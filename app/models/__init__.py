@@ -10,6 +10,10 @@ from .inquiry import Inquiry
 from .audit import AuditLog
 from .content import Announcement, Advertisement
 from .commission import CommissionRate, Commission, MonthlyBilling
+from .customer import Customer
+from .point import PointPackage, PointTransaction
+from .gift import Cast, Gift, GiftTransaction
+from .earning import Earning
 
 __all__ = [
     'User',
@@ -30,4 +34,12 @@ __all__ = [
     'CommissionRate',
     'Commission',
     'MonthlyBilling',
+    # ポイント・ギフトシステム
+    'Customer',
+    'PointPackage',
+    'PointTransaction',
+    'Cast',
+    'Gift',
+    'GiftTransaction',
+    'Earning',
 ]

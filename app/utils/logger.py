@@ -7,7 +7,7 @@ from ..extensions import db
 from ..models.audit import AuditLog
 
 
-def audit_log(action, target_type=None, target_id=None, old_value=None, new_value=None):
+def audit_log(action, target_type=None, target_id=None, old_value=None, new_value=None, customer_id=None):
     """
     Log an audit event.
     
@@ -17,9 +17,14 @@ def audit_log(action, target_type=None, target_id=None, old_value=None, new_valu
         target_id: Target entity ID
         old_value: Previous value (dict)
         new_value: New value (dict)
+        customer_id: Customer ID (for customer actions)
     """
     try:
-        user_id = current_user.id if current_user.is_authenticated else None
+        # Get user_id only if it's a User (not Customer)
+        user_id = None
+        if current_user.is_authenticated:
+            if not hasattr(current_user, 'is_customer') or not current_user.is_customer:
+                user_id = current_user.id
         ip_address = get_client_ip()
         user_agent = request.headers.get('User-Agent', '')[:500] if request else None
         

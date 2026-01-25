@@ -4,6 +4,7 @@ Night-Walk MVP - Public Routes (公開ページ)
 from flask import Blueprint, render_template, request, current_app
 from ..models.shop import Shop, VacancyStatus
 from ..models.content import Announcement, Advertisement
+from ..models.gift import Cast
 
 public_bp = Blueprint('public', __name__)
 
@@ -116,10 +117,14 @@ def shop_detail(shop_id):
     # Get shop images
     images = shop.all_images
     
+    # Get active casts
+    casts = Cast.get_active_by_shop(shop_id)
+    
     return render_template('public/shop_detail.html',
                           shop=shop,
                           job=job,
                           images=images,
+                          casts=casts,
                           vacancy_labels=VacancyStatus.STATUS_LABELS,
                           vacancy_colors=VacancyStatus.STATUS_COLORS)
 

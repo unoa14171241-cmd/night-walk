@@ -76,6 +76,15 @@ class User(UserMixin, db.Model):
         
         return self.role in allowed_roles
     
+    def get_id(self):
+        """Flask-Login用のID（Customerと区別するため）"""
+        return str(self.id)
+    
+    @property
+    def is_customer(self):
+        """カスタマーかどうか（Userは常にFalse）"""
+        return False
+    
     def __repr__(self):
         return f'<User {self.email}>'
 
@@ -108,9 +117,3 @@ class ShopMember(db.Model):
     
     def __repr__(self):
         return f'<ShopMember shop={self.shop_id} user={self.user_id}>'
-
-
-@login_manager.user_loader
-def load_user(user_id):
-    """Load user by ID for Flask-Login."""
-    return User.query.get(int(user_id))

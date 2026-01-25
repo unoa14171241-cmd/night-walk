@@ -1,0 +1,59 @@
+{% extends "customer/base.html" %}
+
+{% block title %}ギフト履歴 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="history-page">
+    <h1 class="page-title">ギフト履歴</h1>
+    
+    {% if gifts.items %}
+    <div class="gift-history-list">
+        {% for gift_tx in gifts.items %}
+        <div class="gift-history-item">
+            <div class="gift-history-main">
+                <div class="gift-history-cast">
+                    <a href="{{ url_for('customer.cast_detail', cast_id=gift_tx.cast_id) }}">
+                        {{ gift_tx.cast.name_display }}
+                    </a>
+                    <span class="gift-history-shop">{{ gift_tx.shop.name }}</span>
+                </div>
+                <div class="gift-history-gift">
+                    <span class="gift-name">{{ gift_tx.gift.name }}</span>
+                    <span class="gift-points">{{ gift_tx.points_used | int }}pt</span>
+                </div>
+            </div>
+            {% if gift_tx.message %}
+            <div class="gift-history-message">
+                "{{ gift_tx.message }}"
+            </div>
+            {% endif %}
+            <div class="gift-history-date">
+                {{ gift_tx.created_at.strftime('%Y/%m/%d %H:%M') }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- ページネーション -->
+    {% if gifts.pages > 1 %}
+    <div class="pagination">
+        {% if gifts.has_prev %}
+        <a href="{{ url_for('customer.gift_history', page=gifts.prev_num) }}" class="page-link">前へ</a>
+        {% endif %}
+        
+        <span class="page-info">{{ gifts.page }} / {{ gifts.pages }}</span>
+        
+        {% if gifts.has_next %}
+        <a href="{{ url_for('customer.gift_history', page=gifts.next_num) }}" class="page-link">次へ</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="empty-state">
+        <p>まだギフトを送っていません</p>
+        <a href="{{ url_for('public.index') }}" class="btn btn-primary">店舗を探す</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

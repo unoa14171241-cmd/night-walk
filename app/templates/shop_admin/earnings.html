@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}ギフト収益 - {{ shop.name }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="page-header">
+        <div>
+            <a href="{{ url_for('shop_admin.dashboard') }}" class="back-link">← ダッシュボードに戻る</a>
+            <h1>ギフト収益</h1>
+            <p class="text-muted">{{ shop.name }}</p>
+        </div>
+    </div>
+    
+    <!-- 収益サマリー -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">¥{{ shop_total | int }}</div>
+            <div class="stat-label">店舗収益（累計）</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">¥{{ cast_total | int }}</div>
+            <div class="stat-label">キャスト収益（累計）</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">¥{{ (shop_total + cast_total) | int }}</div>
+            <div class="stat-label">合計収益</div>
+        </div>
+    </div>
+    
+    <!-- キャスト別収益 -->
+    {% if cast_earnings %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>キャスト別収益</h3>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>キャスト</th>
+                        <th class="text-right">収益</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in cast_earnings %}
+                    <tr>
+                        <td>{{ c.display_name or c.name }}</td>
+                        <td class="text-right">¥{{ c.total | int }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- 収益履歴 -->
+    <div class="card">
+        <div class="card-header">
+            <h3>収益履歴</h3>
+        </div>
+        <div class="card-body">
+            {% if earnings.items %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>日時</th>
+                        <th>種別</th>
+                        <th>対象</th>
+                        <th class="text-right">金額</th>
+                        <th>状態</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for earning in earnings.items %}
+                    <tr>
+                        <td>{{ earning.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
+                        <td>
+                            <span class="badge badge-{{ 'info' if earning.earning_type == 'shop' else 'primary' }}">
+                                {{ earning.type_label }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if earning.cast %}
+                            {{ earning.cast.name_display }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="text-right">¥{{ earning.amount | int }}</td>
+                        <td>
+                            <span class="badge badge-{{ 'success' if earning.status == 'paid' else ('warning' if earning.status == 'confirmed' else 'secondary') }}">
+                                {{ earning.status_label }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- ページネーション -->
+            {% if earnings.pages > 1 %}
+            <div class="pagination">
+                {% if earnings.has_prev %}
+                <a href="{{ url_for('shop_admin.earnings', page=earnings.prev_num) }}" class="page-link">前へ</a>
+                {% endif %}
+                <span class="page-info">{{ earnings.page }} / {{ earnings.pages }}</span>
+                {% if earnings.has_next %}
+                <a href="{{ url_for('shop_admin.earnings', page=earnings.next_num) }}" class="page-link">次へ</a>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <p class="text-muted text-center">まだ収益履歴がありません</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

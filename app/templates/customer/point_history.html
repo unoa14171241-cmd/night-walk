@@ -1,0 +1,67 @@
+{% extends "customer/base.html" %}
+
+{% block title %}ポイント履歴 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="history-page">
+    <h1 class="page-title">ポイント履歴</h1>
+    
+    <div class="current-balance-small">
+        現在のポイント: <strong>{{ current_user.point_balance | default(0) | int }}pt</strong>
+    </div>
+    
+    {% if transactions.items %}
+    <div class="transaction-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>日時</th>
+                    <th>種別</th>
+                    <th>内容</th>
+                    <th class="text-right">金額</th>
+                    <th class="text-right">残高</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in transactions.items %}
+                <tr>
+                    <td>{{ tx.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
+                    <td>
+                        <span class="badge badge-{{ 'success' if tx.is_credit else 'secondary' }}">
+                            {{ tx.type_label }}
+                        </span>
+                    </td>
+                    <td>{{ tx.description or '-' }}</td>
+                    <td class="text-right {% if tx.is_credit %}text-success{% else %}text-danger{% endif %}">
+                        {{ tx.amount_display }}
+                    </td>
+                    <td class="text-right">{{ tx.balance_after | int }}pt</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- ページネーション -->
+    {% if transactions.pages > 1 %}
+    <div class="pagination">
+        {% if transactions.has_prev %}
+        <a href="{{ url_for('customer.point_history', page=transactions.prev_num) }}" class="page-link">前へ</a>
+        {% endif %}
+        
+        <span class="page-info">{{ transactions.page }} / {{ transactions.pages }}</span>
+        
+        {% if transactions.has_next %}
+        <a href="{{ url_for('customer.point_history', page=transactions.next_num) }}" class="page-link">次へ</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="empty-state">
+        <p>まだ取引履歴がありません</p>
+        <a href="{{ url_for('customer.buy_points') }}" class="btn btn-primary">ポイントを購入する</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

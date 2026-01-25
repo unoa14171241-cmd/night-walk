@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'キャスト編集' if cast else 'キャスト登録' }} - {{ shop.name }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="page-header">
+        <div>
+            <a href="{{ url_for('shop_admin.casts') }}" class="back-link">← キャスト一覧に戻る</a>
+            <h1>{{ 'キャスト編集' if cast else '新規キャスト登録' }}</h1>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="form-group">
+                    <label for="name">名前 <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" class="form-control" 
+                           value="{{ cast.name if cast else '' }}" required maxlength="50">
+                    <small class="form-help">本名または管理用の名前</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="display_name">源氏名（表示名）</label>
+                    <input type="text" id="display_name" name="display_name" class="form-control" 
+                           value="{{ cast.display_name if cast and cast.display_name else '' }}" maxlength="50">
+                    <small class="form-help">お客様に表示される名前（空欄の場合は名前が表示されます）</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="profile">プロフィール</label>
+                    <textarea id="profile" name="profile" class="form-control" rows="4">{{ cast.profile if cast else '' }}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="image">写真</label>
+                    {% if cast and cast.image_filename %}
+                    <div class="current-image">
+                        <img src="{{ cast.image_url }}" alt="{{ cast.name_display }}" style="max-width: 200px;">
+                    </div>
+                    {% endif %}
+                    <input type="file" id="image" name="image" class="form-control" accept="image/*">
+                    <small class="form-help">推奨: 正方形、500x500px以上</small>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="twitter_url">Twitter URL</label>
+                        <input type="url" id="twitter_url" name="twitter_url" class="form-control" 
+                               value="{{ cast.twitter_url if cast and cast.twitter_url else '' }}"
+                               placeholder="https://twitter.com/username">
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="instagram_url">Instagram URL</label>
+                        <input type="url" id="instagram_url" name="instagram_url" class="form-control" 
+                               value="{{ cast.instagram_url if cast and cast.instagram_url else '' }}"
+                               placeholder="https://instagram.com/username">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="is_accepting_gifts" 
+                               {% if not cast or cast.is_accepting_gifts %}checked{% endif %}>
+                        ギフトを受け付ける
+                    </label>
+                </div>
+                
+                {% if cast %}
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="is_active" 
+                               {% if cast.is_active %}checked{% endif %}>
+                        公開する
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="is_featured" 
+                               {% if cast.is_featured %}checked{% endif %}>
+                        注目キャストとして表示
+                    </label>
+                </div>
+                {% endif %}
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">{{ '更新' if cast else '登録' }}</button>
+                    <a href="{{ url_for('shop_admin.casts') }}" class="btn btn-secondary">キャンセル</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

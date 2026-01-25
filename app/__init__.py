@@ -25,6 +25,20 @@ def create_app(config_name='default'):
     login_manager.login_message = 'ログインが必要です。'
     login_manager.login_message_category = 'warning'
     
+    # User loader for both User and Customer
+    @login_manager.user_loader
+    def load_user(user_id):
+        """Load user by ID (supports both User and Customer)."""
+        from .models import User, Customer
+        
+        if user_id.startswith('customer_'):
+            # カスタマーの場合
+            customer_id = int(user_id.replace('customer_', ''))
+            return Customer.query.get(customer_id)
+        else:
+            # 管理者/店舗スタッフの場合
+            return User.query.get(int(user_id))
+    
     # Register blueprints
     from .routes.auth import auth_bp
     from .routes.admin import admin_bp
@@ -32,6 +46,7 @@ def create_app(config_name='default'):
     from .routes.public import public_bp
     from .routes.api import api_bp
     from .routes.webhook import webhook_bp
+    from .routes.customer import customer_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -39,6 +54,7 @@ def create_app(config_name='default'):
     app.register_blueprint(public_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(webhook_bp, url_prefix='/webhook')
+    app.register_blueprint(customer_bp, url_prefix='/customer')
     
     # Register error handlers
     register_error_handlers(app)

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Night-Walk{% endblock %}</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <style>
+        /* Customer Layout */
+        .customer-layout {
+            display: flex;
+            min-height: calc(100vh - 60px - 50px);
+        }
+        
+        /* Customer Sidebar */
+        .customer-sidebar {
+            width: 240px;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            padding: 1.5rem 0;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-user {
+            padding: 0 1.5rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 1rem;
+        }
+        
+        .sidebar-user-name {
+            color: #fff;
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .sidebar-user-email {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.75rem;
+        }
+        
+        .sidebar-points {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 1rem 1rem 1.5rem;
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .sidebar-points-label {
+            color: rgba(255,255,255,0.8);
+            font-size: 0.75rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .sidebar-points-value {
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .sidebar-points-value span {
+            font-size: 0.875rem;
+            font-weight: 400;
+        }
+        
+        .sidebar-nav {
+            padding: 0;
+        }
+        
+        .sidebar-nav-section {
+            padding: 0.5rem 1rem;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .sidebar-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar-nav-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+        }
+        
+        .sidebar-nav-item.active {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border-left-color: #667eea;
+        }
+        
+        .sidebar-nav-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+        }
+        
+        .sidebar-nav-text {
+            font-size: 0.875rem;
+        }
+        
+        /* Customer Main Content */
+        .customer-main {
+            flex: 1;
+            padding: 2rem;
+            background: #f8f9fa;
+            overflow-y: auto;
+        }
+        
+        /* Customer Navbar */
+        .customer-navbar {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 0 2rem;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .customer-navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .customer-navbar-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .customer-navbar-link {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+        
+        .customer-navbar-link:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        
+        .customer-navbar-points {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        
+        /* No sidebar layout */
+        .customer-layout.no-sidebar .customer-sidebar {
+            display: none;
+        }
+        
+        .customer-layout.no-sidebar .customer-main {
+            max-width: 100%;
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .customer-sidebar {
+                display: none;
+            }
+            
+            .customer-main {
+                padding: 1rem;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Customer Navbar -->
+    <nav class="customer-navbar">
+        <a href="{{ url_for('public.index') }}" class="customer-navbar-brand">
+            Night-Walk
+        </a>
+        <div class="customer-navbar-menu">
+            <a href="{{ url_for('public.index') }}" class="customer-navbar-link">店舗を探す</a>
+            {% if current_user.is_authenticated and current_user.is_customer %}
+                <span class="customer-navbar-points">{{ current_user.point_balance | default(0) }}pt</span>
+                <a href="{{ url_for('customer.logout') }}" class="customer-navbar-link">ログアウト</a>
+            {% else %}
+                <a href="{{ url_for('customer.login') }}" class="customer-navbar-link">ログイン</a>
+                <a href="{{ url_for('customer.register') }}" class="customer-navbar-link" style="background: #667eea; color: #fff;">新規登録</a>
+            {% endif %}
+        </div>
+    </nav>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            <div class="container">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                    <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Customer Layout -->
+    <div class="customer-layout {% if not current_user.is_authenticated or not current_user.is_customer %}no-sidebar{% endif %}">
+        {% if current_user.is_authenticated and current_user.is_customer %}
+        <!-- Sidebar -->
+        <aside class="customer-sidebar">
+            <div class="sidebar-user">
+                <div class="sidebar-user-name">{{ current_user.nickname }}</div>
+                <div class="sidebar-user-email">{{ current_user.email }}</div>
+            </div>
+            
+            <div class="sidebar-points">
+                <div class="sidebar-points-label">保有ポイント</div>
+                <div class="sidebar-points-value">{{ current_user.point_balance | default(0) }}<span>pt</span></div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="sidebar-nav-section">メニュー</div>
+                
+                <a href="{{ url_for('customer.mypage') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.mypage' %}active{% endif %}">
+                    <span class="sidebar-nav-icon">H</span>
+                    <span class="sidebar-nav-text">マイページ</span>
+                </a>
+                
+                <a href="{{ url_for('customer.buy_points') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.buy_points' %}active{% endif %}">
+                    <span class="sidebar-nav-icon">P</span>
+                    <span class="sidebar-nav-text">ポイント購入</span>
+                </a>
+                
+                <a href="{{ url_for('public.index') }}" class="sidebar-nav-item">
+                    <span class="sidebar-nav-icon">S</span>
+                    <span class="sidebar-nav-text">店舗を探す</span>
+                </a>
+                
+                <div class="sidebar-nav-section">履歴</div>
+                
+                <a href="{{ url_for('customer.gift_history') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.gift_history' %}active{% endif %}">
+                    <span class="sidebar-nav-icon">G</span>
+                    <span class="sidebar-nav-text">ギフト履歴</span>
+                </a>
+                
+                <a href="{{ url_for('customer.point_history') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.point_history' %}active{% endif %}">
+                    <span class="sidebar-nav-icon">T</span>
+                    <span class="sidebar-nav-text">取引履歴</span>
+                </a>
+                
+                <div class="sidebar-nav-section">アカウント</div>
+                
+                <a href="{{ url_for('customer.logout') }}" class="sidebar-nav-item">
+                    <span class="sidebar-nav-icon">X</span>
+                    <span class="sidebar-nav-text">ログアウト</span>
+                </a>
+            </nav>
+        </aside>
+        {% endif %}
+        
+        <!-- Main Content -->
+        <main class="customer-main">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer" style="background: #1a1a2e; color: rgba(255,255,255,0.6); padding: 1rem; text-align: center; font-size: 0.875rem;">
+        <p>&copy; 2026 Night-Walk. All rights reserved.</p>
+    </footer>
+    
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

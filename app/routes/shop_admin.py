@@ -13,6 +13,8 @@ from ..models.job import Job
 from ..models.booking import BookingLog
 from ..models.billing import Subscription
 from ..models.audit import AuditLog
+from ..models.gift import Cast, GiftTransaction
+from ..models.earning import Earning
 from ..utils.decorators import shop_access_required, owner_required
 from ..utils.logger import audit_log
 from ..utils.helpers import get_client_ip
@@ -418,3 +420,238 @@ def reorder_images():
     db.session.commit()
     
     return jsonify({'success': True})
+
+
+# ============================================
+# Cast Management
+# ============================================
+
+@shop_admin_bp.route('/casts')
+@login_required
+@owner_required
+def casts():
+    """Cast management page."""
+    shop = g.current_shop
+    cast_list = Cast.query.filter_by(shop_id=shop.id).order_by(Cast.sort_order, Cast.name).all()
+    return render_template('shop_admin/casts.html', shop=shop, casts=cast_list)
+
+
+@shop_admin_bp.route('/casts/new', methods=['GET', 'POST'])
+@login_required
+@owner_required
+def new_cast():
+    """Create new cast."""
+    shop = g.current_shop
+    
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        display_name = request.form.get('display_name', '').strip()
+        profile = request.form.get('profile', '').strip()
+        twitter_url = request.form.get('twitter_url', '').strip()
+        instagram_url = request.form.get('instagram_url', '').strip()
+        is_accepting_gifts = request.form.get('is_accepting_gifts') == 'on'
+        
+        if not name:
+            flash('名前を入力してください。', 'danger')
+            return render_template('shop_admin/cast_form.html', shop=shop, cast=None)
+        
+        # Get max sort order
+        max_order = db.session.query(db.func.max(Cast.sort_order)).filter_by(shop_id=shop.id).scalar() or 0
+        
+        cast = Cast(
+            shop_id=shop.id,
+            name=name,
+            display_name=display_name or None,
+            profile=profile,
+            twitter_url=twitter_url or None,
+            instagram_url=instagram_url or None,
+            is_accepting_gifts=is_accepting_gifts,
+            is_active=True,
+            sort_order=max_order + 1
+        )
+        
+        # Handle image upload
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename:
+                filename = save_cast_image(file, shop.id)
+                if filename:
+                    cast.image_filename = filename
+        
+        db.session.add(cast)
+        db.session.commit()
+        
+        audit_log(AuditLog.ACTION_CAST_CREATE if hasattr(AuditLog, 'ACTION_CAST_CREATE') else 'cast_create', 
+                  'cast', cast.id, new_value={'name': name})
+        
+        flash(f'キャスト「{cast.name_display}」を登録しました。', 'success')
+        return redirect(url_for('shop_admin.casts'))
+    
+    return render_template('shop_admin/cast_form.html', shop=shop, cast=None)
+
+
+@shop_admin_bp.route('/casts/<int:cast_id>/edit', methods=['GET', 'POST'])
+@login_required
+@owner_required
+def edit_cast(cast_id):
+    """Edit cast."""
+    shop = g.current_shop
+    cast = Cast.query.filter_by(id=cast_id, shop_id=shop.id).first_or_404()
+    
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        
+        if not name:
+            flash('名前を入力してください。', 'danger')
+            return render_template('shop_admin/cast_form.html', shop=shop, cast=cast)
+        
+        cast.name = name
+        cast.display_name = request.form.get('display_name', '').strip() or None
+        cast.profile = request.form.get('profile', '').strip()
+        cast.twitter_url = request.form.get('twitter_url', '').strip() or None
+        cast.instagram_url = request.form.get('instagram_url', '').strip() or None
+        cast.is_accepting_gifts = request.form.get('is_accepting_gifts') == 'on'
+        cast.is_active = request.form.get('is_active') == 'on'
+        cast.is_featured = request.form.get('is_featured') == 'on'
+        
+        # Handle image upload
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename:
+                filename = save_cast_image(file, shop.id)
+                if filename:
+                    # Delete old image
+                    if cast.image_filename:
+                        try:
+                            old_path = os.path.join(current_app.root_path, 'static', 'uploads', 'casts', cast.image_filename)
+                            if os.path.exists(old_path):
+                                os.remove(old_path)
+                        except:
+                            pass
+                    cast.image_filename = filename
+        
+        db.session.commit()
+        
+        flash(f'キャスト「{cast.name_display}」を更新しました。', 'success')
+        return redirect(url_for('shop_admin.casts'))
+    
+    return render_template('shop_admin/cast_form.html', shop=shop, cast=cast)
+
+
+@shop_admin_bp.route('/casts/<int:cast_id>/delete', methods=['POST'])
+@login_required
+@owner_required
+def delete_cast(cast_id):
+    """Delete cast."""
+    shop = g.current_shop
+    cast = Cast.query.filter_by(id=cast_id, shop_id=shop.id).first_or_404()
+    
+    cast_name = cast.name_display
+    
+    # Delete image
+    if cast.image_filename:
+        try:
+            filepath = os.path.join(current_app.root_path, 'static', 'uploads', 'casts', cast.image_filename)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        except:
+            pass
+    
+    db.session.delete(cast)
+    db.session.commit()
+    
+    flash(f'キャスト「{cast_name}」を削除しました。', 'success')
+    return redirect(url_for('shop_admin.casts'))
+
+
+@shop_admin_bp.route('/casts/reorder', methods=['POST'])
+@login_required
+@owner_required
+def reorder_casts():
+    """Reorder casts via AJAX."""
+    shop = g.current_shop
+    
+    data = request.get_json()
+    if not data or 'order' not in data:
+        return jsonify({'error': 'Invalid data'}), 400
+    
+    for idx, cast_id in enumerate(data['order']):
+        cast = Cast.query.filter_by(id=cast_id, shop_id=shop.id).first()
+        if cast:
+            cast.sort_order = idx
+    
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
+
+# ============================================
+# Gift Earnings
+# ============================================
+
+@shop_admin_bp.route('/earnings')
+@login_required
+@owner_required
+def earnings():
+    """View gift earnings."""
+    shop = g.current_shop
+    
+    # Get shop's gift earnings
+    page = request.args.get('page', 1, type=int)
+    earnings_query = Earning.query.filter(
+        Earning.shop_id == shop.id,
+        Earning.earning_type.in_([Earning.TYPE_SHOP, Earning.TYPE_CAST])
+    ).order_by(Earning.created_at.desc())
+    
+    earnings_paginated = earnings_query.paginate(page=page, per_page=50, error_out=False)
+    
+    # Summary
+    shop_total = db.session.query(db.func.sum(Earning.amount)).filter(
+        Earning.shop_id == shop.id,
+        Earning.earning_type == Earning.TYPE_SHOP
+    ).scalar() or 0
+    
+    cast_total = db.session.query(db.func.sum(Earning.amount)).filter(
+        Earning.shop_id == shop.id,
+        Earning.earning_type == Earning.TYPE_CAST
+    ).scalar() or 0
+    
+    # Cast earnings breakdown
+    cast_earnings = db.session.query(
+        Cast.id, Cast.name, Cast.display_name,
+        db.func.sum(Earning.amount).label('total')
+    ).join(Earning, Cast.id == Earning.cast_id).filter(
+        Cast.shop_id == shop.id,
+        Earning.earning_type == Earning.TYPE_CAST
+    ).group_by(Cast.id, Cast.name, Cast.display_name).all()
+    
+    return render_template('shop_admin/earnings.html',
+                           shop=shop,
+                           earnings=earnings_paginated,
+                           shop_total=shop_total,
+                           cast_total=cast_total,
+                           cast_earnings=cast_earnings)
+
+
+def save_cast_image(file, shop_id):
+    """Save uploaded cast image and return filename."""
+    from ..utils.helpers import validate_image_file
+    
+    is_valid, error_message = validate_image_file(file)
+    if not is_valid:
+        return None
+    
+    # Create unique filename
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    filename = f"cast_{shop_id}_{uuid.uuid4().hex[:8]}.{ext}"
+    
+    # Ensure upload directory exists
+    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'casts')
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    # Save file
+    filepath = os.path.join(upload_dir, filename)
+    file.seek(0)  # Reset file position
+    file.save(filepath)
+    
+    return filename

@@ -1,0 +1,46 @@
+{% extends "customer/base.html" %}
+
+{% block title %}ログイン - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h1 class="auth-title">ログイン</h1>
+        <p class="auth-subtitle">Night-Walkにログイン</p>
+        
+        <form method="POST" class="auth-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="form-group">
+                <label for="email">メールアドレス</label>
+                <input type="email" id="email" name="email" class="form-control" 
+                       value="{{ email | default('') }}" required autofocus
+                       placeholder="example@email.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" name="password" class="form-control" 
+                       required placeholder="パスワード">
+            </div>
+            
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="remember" value="1">
+                    ログイン状態を保持する
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block btn-lg">
+                ログイン
+            </button>
+        </form>
+        
+        <div class="auth-footer">
+            <p><a href="#">パスワードをお忘れの方</a></p>
+            <p>アカウントをお持ちでない方は<br>
+            <a href="{{ url_for('customer.register') }}">新規会員登録</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

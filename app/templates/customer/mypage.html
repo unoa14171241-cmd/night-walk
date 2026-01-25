@@ -1,0 +1,117 @@
+{% extends "customer/base.html" %}
+
+{% block title %}マイページ - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="mypage">
+    <h1 class="page-title">マイページ</h1>
+    
+    <!-- ポイント残高カード -->
+    <div class="point-card">
+        <div class="point-card-inner">
+            <div class="point-label">現在のポイント</div>
+            <div class="point-balance">{{ current_user.point_balance | default(0) | int }}<span class="point-unit">pt</span></div>
+            <a href="{{ url_for('customer.buy_points') }}" class="btn btn-primary">ポイントを購入</a>
+        </div>
+        <div class="point-stats">
+            <div class="stat">
+                <span class="stat-label">累計購入</span>
+                <span class="stat-value">{{ current_user.total_purchased_points | default(0) | int }}pt</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">累計使用</span>
+                <span class="stat-value">{{ current_user.total_spent_points | default(0) | int }}pt</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- クイックアクション -->
+    <div class="quick-actions">
+        <a href="{{ url_for('public.index') }}" class="quick-action">
+            <span class="quick-action-icon">店</span>
+            <span class="quick-action-label">店舗を探す</span>
+        </a>
+        <a href="{{ url_for('customer.buy_points') }}" class="quick-action">
+            <span class="quick-action-icon">P</span>
+            <span class="quick-action-label">ポイント購入</span>
+        </a>
+        <a href="{{ url_for('customer.gift_history') }}" class="quick-action">
+            <span class="quick-action-icon">G</span>
+            <span class="quick-action-label">ギフト履歴</span>
+        </a>
+        <a href="{{ url_for('customer.point_history') }}" class="quick-action">
+            <span class="quick-action-icon">H</span>
+            <span class="quick-action-label">取引履歴</span>
+        </a>
+    </div>
+    
+    <!-- 最近のギフト -->
+    {% if recent_gifts %}
+    <div class="section">
+        <div class="section-header">
+            <h2>最近送ったギフト</h2>
+            <a href="{{ url_for('customer.gift_history') }}">すべて見る</a>
+        </div>
+        <div class="gift-list">
+            {% for gift_tx in recent_gifts %}
+            <div class="gift-item">
+                <div class="gift-info">
+                    <span class="gift-cast">{{ gift_tx.cast.name_display }}</span>
+                    <span class="gift-name">{{ gift_tx.gift.name }}</span>
+                </div>
+                <div class="gift-meta">
+                    <span class="gift-points">{{ gift_tx.points_used }}pt</span>
+                    <span class="gift-date">{{ gift_tx.created_at.strftime('%m/%d %H:%M') }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- 最近の取引履歴 -->
+    {% if recent_transactions %}
+    <div class="section">
+        <div class="section-header">
+            <h2>最近の取引</h2>
+            <a href="{{ url_for('customer.point_history') }}">すべて見る</a>
+        </div>
+        <div class="transaction-list">
+            {% for tx in recent_transactions %}
+            <div class="transaction-item">
+                <div class="transaction-info">
+                    <span class="transaction-type">{{ tx.type_label }}</span>
+                    <span class="transaction-desc">{{ tx.description or '' }}</span>
+                </div>
+                <div class="transaction-meta">
+                    <span class="transaction-amount {% if tx.is_credit %}credit{% else %}debit{% endif %}">
+                        {{ tx.amount_display }}
+                    </span>
+                    <span class="transaction-date">{{ tx.created_at.strftime('%m/%d') }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- アカウント情報 -->
+    <div class="section">
+        <h2>アカウント情報</h2>
+        <div class="account-info">
+            <div class="info-row">
+                <span class="info-label">ニックネーム</span>
+                <span class="info-value">{{ current_user.nickname }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">メールアドレス</span>
+                <span class="info-value">{{ current_user.email }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">登録日</span>
+                <span class="info-value">{{ current_user.created_at.strftime('%Y年%m月%d日') }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -120,13 +120,34 @@
                 </div>
             </div>
             
+            <!-- Casts Section -->
+            {% if casts %}
+            <div class="info-section">
+                <h3>キャスト紹介</h3>
+                <div class="cast-grid">
+                    {% for cast in casts %}
+                    <a href="{{ url_for('customer.cast_detail', cast_id=cast.id) }}" class="cast-preview-card">
+                        <div class="cast-preview-image">
+                            <img src="{{ cast.image_url }}" alt="{{ cast.name_display }}">
+                        </div>
+                        <div class="cast-preview-info">
+                            <span class="cast-preview-name">{{ cast.name_display }}</span>
+                            {% if cast.is_accepting_gifts %}
+                            <span class="badge badge-sm badge-success">ギフト受付中</span>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
             <!-- Job Posting -->
             {% if job and job.is_visible %}
             <div class="info-section">
                 <h3>求人情報</h3>
                 <div class="card" style="border-color: var(--color-accent-pink);">
                     <div class="d-flex align-center gap-2 mb-2">
-                        <span style="font-size: 1.5rem;">💼</span>
                         <span class="badge badge-danger">急募</span>
                     </div>
                     
@@ -262,9 +283,62 @@
     color: var(--color-primary);
 }
 
+/* Cast Grid */
+.cast-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: var(--space-md);
+}
+
+.cast-preview-card {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--color-text);
+    transition: var(--transition-base);
+}
+
+.cast-preview-card:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+}
+
+.cast-preview-image {
+    aspect-ratio: 1;
+    overflow: hidden;
+}
+
+.cast-preview-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cast-preview-info {
+    padding: var(--space-sm);
+    text-align: center;
+}
+
+.cast-preview-name {
+    display: block;
+    font-weight: 500;
+    margin-bottom: var(--space-xs);
+}
+
+.badge-sm {
+    font-size: 0.625rem;
+    padding: 2px 6px;
+}
+
 @media (max-width: 768px) {
     .gallery-main {
         height: 250px;
+    }
+    
+    .cast-grid {
+        grid-template-columns: repeat(3, 1fr);
     }
 }
 </style>

@@ -1,0 +1,146 @@
+{% extends "customer/base.html" %}
+
+{% block title %}{{ cast.name_display }} - {{ cast.shop.name }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="cast-detail-page">
+    <div class="back-link">
+        <a href="{{ url_for('public.shop_detail', shop_id=cast.shop_id) }}">← {{ cast.shop.name }}に戻る</a>
+    </div>
+    
+    <div class="cast-profile">
+        <div class="cast-image">
+            <img src="{{ cast.image_url }}" alt="{{ cast.name_display }}">
+        </div>
+        
+        <div class="cast-info">
+            <h1 class="cast-name">{{ cast.name_display }}</h1>
+            <p class="cast-shop">{{ cast.shop.name }}</p>
+            
+            {% if cast.profile %}
+            <div class="cast-bio">
+                {{ cast.profile | nl2br }}
+            </div>
+            {% endif %}
+            
+            <div class="cast-stats">
+                <div class="stat">
+                    <span class="stat-value">{{ cast.total_gifts_received | default(0) }}</span>
+                    <span class="stat-label">ギフト</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value">{{ cast.total_points_received | default(0) }}</span>
+                    <span class="stat-label">pt</span>
+                </div>
+            </div>
+            
+            {% if cast.twitter_url or cast.instagram_url %}
+            <div class="cast-sns">
+                {% if cast.twitter_url %}
+                <a href="{{ cast.twitter_url }}" target="_blank" class="sns-link">Twitter</a>
+                {% endif %}
+                {% if cast.instagram_url %}
+                <a href="{{ cast.instagram_url }}" target="_blank" class="sns-link">Instagram</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- ギフト送信セクション -->
+    <div class="gift-section">
+        <h2>ギフトを送る</h2>
+        
+        {% if current_user.is_authenticated and current_user.is_customer %}
+            <div class="your-points">
+                あなたのポイント: <strong>{{ current_user.point_balance | default(0) | int }}pt</strong>
+                <a href="{{ url_for('customer.buy_points') }}" class="btn btn-sm btn-outline">チャージ</a>
+            </div>
+            
+            {% if cast.is_accepting_gifts %}
+            <div class="gift-grid">
+                {% for gift in gifts %}
+                <div class="gift-card {% if current_user.point_balance < gift.points %}disabled{% endif %}">
+                    <div class="gift-image">
+                        <img src="{{ gift.image_url }}" alt="{{ gift.name }}">
+                    </div>
+                    <div class="gift-name">{{ gift.name }}</div>
+                    <div class="gift-points">{{ gift.points | int }}pt</div>
+                    
+                    <form action="{{ url_for('customer.send_gift', cast_id=cast.id) }}" method="POST" class="gift-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="gift_id" value="{{ gift.id }}">
+                        
+                        {% if current_user.point_balance >= gift.points %}
+                        <button type="button" class="btn btn-primary btn-block" 
+                                onclick="openGiftModal({{ gift.id }}, '{{ gift.name }}', {{ gift.points }})">
+                            送る
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-secondary btn-block" disabled>
+                            ポイント不足
+                        </button>
+                        {% endif %}
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="not-accepting">
+                <p>現在ギフトを受け付けていません</p>
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="login-prompt">
+                <p>ギフトを送るにはログインが必要です</p>
+                <a href="{{ url_for('customer.login', next=request.url) }}" class="btn btn-primary">ログイン</a>
+                <a href="{{ url_for('customer.register') }}" class="btn btn-outline">新規登録</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ギフト送信モーダル -->
+<div id="giftModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeGiftModal()">&times;</span>
+        <h3>ギフトを送る</h3>
+        <p><strong id="modalGiftName"></strong>を{{ cast.name_display }}さんに送ります</p>
+        <p class="modal-points"><span id="modalGiftPoints"></span>pt</p>
+        
+        <form id="giftForm" action="{{ url_for('customer.send_gift', cast_id=cast.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="gift_id" id="modalGiftId">
+            
+            <div class="form-group">
+                <label for="message">メッセージ（任意）</label>
+                <textarea name="message" id="message" class="form-control" 
+                          maxlength="200" rows="3" placeholder="応援メッセージを入力..."></textarea>
+                <small class="form-help">200文字まで</small>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block btn-lg">送信する</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openGiftModal(giftId, giftName, giftPoints) {
+    document.getElementById('modalGiftId').value = giftId;
+    document.getElementById('modalGiftName').textContent = giftName;
+    document.getElementById('modalGiftPoints').textContent = giftPoints;
+    document.getElementById('giftModal').style.display = 'flex';
+}
+
+function closeGiftModal() {
+    document.getElementById('giftModal').style.display = 'none';
+}
+
+// モーダル外クリックで閉じる
+document.getElementById('giftModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeGiftModal();
+    }
+});
+</script>
+{% endblock %}

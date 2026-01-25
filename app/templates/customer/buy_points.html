@@ -1,0 +1,54 @@
+{% extends "customer/base.html" %}
+
+{% block title %}ポイント購入 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="buy-points-page">
+    <h1 class="page-title">ポイント購入</h1>
+    
+    <div class="current-balance">
+        <span class="balance-label">現在のポイント</span>
+        <span class="balance-value">{{ current_user.point_balance | default(0) | int }}<span class="pt">pt</span></span>
+    </div>
+    
+    <div class="packages-grid">
+        {% for package in packages %}
+        <div class="package-card {% if package.is_featured %}featured{% endif %}">
+            {% if package.bonus_rate > 0 %}
+            <div class="package-badge">+{{ package.bonus_rate }}% ボーナス</div>
+            {% endif %}
+            
+            <div class="package-name">{{ package.name }}</div>
+            
+            <div class="package-points">
+                <span class="total-points">{{ package.total_points | int }}</span>
+                <span class="pt">pt</span>
+            </div>
+            
+            {% if package.bonus_points > 0 %}
+            <div class="package-breakdown">
+                ({{ package.points | int }}pt + ボーナス{{ package.bonus_points | int }}pt)
+            </div>
+            {% endif %}
+            
+            <div class="package-price">{{ package.price_display }}</div>
+            
+            <form action="{{ url_for('customer.purchase_package', package_id=package.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary btn-block">購入する</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="payment-info">
+        <h3>お支払いについて</h3>
+        <ul>
+            <li>クレジットカード（VISA, Mastercard, JCB, AMEX）がご利用いただけます</li>
+            <li>決済はStripeにより安全に処理されます</li>
+            <li>ポイントは購入後すぐにご利用いただけます</li>
+            <li>ポイントの有効期限はありません</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
