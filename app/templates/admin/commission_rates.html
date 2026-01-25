@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}手数料設定 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <div class="d-flex justify-between align-center mb-4">
+            <h1 class="mb-0">手数料設定</h1>
+            {% if shops_without_rate %}
+            <a href="{{ url_for('admin.new_commission_rate') }}" class="btn btn-primary">
+                + 新規設定
+            </a>
+            {% endif %}
+        </div>
+        
+        <!-- Rates List -->
+        <div class="card mb-4">
+            <h3 class="mb-3">設定済み店舗</h3>
+            
+            {% if rates %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>店舗</th>
+                        <th>タイプ</th>
+                        <th>手数料</th>
+                        <th>状態</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rate, shop in rates %}
+                    <tr>
+                        <td><strong>{{ shop.name }}</strong></td>
+                        <td>{{ rate.type_label }}</td>
+                        <td>
+                            {% if rate.commission_type == 'fixed' %}
+                            <span class="text-primary">¥{{ "{:,}".format(rate.fixed_amount) }}/件</span>
+                            {% else %}
+                            <span class="text-primary">{{ rate.percentage_rate }}%</span>
+                            {% if rate.min_amount %}
+                            <br><span class="text-muted" style="font-size: 0.75rem;">（最低 ¥{{ "{:,}".format(rate.min_amount) }}）</span>
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if rate.is_active %}
+                            <span class="badge badge-success">有効</span>
+                            {% else %}
+                            <span class="badge" style="background: var(--color-bg-elevated);">無効</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('admin.edit_commission_rate', shop_id=shop.id) }}" class="btn btn-sm btn-secondary">
+                                編集
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">手数料設定がありません</p>
+            {% endif %}
+        </div>
+        
+        <!-- Shops without rate -->
+        {% if shops_without_rate %}
+        <div class="card">
+            <h3 class="mb-3">未設定店舗</h3>
+            <p class="text-muted mb-3">以下の店舗にはまだ手数料設定がありません。デフォルト: ¥1,000/件</p>
+            
+            <div class="shop-chips">
+                {% for shop in shops_without_rate %}
+                <a href="{{ url_for('admin.edit_commission_rate', shop_id=shop.id) }}" class="shop-chip">
+                    {{ shop.name }}
+                    <span class="chip-icon">→</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Help -->
+        <div class="card mt-4">
+            <h3 class="mb-3">手数料タイプについて</h3>
+            <table class="table" style="margin: 0;">
+                <tr>
+                    <td style="width: 120px;"><strong>固定額</strong></td>
+                    <td>送客1件（1名）あたり固定金額を請求。シンプルで分かりやすい料金体系です。</td>
+                </tr>
+                <tr>
+                    <td><strong>パーセンテージ</strong></td>
+                    <td>売上金額に対して一定割合を請求。売上把握ができる場合に有効です。最低金額も設定可能。</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.shop-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+}
+
+.shop-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: 0.875rem;
+    transition: all var(--transition-fast);
+}
+
+.shop-chip:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.chip-icon {
+    opacity: 0.5;
+}
+
+.shop-chip:hover .chip-icon {
+    opacity: 1;
+}
+</style>
+{% endblock %}

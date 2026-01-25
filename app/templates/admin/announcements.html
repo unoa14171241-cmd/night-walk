@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}お知らせ管理 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <div class="d-flex justify-between align-center mb-4">
+            <h1 class="mb-0">お知らせ管理</h1>
+            <a href="{{ url_for('admin.new_announcement') }}" class="btn btn-primary">
+                + 新規お知らせ
+            </a>
+        </div>
+        
+        <div class="card">
+            {% if announcements %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>タイトル</th>
+                        <th>優先度</th>
+                        <th>状態</th>
+                        <th>期間</th>
+                        <th>作成日</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in announcements %}
+                    <tr>
+                        <td>
+                            <strong>{{ item.title }}</strong>
+                            {% if item.link_url %}
+                            <br><span class="text-muted" style="font-size: 0.75rem;">🔗 リンクあり</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.priority }}</td>
+                        <td>
+                            {% if item.is_currently_active %}
+                            <span class="badge badge-success">表示中</span>
+                            {% elif item.is_active %}
+                            <span class="badge badge-warning">予約中</span>
+                            {% else %}
+                            <span class="badge" style="background: var(--color-bg-elevated);">非表示</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size: 0.75rem;">
+                            {% if item.starts_at %}
+                            {{ item.starts_at.strftime('%Y/%m/%d %H:%M') }}〜
+                            {% else %}
+                            −
+                            {% endif %}
+                            {% if item.ends_at %}
+                            <br>{{ item.ends_at.strftime('%Y/%m/%d %H:%M') }}
+                            {% endif %}
+                        </td>
+                        <td style="font-size: 0.75rem;">
+                            {{ item.created_at.strftime('%Y/%m/%d') }}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{{ url_for('admin.edit_announcement', id=item.id) }}" class="btn btn-sm btn-secondary">
+                                    編集
+                                </a>
+                                <form method="POST" action="{{ url_for('admin.delete_announcement', id=item.id) }}"
+                                      onsubmit="return confirm('このお知らせを削除しますか？')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-danger">削除</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">まだお知らせがありません</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

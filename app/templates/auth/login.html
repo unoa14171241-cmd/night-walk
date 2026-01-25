@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}ログイン - Night-Walk{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block body_class %}login-page{% endblock %}
+
+{% block content %}
+<div class="login-card">
+    <div class="login-header">
+        <span class="brand-icon">🌙</span>
+        <h1>Night-Walk</h1>
+        <p class="text-muted">店舗管理システム</p>
+    </div>
+    
+    <form method="POST" action="{{ url_for('auth.login') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="form-group">
+            <label class="form-label" for="email">メールアドレス</label>
+            <input type="email" 
+                   id="email" 
+                   name="email" 
+                   class="form-control" 
+                   placeholder="your@email.com"
+                   required 
+                   autofocus>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label" for="password">パスワード</label>
+            <input type="password" 
+                   id="password" 
+                   name="password" 
+                   class="form-control" 
+                   placeholder="••••••••"
+                   required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-check">
+                <input type="checkbox" name="remember" class="form-check-input">
+                <span>ログイン状態を保持する</span>
+            </label>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-block btn-lg">
+            ログイン
+        </button>
+    </form>
+    
+    <p class="text-center text-muted mt-3" style="font-size: 0.875rem;">
+        <a href="{{ url_for('public.index') }}">← 店舗一覧に戻る</a>
+    </p>
+</div>
+{% endblock %}

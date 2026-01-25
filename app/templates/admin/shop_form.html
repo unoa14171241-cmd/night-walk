@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}{% if shop %}店舗編集{% else %}新規店舗{% endif %} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <p class="mb-3">
+            <a href="{{ url_for('admin.shops') }}">← 店舗一覧に戻る</a>
+        </p>
+        
+        <div class="card" style="max-width: 600px;">
+            <div class="card-header">
+                <h1 class="card-title">{% if shop %}店舗編集{% else %}新規店舗作成{% endif %}</h1>
+            </div>
+            
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="form-group">
+                    <label class="form-label" for="name">店舗名 *</label>
+                    <input type="text" 
+                           id="name" 
+                           name="name" 
+                           class="form-control" 
+                           value="{{ shop.name if shop else '' }}"
+                           required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="area">エリア *</label>
+                    <select id="area" name="area" class="form-control" required>
+                        {% for area in areas %}
+                        <option value="{{ area }}" {% if shop and shop.area == area %}selected{% endif %}>
+                            {{ area }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="phone">電話番号</label>
+                    <input type="tel" 
+                           id="phone" 
+                           name="phone" 
+                           class="form-control" 
+                           value="{{ shop.phone if shop else '' }}"
+                           placeholder="086-XXX-XXXX">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="address">住所</label>
+                    <input type="text" 
+                           id="address" 
+                           name="address" 
+                           class="form-control" 
+                           value="{{ shop.address if shop else '' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="business_hours">営業時間</label>
+                    <input type="text" 
+                           id="business_hours" 
+                           name="business_hours" 
+                           class="form-control" 
+                           value="{{ shop.business_hours if shop else '' }}"
+                           placeholder="20:00〜02:00">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="price_range">料金目安</label>
+                    <input type="text" 
+                           id="price_range" 
+                           name="price_range" 
+                           class="form-control" 
+                           value="{{ shop.price_range if shop else '' }}"
+                           placeholder="5,000円〜">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="description">紹介文</label>
+                    <textarea id="description" 
+                              name="description" 
+                              class="form-control" 
+                              rows="4">{{ shop.description if shop else '' }}</textarea>
+                </div>
+                
+                <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        {% if shop %}保存{% else %}作成{% endif %}
+                    </button>
+                    <a href="{{ url_for('admin.shops') }}" class="btn btn-secondary">
+                        キャンセル
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

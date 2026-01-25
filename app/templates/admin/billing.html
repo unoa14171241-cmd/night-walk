@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}課金状況 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <h1 class="mb-4">課金状況</h1>
+        
+        <div class="card">
+            {% if subscriptions %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>店舗名</th>
+                        <th>エリア</th>
+                        <th>プラン</th>
+                        <th>ステータス</th>
+                        <th>期間終了</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subscription, shop in subscriptions %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('admin.shop_detail', shop_id=shop.id) }}">
+                                <strong>{{ shop.name }}</strong>
+                            </a>
+                        </td>
+                        <td>{{ shop.area }}</td>
+                        <td>{{ subscription.plan | upper }}</td>
+                        <td>
+                            <span class="badge badge-{% if subscription.is_active %}success{% elif subscription.is_past_due %}warning{% else %}danger{% endif %}">
+                                {{ subscription.status_label }}
+                            </span>
+                        </td>
+                        <td>
+                            {{ subscription.current_period_end.strftime('%Y/%m/%d') if subscription.current_period_end else '−' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">サブスクリプションがありません</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

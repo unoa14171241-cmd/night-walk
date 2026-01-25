@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>請求書 {{ billing.invoice_number }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+            font-size: 10pt;
+            line-height: 1.6;
+            color: #333;
+            background: #fff;
+        }
+        
+        .invoice-container {
+            max-width: 21cm;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header */
+        .invoice-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px double #333;
+        }
+        
+        .invoice-title {
+            font-size: 28pt;
+            font-weight: bold;
+            letter-spacing: 0.5em;
+            margin-bottom: 10px;
+        }
+        
+        .invoice-number {
+            font-size: 10pt;
+            color: #666;
+        }
+        
+        /* Parties */
+        .parties {
+            display: table;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        
+        .party {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+        }
+        
+        .party-right {
+            text-align: right;
+        }
+        
+        .party-label {
+            font-size: 9pt;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .party-name {
+            font-size: 16pt;
+            font-weight: bold;
+            border-bottom: 2px solid #333;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        
+        .honorific {
+            font-size: 12pt;
+            font-weight: normal;
+            margin-left: 10px;
+        }
+        
+        .party-info {
+            font-size: 9pt;
+            line-height: 1.8;
+        }
+        
+        /* Summary Box */
+        .summary-box {
+            background: #f8f8f8;
+            border: 2px solid #333;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        .summary-label {
+            font-size: 12pt;
+            margin-bottom: 10px;
+        }
+        
+        .summary-amount {
+            font-size: 28pt;
+            font-weight: bold;
+        }
+        
+        .summary-amount .yen {
+            font-size: 18pt;
+        }
+        
+        /* Details */
+        .details {
+            margin-bottom: 25px;
+        }
+        
+        .details-row {
+            display: table;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        
+        .details-label {
+            display: table-cell;
+            width: 120px;
+            font-weight: bold;
+        }
+        
+        .details-value {
+            display: table-cell;
+        }
+        
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        th, td {
+            border: 1px solid #999;
+            padding: 8px 10px;
+            text-align: left;
+            font-size: 9pt;
+        }
+        
+        th {
+            background: #e8e8e8;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .col-date { width: 70px; text-align: center; }
+        .col-desc { }
+        .col-qty { width: 60px; text-align: center; }
+        .col-amount { width: 100px; text-align: right; }
+        
+        td.amount {
+            text-align: right;
+            font-family: "Courier New", monospace;
+        }
+        
+        tfoot td {
+            background: #f5f5f5;
+        }
+        
+        .total-row td {
+            font-weight: bold;
+            font-size: 11pt;
+            background: #e8e8e8;
+        }
+        
+        /* Bank Info */
+        .bank-info {
+            margin-top: 30px;
+            padding: 15px;
+            border: 1px solid #999;
+            background: #fafafa;
+        }
+        
+        .bank-title {
+            font-weight: bold;
+            font-size: 11pt;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ccc;
+        }
+        
+        .bank-details {
+            font-size: 10pt;
+            line-height: 1.8;
+        }
+        
+        .bank-note {
+            font-size: 8pt;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        /* Footer */
+        .invoice-footer {
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 1px solid #ccc;
+            font-size: 8pt;
+            color: #666;
+            text-align: center;
+        }
+        
+        /* Stamp area */
+        .stamp-area {
+            float: right;
+            width: 80px;
+            height: 80px;
+            border: 1px dashed #ccc;
+            margin-top: -60px;
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-container">
+        <!-- Header -->
+        <div class="invoice-header">
+            <div class="invoice-title">請 求 書</div>
+            <div class="invoice-number">No. {{ billing.invoice_number }}</div>
+        </div>
+        
+        <!-- Parties -->
+        <div class="parties">
+            <div class="party">
+                <div class="party-label">請求先</div>
+                <div class="party-name">{{ shop.name }}<span class="honorific">御中</span></div>
+                {% if shop.address %}
+                <div class="party-info">〒{{ shop.address }}</div>
+                {% endif %}
+            </div>
+            <div class="party party-right">
+                <div class="party-label">発行日: {{ generated_at.strftime('%Y年%m月%d日') }}</div>
+                <div style="margin-top: 15px;">
+                    <strong style="font-size: 12pt;">{{ company.name }}</strong><br>
+                    <span class="party-info">
+                        〒{{ company.postal_code }}<br>
+                        {{ company.address }}<br>
+                        TEL: {{ company.phone }}<br>
+                        Email: {{ company.email }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Summary -->
+        <div class="summary-box">
+            <div class="summary-label">ご請求金額（税込）</div>
+            <div class="summary-amount">
+                <span class="yen">¥</span>{{ "{:,}".format(billing.total_amount) }}-
+            </div>
+        </div>
+        
+        <!-- Details -->
+        <div class="details">
+            <div class="details-row">
+                <div class="details-label">件名:</div>
+                <div class="details-value">{{ billing.period_display }} 送客手数料</div>
+            </div>
+            <div class="details-row">
+                <div class="details-label">お支払期限:</div>
+                <div class="details-value">
+                    {% if billing.due_date %}
+                    {{ billing.due_date.strftime('%Y年%m月%d日') }}
+                    {% else %}
+                    発行日より30日以内
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Line Items -->
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-date">日付</th>
+                    <th class="col-desc">内容</th>
+                    <th class="col-qty">人数</th>
+                    <th class="col-amount">金額</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in commissions %}
+                <tr>
+                    <td class="col-date">{{ c.visit_date.strftime('%m/%d') }}</td>
+                    <td>送客手数料（{{ c.source_label }}）</td>
+                    <td class="col-qty">{{ c.guest_count }}名</td>
+                    <td class="amount">¥{{ "{:,}".format(c.commission_amount) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" style="text-align: right;">小計</td>
+                    <td class="amount">¥{{ "{:,}".format(billing.subtotal) }}</td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="text-align: right;">消費税（10%）</td>
+                    <td class="amount">¥{{ "{:,}".format(billing.tax_amount) }}</td>
+                </tr>
+                <tr class="total-row">
+                    <td colspan="3" style="text-align: right;">合計</td>
+                    <td class="amount">¥{{ "{:,}".format(billing.total_amount) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+        
+        <!-- Bank Info -->
+        <div class="bank-info">
+            <div class="bank-title">お振込先</div>
+            <div class="bank-details">
+                {{ company.bank_name }}<br>
+                {{ company.bank_account_type }} {{ company.bank_account_number }}<br>
+                口座名義: {{ company.bank_account_holder }}
+            </div>
+            <div class="bank-note">
+                ※ 振込手数料はお客様にてご負担ください
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="invoice-footer">
+            <p>ご不明な点がございましたら、{{ company.email }} までお問い合わせください。</p>
+            <p style="margin-top: 5px;">Night-Walk 送客手数料請求システム</p>
+        </div>
+    </div>
+</body>
+</html>

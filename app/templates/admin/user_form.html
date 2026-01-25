@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}{% if user %}ユーザー編集{% else %}新規ユーザー{% endif %} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <p class="mb-3">
+            <a href="{{ url_for('admin.users') }}">← ユーザー一覧に戻る</a>
+        </p>
+        
+        <div class="card" style="max-width: 500px;">
+            <div class="card-header">
+                <h1 class="card-title">{% if user %}ユーザー編集{% else %}新規ユーザー作成{% endif %}</h1>
+            </div>
+            
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="form-group">
+                    <label class="form-label" for="name">名前 *</label>
+                    <input type="text" 
+                           id="name" 
+                           name="name" 
+                           class="form-control" 
+                           value="{{ user.name if user else '' }}"
+                           required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="email">メールアドレス *</label>
+                    <input type="email" 
+                           id="email" 
+                           name="email" 
+                           class="form-control" 
+                           value="{{ user.email if user else '' }}"
+                           required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="password">パスワード {% if not user %}*{% endif %}</label>
+                    <input type="password" 
+                           id="password" 
+                           name="password" 
+                           class="form-control"
+                           {% if not user %}required{% endif %}>
+                    {% if user %}
+                    <p class="text-muted" style="font-size: 0.75rem; margin-top: var(--space-xs);">
+                        ※ 変更する場合のみ入力
+                    </p>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="role">権限 *</label>
+                    <select id="role" name="role" class="form-control" required>
+                        <option value="staff" {% if user and user.role == 'staff' %}selected{% endif %}>スタッフ</option>
+                        <option value="owner" {% if user and user.role == 'owner' %}selected{% endif %}>オーナー</option>
+                        <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>管理者</option>
+                    </select>
+                </div>
+                
+                <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        {% if user %}保存{% else %}作成{% endif %}
+                    </button>
+                    <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">
+                        キャンセル
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

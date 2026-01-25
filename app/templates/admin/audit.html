@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}監査ログ - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <h1 class="mb-4">監査ログ</h1>
+        
+        <div class="card">
+            {% if logs.items %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>日時</th>
+                        <th>ユーザー</th>
+                        <th>アクション</th>
+                        <th>対象</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs.items %}
+                    <tr>
+                        <td>{{ log.created_at.strftime('%Y/%m/%d %H:%M:%S') }}</td>
+                        <td>{{ log.user.name if log.user else '−' }}</td>
+                        <td>
+                            {% if log.action == 'vacancy.update' %}
+                            <span class="badge badge-info">空席更新</span>
+                            {% elif log.action == 'shop.create' %}
+                            <span class="badge badge-success">店舗作成</span>
+                            {% elif log.action == 'shop.edit' %}
+                            <span class="badge badge-warning">店舗編集</span>
+                            {% elif log.action == 'shop.toggle' %}
+                            <span class="badge badge-warning">店舗状態変更</span>
+                            {% elif log.action == 'job.update' %}
+                            <span class="badge badge-info">求人更新</span>
+                            {% elif log.action == 'booking.create' %}
+                            <span class="badge badge-success">予約作成</span>
+                            {% elif log.action == 'billing.event' %}
+                            <span class="badge badge-warning">課金イベント</span>
+                            {% elif log.action == 'user.login' %}
+                            <span class="badge badge-success">ログイン</span>
+                            {% elif log.action == 'user.logout' %}
+                            <span class="badge" style="background: var(--color-bg-elevated);">ログアウト</span>
+                            {% elif log.action == 'user.login_failed' %}
+                            <span class="badge badge-danger">ログイン失敗</span>
+                            {% else %}
+                            {{ log.action }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if log.target_type %}
+                            {{ log.target_type }}:{{ log.target_id }}
+                            {% else %}
+                            −
+                            {% endif %}
+                        </td>
+                        <td style="font-size: 0.75rem; color: var(--color-text-muted);">
+                            {{ log.ip_address or '−' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <!-- Pagination -->
+            {% if logs.pages > 1 %}
+            <div class="d-flex justify-between align-center mt-3">
+                <div class="text-muted" style="font-size: 0.875rem;">
+                    {{ logs.total }}件中 {{ logs.page * logs.per_page - logs.per_page + 1 }}〜{{ [logs.page * logs.per_page, logs.total] | min }}件表示
+                </div>
+                <div class="d-flex gap-1">
+                    {% if logs.has_prev %}
+                    <a href="{{ url_for('admin.audit', page=logs.prev_num) }}" class="btn btn-sm btn-secondary">←</a>
+                    {% endif %}
+                    
+                    {% for page_num in logs.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            {% if page_num == logs.page %}
+                            <span class="btn btn-sm btn-primary">{{ page_num }}</span>
+                            {% else %}
+                            <a href="{{ url_for('admin.audit', page=page_num) }}" class="btn btn-sm btn-secondary">{{ page_num }}</a>
+                            {% endif %}
+                        {% else %}
+                        <span class="text-muted">...</span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if logs.has_next %}
+                    <a href="{{ url_for('admin.audit', page=logs.next_num) }}" class="btn btn-sm btn-secondary">→</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            {% else %}
+            <p class="text-muted text-center">まだログがありません</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

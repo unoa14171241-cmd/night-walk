@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}課金状況 - {{ shop.name }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="container container-md">
+    <p class="mb-3">
+        <a href="{{ url_for('shop_admin.dashboard') }}">← ダッシュボードに戻る</a>
+    </p>
+    
+    <div class="card">
+        <div class="card-header">
+            <h1 class="card-title">課金状況</h1>
+        </div>
+        
+        {% if subscription %}
+        <div class="stats-grid mb-4" style="grid-template-columns: 1fr 1fr;">
+            <div class="stat-card">
+                <div class="stat-value">
+                    <span class="badge badge-{% if subscription.is_active %}success{% elif subscription.is_past_due %}warning{% else %}danger{% endif %}" style="font-size: 1rem; padding: var(--space-sm) var(--space-lg);">
+                        {{ subscription.status_label }}
+                    </span>
+                </div>
+                <div class="stat-label">ステータス</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value" style="font-size: 1.25rem;">
+                    {{ subscription.plan | upper }}
+                </div>
+                <div class="stat-label">プラン</div>
+            </div>
+        </div>
+        
+        {% if subscription.current_period_end %}
+        <div class="card mb-4" style="background: var(--color-bg-elevated);">
+            <p class="mb-1"><strong>現在の請求期間:</strong></p>
+            <p class="text-muted mb-0">
+                {{ subscription.current_period_start.strftime('%Y/%m/%d') if subscription.current_period_start else '−' }}
+                〜
+                {{ subscription.current_period_end.strftime('%Y/%m/%d') }}
+            </p>
+        </div>
+        {% endif %}
+        
+        {% if subscription.is_past_due %}
+        <div class="alert alert-warning">
+            支払いが遅延しています。お支払い方法をご確認ください。
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="alert alert-info">
+            サブスクリプション情報がまだ設定されていません。
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Billing Events -->
+    <div class="card mt-4">
+        <h3 class="mb-3">課金履歴</h3>
+        
+        {% if billing_events %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>日時</th>
+                    <th>イベント</th>
+                    <th>金額</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in billing_events %}
+                <tr>
+                    <td>{{ event.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
+                    <td>
+                        {% if event.event_type == 'invoice.paid' %}
+                        <span class="badge badge-success">支払い完了</span>
+                        {% elif event.event_type == 'invoice.payment_failed' %}
+                        <span class="badge badge-danger">支払い失敗</span>
+                        {% else %}
+                        {{ event.event_type }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if event.amount %}
+                        ¥{{ '{:,}'.format(event.amount) }}
+                        {% else %}
+                        −
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">まだ課金履歴がありません</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

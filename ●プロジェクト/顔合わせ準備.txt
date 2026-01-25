@@ -1,0 +1,87 @@
+Night-Walk MVP 開発進捗報告書
+📌 プロジェクト概要
+Night-Walk - ナイトレジャー業界向け垂直型SaaS
+目的: 岡山・倉敷エリアの10店舗でパイロット運用開始
+コア機能: 空席状況のリアルタイム共有、電話予約自動化（Twilio）
+✅ 実装完了機能
+1. 認証・認可システム
+機能	状態
+ログイン/ログアウト	✅ 完了
+ロールベースアクセス制御（RBAC）	✅ 完了
+権限: admin / owner / staff	✅ 完了
+セッション管理（Flask-Login）	✅ 完了
+2. 管理者機能（/admin）
+機能	状態
+ダッシュボード	✅ 完了
+店舗CRUD	✅ 完了
+ユーザー管理	✅ 完了
+お知らせ管理	✅ 完了
+広告管理（バナー）	✅ 完了
+送客手数料（コミッション）管理	✅ 完了
+月次請求管理	✅ 完了
+請求書PDF生成・メール送付	✅ 完了
+監査ログ	✅ 完了
+3. 店舗管理機能（/shop）
+機能	状態
+店舗ダッシュボード	✅ 完了
+空席状況更新（3タップ: 空き/混雑/満席）	✅ 完了
+店舗情報編集	✅ 完了
+画像アップロード（複数枚対応）	✅ 完了
+求人ON/OFF管理	✅ 完了
+請求確認	✅ 完了
+4. 公開ページ（一般ユーザー向け）
+機能	状態
+店舗検索（キーワード・条件）	✅ 完了
+店舗一覧（空席表示付き）	✅ 完了
+店舗詳細（写真・求人・空席）	✅ 完了
+電話予約ページ	✅ 完了
+お知らせ表示	✅ 完了
+広告表示	✅ 完了
+5. 外部連携
+機能	状態	備考
+Twilio（電話予約自動化）	✅ 構造完了	APIキー設定で稼働可能
+Stripe（サブスクリプション課金）	✅ 構造完了	Webhook対応済み
+SendGrid（請求書メール送付）	✅ 完了	PDF添付対応
+6. セキュリティ対策（本日実装）
+対策	状態
+APIレート制限（Flask-Limiter）	✅ 完了
+ログイン試行制限（5回/分）	✅ 完了
+Twilio署名検証	✅ 完了
+ファイルアップロードMIME検証	✅ 完了
+CSRF保護	✅ 完了
+SQLインジェクション対策（ORM）	✅ 完了
+XSS対策（Jinja2自動エスケープ）	✅ 完了
+🔧 技術スタック
+Backend:   Python 3.x / Flask / Flask-Login / SQLAlchemyDatabase:  SQLite（開発）→ PostgreSQL（本番）Frontend:  Jinja2 + HTML/CSS/JS（レスポンシブ対応）Hosting:   Render（render.yaml作成済み）External:  Twilio, Stripe, SendGridSecurity:  Flask-Limiter, CSRF, python-magic
+📁 リポジトリ構造
+night-walk/├── app/│   ├── __init__.py          # アプリファクトリ│   ├── config.py            # 設定│   ├── extensions.py        # Flask拡張│   ├── models/              # DBモデル（10ファイル）│   │   ├── user.py          # ユーザー・店舗メンバー│   │   ├── shop.py          # 店舗・空席・画像│   │   ├── booking.py       # 予約・通話ログ│   │   ├── billing.py       # サブスク・課金イベント│   │   ├── commission.py    # 送客手数料・月次請求│   │   ├── content.py       # お知らせ・広告│   │   ├── job.py           # 求人│   │   ├── inquiry.py       # お問い合わせ│   │   └── audit.py         # 監査ログ│   ├── routes/              # ルーティング（6ファイル）│   │   ├── auth.py          # 認証│   │   ├── admin.py         # 管理者│   │   ├── shop_admin.py    # 店舗管理│   │   ├── public.py        # 公開ページ│   │   ├── api.py           # 内部API│   │   └── webhook.py       # Stripe/Twilio Webhook│   ├── services/            # サービス層│   │   ├── twilio_service.py│   │   ├── invoice_service.py│   │   └── vacancy_service.py│   ├── templates/           # HTMLテンプレート（30+ファイル）│   └── static/              # CSS/JS/画像├── scripts/                 # DB操作スクリプト├── render.yaml              # Renderデプロイ設定├── requirements.txt         # Python依存関係└── run.py                   # エントリーポイント
+⚠️ 残タスク・確認事項
+本番デプロイ前に必要
+タスク	優先度
+環境変数の設定（Twilio/Stripe/SendGrid APIキー）	高
+会社情報の設定（請求書に記載）	高
+PostgreSQLへの移行確認	高
+ドメイン設定	中
+将来的な拡張候補
+機能	備考
+AIコンシェルジュ	MVPでは対象外
+一般ユーザーアカウント	現状はログイン不要で閲覧可能
+お気に入り・予約履歴	要アカウント機能
+2要素認証（2FA）	管理者向け推奨
+リアルタイム通知（WebSocket）	空席更新のプッシュ通知
+🧪 動作確認用アカウント
+管理者:  Email: admin@night-walk.jp  Pass:  admin123店舗オーナー:  Email: owner@lounge-stella.jp  Pass:  owner123
+💬 協業者への伝達事項
+コードベースはGitHubにプッシュ可能な状態
+.gitignore 設定済み（venv, .env, pycache 除外）
+ローカル環境構築手順
+   python -m venv venv   .\venv\Scripts\activate   pip install -r requirements.txt   python scripts/recreate_db.py  # DB初期化+シード   python run.py                   # http://localhost:5000
+Renderデプロイ
+render.yaml で Blueprint デプロイ対応
+環境変数はRender Dashboardで手動設定が必要
+セキュリティ実装済み
+パイロット運用に必要な基本対策は完了
+📊 コード規模（概算）
+Pythonファイル: 約25ファイル
+HTMLテンプレート: 約35ファイル
+総コード行数: 約5,000〜6,000行

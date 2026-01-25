@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}店舗管理 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <div class="d-flex justify-between align-center mb-4">
+            <h1 class="mb-0">店舗管理</h1>
+            <a href="{{ url_for('admin.new_shop') }}" class="btn btn-primary">
+                + 新規店舗
+            </a>
+        </div>
+        
+        <div class="card">
+            {% if shops %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>店舗名</th>
+                        <th>エリア</th>
+                        <th>空席</th>
+                        <th>状態</th>
+                        <th>課金</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for shop in shops %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('admin.shop_detail', shop_id=shop.id) }}">
+                                <strong>{{ shop.name }}</strong>
+                            </a>
+                        </td>
+                        <td>{{ shop.area }}</td>
+                        <td>
+                            <span class="vacancy-badge vacancy-{{ shop.vacancy_status.color if shop.vacancy_status else 'secondary' }}">
+                                {{ shop.vacancy_status.label if shop.vacancy_status else '−' }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if shop.is_active %}
+                                {% if shop.is_published %}
+                                <span class="badge badge-success">公開中</span>
+                                {% else %}
+                                <span class="badge badge-warning">非公開</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="badge badge-danger">無効</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if shop.subscription %}
+                            <span class="badge badge-{% if shop.subscription.is_active %}success{% elif shop.subscription.is_past_due %}warning{% else %}danger{% endif %}">
+                                {{ shop.subscription.status_label }}
+                            </span>
+                            {% else %}
+                            <span class="badge" style="background: var(--color-bg-elevated);">未設定</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('shop_admin.select_shop', shop_id=shop.id) }}" class="btn btn-sm btn-secondary">
+                                管理
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">まだ店舗が登録されていません</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}{{ billing.period_display }} - {{ billing.shop.name }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <p class="mb-3">
+            <a href="{{ url_for('admin.monthly_billings') }}">← 月次請求一覧に戻る</a>
+        </p>
+        
+        <!-- Header -->
+        <div class="billing-header mb-4">
+            <div>
+                <h1 class="mb-1">{{ billing.shop.name }}</h1>
+                <p class="text-muted mb-0">{{ billing.period_display }} 送客手数料請求</p>
+            </div>
+            <div class="billing-status">
+                {% if billing.status == 'open' %}
+                <span class="badge badge-warning badge-lg">{{ billing.status_label }}</span>
+                {% elif billing.status == 'closed' %}
+                <span class="badge badge-info badge-lg">{{ billing.status_label }}</span>
+                {% elif billing.status == 'invoiced' %}
+                <span class="badge badge-lg" style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6;">{{ billing.status_label }}</span>
+                {% elif billing.status == 'paid' %}
+                <span class="badge badge-success badge-lg">{{ billing.status_label }}</span>
+                {% elif billing.status == 'overdue' %}
+                <span class="badge badge-danger badge-lg">{{ billing.status_label }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Summary Cards -->
+        <div class="billing-summary mb-4">
+            <div class="summary-card">
+                <span class="summary-label">送客件数</span>
+                <span class="summary-value">{{ billing.total_commissions }}件</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-label">小計</span>
+                <span class="summary-value">¥{{ "{:,}".format(billing.subtotal) }}</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-label">消費税（10%）</span>
+                <span class="summary-value">¥{{ "{:,}".format(billing.tax_amount) }}</span>
+            </div>
+            <div class="summary-card total">
+                <span class="summary-label">合計（税込）</span>
+                <span class="summary-value text-primary">¥{{ "{:,}".format(billing.total_amount) }}</span>
+            </div>
+        </div>
+        
+        <!-- Invoice Actions -->
+        <div class="card mb-4">
+            <h3 class="mb-3">請求書</h3>
+            <div class="d-flex gap-2 flex-wrap mb-3">
+                <a href="{{ url_for('admin.preview_invoice', id=billing.id) }}" 
+                   target="_blank" 
+                   class="btn btn-secondary">
+                    プレビュー
+                </a>
+                <a href="{{ url_for('admin.download_invoice', id=billing.id) }}" 
+                   class="btn btn-secondary">
+                    ダウンロード
+                </a>
+                <a href="{{ url_for('admin.send_invoice', id=billing.id) }}" 
+                   class="btn btn-primary">
+                    メールで送付
+                </a>
+            </div>
+            
+            {% if billing.is_invoice_sent %}
+            <div class="invoice-sent-info">
+                <span class="badge badge-success">送付済み</span>
+                <span class="text-muted" style="font-size: 0.875rem; margin-left: var(--space-sm);">
+                    {{ billing.sent_at.strftime('%Y/%m/%d %H:%M') }} → {{ billing.sent_to }}
+                </span>
+            </div>
+            {% endif %}
+            
+            {% if billing.invoice_number %}
+            <p class="text-muted mb-0" style="font-size: 0.75rem; margin-top: var(--space-sm);">
+                請求書番号: {{ billing.invoice_number }}
+            </p>
+            {% endif %}
+        </div>
+        
+        <!-- Status Actions -->
+        <div class="card mb-4">
+            <h3 class="mb-3">ステータス操作</h3>
+            <div class="d-flex gap-2 flex-wrap">
+                <form method="POST" action="{{ url_for('admin.recalculate_monthly_billing', id=billing.id) }}" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-secondary">
+                        再計算
+                    </button>
+                </form>
+                
+                {% if billing.status == 'open' %}
+                <form method="POST" action="{{ url_for('admin.close_monthly_billing', id=billing.id) }}" 
+                      style="display: inline;"
+                      onsubmit="return confirm('この月の請求を締めますか？')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-warning">
+                        締める
+                    </button>
+                </form>
+                {% endif %}
+                
+                {% if billing.status in ['open', 'closed'] %}
+                <form method="POST" action="{{ url_for('admin.invoice_monthly_billing', id=billing.id) }}" 
+                      style="display: inline;"
+                      onsubmit="return confirm('請求済みにしますか？')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-info">
+                        請求済みにする
+                    </button>
+                </form>
+                {% endif %}
+                
+                {% if billing.status in ['invoiced', 'overdue'] %}
+                <form method="POST" action="{{ url_for('admin.mark_paid_monthly_billing', id=billing.id) }}" 
+                      style="display: inline;"
+                      onsubmit="return confirm('支払済みにしますか？')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success">
+                        支払済みにする
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            
+            {% if billing.due_date %}
+            <p class="text-muted mt-3 mb-0" style="font-size: 0.875rem;">
+                支払期限: {{ billing.due_date.strftime('%Y年%m月%d日') }}
+            </p>
+            {% endif %}
+        </div>
+        
+        <!-- Commission Details -->
+        <div class="card">
+            <h3 class="mb-3">明細（{{ commissions | length }}件）</h3>
+            
+            {% if commissions %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>来店日</th>
+                        <th>送客元</th>
+                        <th>人数</th>
+                        <th>売上</th>
+                        <th>手数料</th>
+                        <th>状態</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for commission in commissions %}
+                    <tr {% if commission.status == 'cancelled' %}style="opacity: 0.5;"{% endif %}>
+                        <td>{{ commission.visit_date.strftime('%m/%d') }}</td>
+                        <td>{{ commission.source_label }}</td>
+                        <td>{{ commission.guest_count }}名</td>
+                        <td>
+                            {% if commission.sales_amount %}
+                            ¥{{ "{:,}".format(commission.sales_amount) }}
+                            {% else %}
+                            −
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if commission.status == 'cancelled' %}
+                            <del>¥{{ "{:,}".format(commission.commission_amount) }}</del>
+                            {% else %}
+                            <strong>¥{{ "{:,}".format(commission.commission_amount) }}</strong>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if commission.status == 'pending' %}
+                            <span class="badge badge-warning">{{ commission.status_label }}</span>
+                            {% elif commission.status == 'confirmed' %}
+                            <span class="badge badge-success">{{ commission.status_label }}</span>
+                            {% elif commission.status == 'cancelled' %}
+                            <span class="badge" style="background: var(--color-bg-elevated);">{{ commission.status_label }}</span>
+                            {% elif commission.status == 'paid' %}
+                            <span class="badge badge-info">{{ commission.status_label }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4" style="text-align: right;"><strong>小計</strong></td>
+                        <td colspan="2"><strong>¥{{ "{:,}".format(billing.subtotal) }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">この期間の明細がありません</p>
+            {% endif %}
+        </div>
+        
+        <!-- Timeline -->
+        <div class="card mt-4">
+            <h3 class="mb-3">履歴</h3>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <span class="timeline-dot"></span>
+                    <span class="timeline-date">{{ billing.created_at.strftime('%Y/%m/%d %H:%M') }}</span>
+                    <span>作成</span>
+                </div>
+                {% if billing.closed_at %}
+                <div class="timeline-item">
+                    <span class="timeline-dot"></span>
+                    <span class="timeline-date">{{ billing.closed_at.strftime('%Y/%m/%d %H:%M') }}</span>
+                    <span>締め</span>
+                </div>
+                {% endif %}
+                {% if billing.invoiced_at %}
+                <div class="timeline-item">
+                    <span class="timeline-dot"></span>
+                    <span class="timeline-date">{{ billing.invoiced_at.strftime('%Y/%m/%d %H:%M') }}</span>
+                    <span>請求</span>
+                </div>
+                {% endif %}
+                {% if billing.paid_at %}
+                <div class="timeline-item">
+                    <span class="timeline-dot success"></span>
+                    <span class="timeline-date">{{ billing.paid_at.strftime('%Y/%m/%d %H:%M') }}</span>
+                    <span>支払確認</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.billing-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.billing-status {
+    text-align: right;
+}
+
+.badge-lg {
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.875rem;
+}
+
+.billing-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-md);
+}
+
+.summary-card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md) var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.summary-card.total {
+    border-color: var(--color-primary);
+    background: rgba(201, 169, 98, 0.05);
+}
+
+.summary-label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.summary-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.timeline {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.timeline-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.timeline-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--color-border);
+    flex-shrink: 0;
+}
+
+.timeline-dot.success {
+    background: var(--color-success);
+}
+
+.timeline-date {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    min-width: 130px;
+}
+
+.invoice-sent-info {
+    display: flex;
+    align-items: center;
+    padding: var(--space-sm);
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: var(--radius-md);
+}
+</style>
+{% endblock %}

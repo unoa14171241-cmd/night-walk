@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}予約 - {{ shop.name }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="container container-sm">
+    <!-- Back Link -->
+    <p class="mb-3">
+        <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}">← {{ shop.name }}に戻る</a>
+    </p>
+    
+    <div class="card text-center">
+        <div class="card-header">
+            <h2 class="card-title mb-0">電話予約</h2>
+        </div>
+        
+        <div class="mb-4">
+            <h3 class="mb-2">{{ shop.name }}</h3>
+            <span class="vacancy-badge vacancy-badge-lg vacancy-{{ shop.vacancy_status.color if shop.vacancy_status else 'secondary' }}">
+                {{ shop.vacancy_status.label if shop.vacancy_status else '−' }}
+            </span>
+        </div>
+        
+        {% if twilio_configured %}
+        <!-- Twilio Automated Call -->
+        <div class="mb-4">
+            <p class="text-muted mb-3">
+                ボタンを押すと自動音声予約システムに接続されます。<br>
+                案内に従ってプッシュ番号を入力してください。
+            </p>
+            
+            <button class="phone-btn" 
+                    data-shop-id="{{ shop.id }}"
+                    data-twilio-enabled="true">
+                自動音声で予約する
+            </button>
+            
+            <p class="text-muted mt-3" style="font-size: 0.75rem;">
+                通話料はお客様負担となります
+            </p>
+        </div>
+        
+        <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+        
+        <p class="text-muted mb-2">または直接電話する</p>
+        {% endif %}
+        
+        <!-- Direct Phone Call -->
+        {% if shop.phone %}
+        <a href="tel:{{ shop.phone }}" class="btn btn-secondary btn-lg btn-block">
+            {{ shop.phone }} に電話
+        </a>
+        {% else %}
+        <p class="text-muted">
+            電話番号が登録されていません。<br>
+            店舗に直接お問い合わせください。
+        </p>
+        {% endif %}
+    </div>
+    
+    <!-- Instructions -->
+    <div class="card mt-4">
+        <h4 class="mb-3">予約の流れ</h4>
+        <ol style="padding-left: var(--space-lg); color: var(--color-text-muted);">
+            <li class="mb-2">電話予約ボタンをタップ</li>
+            <li class="mb-2">自動音声の案内をお聞きください</li>
+            <li class="mb-2">予約確定は「1」、キャンセルは「2」を押す</li>
+            <li class="mb-2">店舗からの折り返し連絡をお待ちください</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}

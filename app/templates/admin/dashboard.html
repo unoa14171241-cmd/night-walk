@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}管理ダッシュボード - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <h1 class="mb-4">ダッシュボード</h1>
+        
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_shops }}</div>
+                <div class="stat-label">全店舗数</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value">{{ published_shops }}</div>
+                <div class="stat-label">公開中</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value">{{ vacancy_stats.get('empty', 0) }}</div>
+                <div class="stat-label">空席あり</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-value">{{ vacancy_stats.get('full', 0) }}</div>
+                <div class="stat-label">満席</div>
+            </div>
+        </div>
+        
+        <!-- Billing Summary -->
+        <div class="card mb-4">
+            <h3 class="mb-3">課金状況サマリー</h3>
+            <div class="d-flex gap-3" style="flex-wrap: wrap;">
+                <div>
+                    <span class="badge badge-info">トライアル</span>
+                    <strong class="ml-1">{{ trial_count }}</strong>
+                </div>
+                <div>
+                    <span class="badge badge-success">有効</span>
+                    <strong class="ml-1">{{ active_count }}</strong>
+                </div>
+                <div>
+                    <span class="badge badge-warning">支払い遅延</span>
+                    <strong class="ml-1">{{ past_due_count }}</strong>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="card">
+            <h3 class="mb-3">最近のアクティビティ</h3>
+            {% if recent_logs %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>日時</th>
+                        <th>ユーザー</th>
+                        <th>アクション</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in recent_logs %}
+                    <tr>
+                        <td>{{ log.created_at.strftime('%m/%d %H:%M') }}</td>
+                        <td>{{ log.user.name if log.user else '−' }}</td>
+                        <td>
+                            {% if log.action == 'vacancy.update' %}
+                            <span class="badge badge-info">空席更新</span>
+                            {% elif log.action == 'shop.edit' %}
+                            <span class="badge badge-warning">店舗編集</span>
+                            {% elif log.action == 'user.login' %}
+                            <span class="badge badge-success">ログイン</span>
+                            {% else %}
+                            {{ log.action }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">まだアクティビティがありません</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

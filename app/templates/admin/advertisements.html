@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}広告管理 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <div class="d-flex justify-between align-center mb-4">
+            <h1 class="mb-0">広告管理</h1>
+            <a href="{{ url_for('admin.new_advertisement') }}" class="btn btn-primary">
+                + 新規広告
+            </a>
+        </div>
+        
+        <div class="card">
+            {% if advertisements %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">画像</th>
+                        <th>タイトル</th>
+                        <th>位置</th>
+                        <th>優先度</th>
+                        <th>状態</th>
+                        <th>クリック数</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in advertisements %}
+                    <tr>
+                        <td>
+                            {% if item.display_image_url %}
+                            <img src="{{ item.display_image_url }}" alt="" style="width: 60px; height: 40px; object-fit: cover; border-radius: var(--radius-sm);">
+                            {% else %}
+                            <div style="width: 60px; height: 40px; background: var(--color-bg-elevated); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: var(--color-text-muted);">
+                                なし
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ item.title }}</strong>
+                            {% if item.link_url %}
+                            <br><span class="text-muted" style="font-size: 0.75rem;">🔗 {{ item.link_url[:30] }}...</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-info">{{ position_labels.get(item.position, item.position) }}</span>
+                        </td>
+                        <td>{{ item.priority }}</td>
+                        <td>
+                            {% if item.is_currently_active %}
+                            <span class="badge badge-success">表示中</span>
+                            {% elif item.is_active %}
+                            <span class="badge badge-warning">予約中</span>
+                            {% else %}
+                            <span class="badge" style="background: var(--color-bg-elevated);">非表示</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.click_count or 0 }}</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{{ url_for('admin.edit_advertisement', id=item.id) }}" class="btn btn-sm btn-secondary">
+                                    編集
+                                </a>
+                                <form method="POST" action="{{ url_for('admin.delete_advertisement', id=item.id) }}"
+                                      onsubmit="return confirm('この広告を削除しますか？')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-danger">削除</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">まだ広告がありません</p>
+            {% endif %}
+        </div>
+        
+        <div class="card mt-4">
+            <h3 class="mb-3">広告位置について</h3>
+            <table class="table" style="margin: 0;">
+                <tr>
+                    <td><span class="badge badge-info">トップバナー</span></td>
+                    <td>トップページ上部のメインバナー（スライダー形式）</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-info">サイドバー</span></td>
+                    <td>検索結果ページのサイドバー</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-info">ページ下部</span></td>
+                    <td>各ページの下部</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-info">一覧内広告</span></td>
+                    <td>店舗一覧の中に挿入される広告</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

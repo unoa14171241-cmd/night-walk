@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}空席ステータス更新 - {{ shop.name }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="container container-sm">
+    <p class="mb-3">
+        <a href="{{ url_for('shop_admin.dashboard') }}">← ダッシュボードに戻る</a>
+    </p>
+    
+    <div class="card text-center">
+        <h1 class="mb-2">空席ステータス更新</h1>
+        <p class="text-muted mb-4">{{ shop.name }}</p>
+        
+        <!-- Current Status -->
+        <div class="mb-4">
+            <p class="text-muted mb-2">現在のステータス</p>
+            <span class="vacancy-badge vacancy-badge-lg vacancy-{{ shop.vacancy_status.color if shop.vacancy_status else 'secondary' }}">
+                {{ shop.vacancy_status.label if shop.vacancy_status else '−' }}
+            </span>
+            {% if shop.vacancy_updated_at %}
+            <p class="text-muted mt-2" style="font-size: 0.75rem;">
+                {{ shop.vacancy_updated_at.strftime('%Y/%m/%d %H:%M') }} に更新
+            </p>
+            {% endif %}
+        </div>
+        
+        <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+        
+        <!-- Update Buttons -->
+        <p class="text-muted mb-3">タップで更新</p>
+        
+        <form id="vacancy-form" method="POST" action="{{ url_for('shop_admin.vacancy') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="status" id="vacancy-status-input" value="">
+            
+            <div class="vacancy-buttons">
+                <button type="button" 
+                        class="vacancy-btn vacancy-btn-empty {% if shop.current_vacancy == 'empty' %}active{% endif %}"
+                        data-status="empty">
+                    空
+                    <span>空いています</span>
+                </button>
+                
+                <button type="button" 
+                        class="vacancy-btn vacancy-btn-busy {% if shop.current_vacancy == 'busy' %}active{% endif %}"
+                        data-status="busy">
+                    混
+                    <span>混んでいます</span>
+                </button>
+                
+                <button type="button" 
+                        class="vacancy-btn vacancy-btn-full {% if shop.current_vacancy == 'full' %}active{% endif %}"
+                        data-status="full">
+                    満
+                    <span>満席です</span>
+                </button>
+            </div>
+        </form>
+        
+        <p class="text-muted mt-4" style="font-size: 0.75rem;">
+            ※ 更新すると即座に公開ページに反映されます
+        </p>
+    </div>
+</div>
+{% endblock %}

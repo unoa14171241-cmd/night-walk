@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}{% if commission %}手数料編集{% else %}手数料登録{% endif %} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <p class="mb-3">
+            <a href="{{ url_for('admin.commissions') }}">← 手数料明細に戻る</a>
+        </p>
+        
+        <div class="card" style="max-width: 600px;">
+            <div class="card-header">
+                <h1 class="card-title">{% if commission %}手数料編集{% else %}手数料手動登録{% endif %}</h1>
+                <p class="text-muted mb-0">電話予約以外の送客を手動で登録します</p>
+            </div>
+            
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="form-group">
+                    <label class="form-label" for="shop_id">店舗 *</label>
+                    <select id="shop_id" name="shop_id" class="form-control" required>
+                        <option value="">選択してください</option>
+                        {% for shop in shops %}
+                        <option value="{{ shop.id }}" {% if commission and commission.shop_id == shop.id %}selected{% endif %}>
+                            {{ shop.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="visit_date">来店日 *</label>
+                    <input type="date" 
+                           id="visit_date" 
+                           name="visit_date" 
+                           class="form-control" 
+                           value="{{ commission.visit_date if commission else '' }}"
+                           required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="source">送客元 *</label>
+                    <select id="source" name="source" class="form-control" required>
+                        {% for key, label in sources.items() %}
+                        <option value="{{ key }}" {% if commission and commission.source == key %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+                    <div class="form-group">
+                        <label class="form-label" for="guest_count">来店人数</label>
+                        <input type="number" 
+                               id="guest_count" 
+                               name="guest_count" 
+                               class="form-control" 
+                               value="{{ commission.guest_count if commission else 1 }}"
+                               min="1"
+                               required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="sales_amount">売上金額（任意）</label>
+                        <input type="number" 
+                               id="sales_amount" 
+                               name="sales_amount" 
+                               class="form-control" 
+                               value="{{ commission.sales_amount if commission and commission.sales_amount else '' }}"
+                               placeholder="把握している場合"
+                               min="0">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="commission_amount">手数料金額（任意）</label>
+                    <input type="number" 
+                           id="commission_amount" 
+                           name="commission_amount" 
+                           class="form-control" 
+                           value="{{ commission.commission_amount if commission else '' }}"
+                           placeholder="空欄の場合は設定に基づいて自動計算"
+                           min="0">
+                    <p class="text-muted" style="font-size: 0.75rem; margin-top: var(--space-xs);">
+                        ※ 空欄の場合、店舗の手数料設定に基づいて自動計算されます
+                    </p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="notes">備考</label>
+                    <textarea id="notes" 
+                              name="notes" 
+                              class="form-control" 
+                              rows="2"
+                              placeholder="メモなど">{{ commission.notes if commission else '' }}</textarea>
+                </div>
+                
+                <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        {% if commission %}保存{% else %}登録{% endif %}
+                    </button>
+                    <a href="{{ url_for('admin.commissions') }}" class="btn btn-secondary">
+                        キャンセル
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Night-Walk{% endblock %}</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    {% block navbar %}
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="{{ url_for('public.index') }}" class="navbar-brand">
+                <span class="brand-icon">🌙</span>
+                <span class="brand-text">Night-Walk</span>
+            </a>
+            
+            <div class="navbar-menu">
+                {% if current_user.is_authenticated %}
+                    {% if current_user.is_admin %}
+                        <a href="{{ url_for('admin.dashboard') }}" class="nav-link">管理画面</a>
+                    {% else %}
+                        <a href="{{ url_for('shop_admin.dashboard') }}" class="nav-link">店舗管理</a>
+                    {% endif %}
+                    <a href="{{ url_for('auth.logout') }}" class="nav-link">ログアウト</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="nav-link btn-outline">ログイン</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    {% endblock %}
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            <div class="container">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                    <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    {% block footer %}
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Night-Walk. All rights reserved.</p>
+        </div>
+    </footer>
+    {% endblock %}
+    
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}サーバーエラー - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="container container-sm text-center" style="padding-top: var(--space-2xl);">
+    <div class="card">
+        <div style="font-size: 4rem; margin-bottom: var(--space-lg);"></div>
+        <h1 class="mb-2">サーバーエラー</h1>
+        <p class="text-muted mb-4">申し訳ありません。サーバーで問題が発生しました。<br>しばらくしてから再度お試しください。</p>
+        <a href="{{ url_for('public.index') }}" class="btn btn-primary">
+            トップページに戻る
+        </a>
+    </div>
+</div>
+{% endblock %}

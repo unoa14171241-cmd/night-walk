@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}請求書送付 - {{ billing.period_display }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <p class="mb-3">
+            <a href="{{ url_for('admin.monthly_billing_detail', id=billing.id) }}">← 請求詳細に戻る</a>
+        </p>
+        
+        <div class="card" style="max-width: 600px;">
+            <div class="card-header">
+                <h1 class="card-title">請求書送付</h1>
+                <p class="text-muted mb-0">{{ billing.shop.name }} - {{ billing.period_display }}</p>
+            </div>
+            
+            <!-- Invoice Summary -->
+            <div class="invoice-summary mb-4">
+                <div class="summary-row">
+                    <span class="summary-label">請求書番号</span>
+                    <span class="summary-value">{{ billing.invoice_number or '（自動生成）' }}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">請求金額</span>
+                    <span class="summary-value text-primary">¥{{ "{:,}".format(billing.total_amount) }}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">送客件数</span>
+                    <span class="summary-value">{{ billing.total_commissions }}件</span>
+                </div>
+            </div>
+            
+            {% if billing.is_invoice_sent %}
+            <div class="alert alert-info mb-4">
+                <strong>送付済み</strong><br>
+                <span style="font-size: 0.875rem;">
+                    {{ billing.sent_at.strftime('%Y/%m/%d %H:%M') }} に {{ billing.sent_to }} へ送付済みです。<br>
+                    再送付する場合は下記から送信してください。
+                </span>
+            </div>
+            {% endif %}
+            
+            <!-- Preview -->
+            <div class="mb-4">
+                <a href="{{ url_for('admin.preview_invoice', id=billing.id) }}" 
+                   target="_blank" 
+                   class="btn btn-secondary btn-block">
+                    請求書をプレビュー
+                </a>
+            </div>
+            
+            <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+            
+            <!-- Send Form -->
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="form-group">
+                    <label class="form-label" for="email">送付先メールアドレス *</label>
+                    <input type="email" 
+                           id="email" 
+                           name="email" 
+                           class="form-control" 
+                           value="{{ default_email }}"
+                           placeholder="example@email.com"
+                           required>
+                    <p class="text-muted" style="font-size: 0.75rem; margin-top: var(--space-xs);">
+                        ※ 請求書PDFが添付されたメールが送信されます
+                    </p>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        請求書を送付
+                    </button>
+                    <a href="{{ url_for('admin.download_invoice', id=billing.id) }}" class="btn btn-secondary">
+                        ダウンロード
+                    </a>
+                </div>
+            </form>
+            
+            {% if not current_app.config.get('SENDGRID_API_KEY') %}
+            <div class="alert alert-warning mt-4">
+                <strong>メール設定未完了</strong><br>
+                <span style="font-size: 0.875rem;">
+                    SendGrid APIキーが設定されていません。<br>
+                    環境変数 <code>SENDGRID_API_KEY</code> を設定してください。
+                </span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.invoice-summary {
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.summary-row:last-child {
+    border-bottom: none;
+}
+
+.summary-label {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+.summary-value {
+    font-weight: 600;
+}
+
+.btn-block {
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+.alert {
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+}
+
+.alert-info {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: var(--color-info);
+}
+
+.alert-warning {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: var(--color-warning);
+}
+</style>
+{% endblock %}

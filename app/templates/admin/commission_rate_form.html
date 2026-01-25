@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{% if shop %}{{ shop.name }}の手数料設定{% else %}新規手数料設定{% endif %} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <p class="mb-3">
+            <a href="{{ url_for('admin.commission_rates') }}">← 手数料設定に戻る</a>
+        </p>
+        
+        <div class="card" style="max-width: 600px;">
+            <div class="card-header">
+                <h1 class="card-title">
+                    {% if shop %}{{ shop.name }}の手数料設定{% else %}新規手数料設定{% endif %}
+                </h1>
+            </div>
+            
+            <form method="POST" {% if shop %}action="{{ url_for('admin.edit_commission_rate', shop_id=shop.id) }}"{% endif %}>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                {% if not shop and shops %}
+                <div class="form-group">
+                    <label class="form-label" for="shop_id">店舗 *</label>
+                    <select id="shop_id" name="shop_id" class="form-control" required>
+                        <option value="">選択してください</option>
+                        {% for s in shops %}
+                        <option value="{{ s.id }}">{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                
+                <div class="form-group">
+                    <label class="form-label" for="commission_type">手数料タイプ *</label>
+                    <select id="commission_type" name="commission_type" class="form-control" required onchange="toggleFields()">
+                        {% for key, label in types.items() %}
+                        <option value="{{ key }}" {% if rate and rate.commission_type == key %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div id="fixed-fields">
+                    <div class="form-group">
+                        <label class="form-label" for="fixed_amount">固定額（円/件）</label>
+                        <input type="number" 
+                               id="fixed_amount" 
+                               name="fixed_amount" 
+                               class="form-control" 
+                               value="{{ rate.fixed_amount if rate else 1000 }}"
+                               min="0"
+                               step="100">
+                        <p class="text-muted" style="font-size: 0.75rem; margin-top: var(--space-xs);">
+                            ※ 来店人数に応じて乗算されます（例: 2名なら2倍）
+                        </p>
+                    </div>
+                </div>
+                
+                <div id="percentage-fields" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label" for="percentage_rate">パーセンテージ（%）</label>
+                        <input type="number" 
+                               id="percentage_rate" 
+                               name="percentage_rate" 
+                               class="form-control" 
+                               value="{{ rate.percentage_rate if rate else 10.0 }}"
+                               min="0"
+                               max="100"
+                               step="0.5">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="min_amount">最低手数料（円）</label>
+                        <input type="number" 
+                               id="min_amount" 
+                               name="min_amount" 
+                               class="form-control" 
+                               value="{{ rate.min_amount if rate else 0 }}"
+                               min="0"
+                               step="100">
+                        <p class="text-muted" style="font-size: 0.75rem; margin-top: var(--space-xs);">
+                            ※ パーセンテージ計算額がこれを下回る場合、最低手数料が適用されます
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-check">
+                        <input type="checkbox" 
+                               name="is_active" 
+                               class="form-check-input"
+                               {% if not rate or rate.is_active %}checked{% endif %}>
+                        <span>有効にする</span>
+                    </label>
+                </div>
+                
+                <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        保存
+                    </button>
+                    <a href="{{ url_for('admin.commission_rates') }}" class="btn btn-secondary">
+                        キャンセル
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function toggleFields() {
+    const type = document.getElementById('commission_type').value;
+    const fixedFields = document.getElementById('fixed-fields');
+    const percentageFields = document.getElementById('percentage-fields');
+    
+    if (type === 'fixed') {
+        fixedFields.style.display = 'block';
+        percentageFields.style.display = 'none';
+    } else {
+        fixedFields.style.display = 'none';
+        percentageFields.style.display = 'block';
+    }
+}
+
+// Initial toggle
+document.addEventListener('DOMContentLoaded', toggleFields);
+</script>
+{% endblock %}
+{% endblock %}

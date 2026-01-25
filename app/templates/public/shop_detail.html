@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}{{ shop.name }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Back Link -->
+    <p class="mb-3">
+        <a href="{{ url_for('public.search') }}">← 店舗検索に戻る</a>
+    </p>
+    
+    <!-- Image Gallery -->
+    <div class="shop-gallery mb-4">
+        {% if images %}
+        <div class="gallery-main">
+            <img src="{{ images[0].url }}" alt="{{ shop.name }}" id="gallery-main-image">
+        </div>
+        {% if images | length > 1 %}
+        <div class="gallery-thumbs">
+            {% for image in images %}
+            <div class="gallery-thumb {% if loop.first %}active{% endif %}" 
+                 onclick="setMainImage('{{ image.url }}', this)">
+                <img src="{{ image.url }}" alt="">
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% elif shop.image_url %}
+        <div class="gallery-main">
+            <img src="{{ shop.image_url }}" alt="{{ shop.name }}">
+        </div>
+        {% else %}
+        <div class="gallery-main gallery-placeholder">
+            <span>🌙</span>
+            <p>{{ shop.name }}</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Shop Info Header -->
+    <div class="shop-detail-header-info mb-4">
+        <div class="d-flex justify-between align-center">
+            <div>
+                <div class="d-flex align-center gap-2 mb-2">
+                    <h1 class="mb-0">{{ shop.name }}</h1>
+                    {% if shop.is_featured %}
+                    <span class="badge badge-warning">おすすめ</span>
+                    {% endif %}
+                </div>
+                <p class="text-muted mb-0">
+                    📍 {{ shop.area }}
+                    {% if shop.category_label %}
+                    ・ {{ shop.category_label }}
+                    {% endif %}
+                </p>
+            </div>
+            <span class="vacancy-badge vacancy-badge-lg vacancy-{{ vacancy_colors.get(shop.current_vacancy, 'secondary') }}">
+                {{ vacancy_labels.get(shop.current_vacancy, '−') }}
+            </span>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="shop-detail-info">
+        <!-- Left Column: Info -->
+        <div>
+            <!-- Description -->
+            {% if shop.description %}
+            <div class="info-section">
+                <h3>紹介</h3>
+                <div class="card">
+                    <p style="white-space: pre-line;">{{ shop.description }}</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Tags -->
+            {% if shop.tags_list %}
+            <div class="info-section">
+                <div class="shop-tags">
+                    {% for tag in shop.tags_list %}
+                    <span class="shop-tag">#{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Details -->
+            <div class="info-section">
+                <h3>店舗情報</h3>
+                <div class="card">
+                    <table class="table" style="margin: 0;">
+                        {% if shop.business_hours %}
+                        <tr>
+                            <th style="width: 100px;">営業時間</th>
+                            <td>{{ shop.business_hours }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if shop.price_range %}
+                        <tr>
+                            <th>料金目安</th>
+                            <td>{{ shop.price_range }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if shop.phone %}
+                        <tr>
+                            <th>電話番号</th>
+                            <td>
+                                <a href="tel:{{ shop.phone }}">{{ shop.phone }}</a>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% if shop.address %}
+                        <tr>
+                            <th>住所</th>
+                            <td>{{ shop.address }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Job Posting -->
+            {% if job and job.is_visible %}
+            <div class="info-section">
+                <h3>求人情報</h3>
+                <div class="card" style="border-color: var(--color-accent-pink);">
+                    <div class="d-flex align-center gap-2 mb-2">
+                        <span style="font-size: 1.5rem;">💼</span>
+                        <span class="badge badge-danger">急募</span>
+                    </div>
+                    
+                    {% if job.hourly_wage %}
+                    <p class="mb-1"><strong>時給:</strong> {{ job.hourly_wage }}</p>
+                    {% endif %}
+                    
+                    {% if job.benefits %}
+                    <p class="mb-1"><strong>待遇:</strong> {{ job.benefits }}</p>
+                    {% endif %}
+                    
+                    {% if job.trial_available %}
+                    <p class="mb-0">
+                        <span class="badge badge-success">体験入店OK</span>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Right Column: Booking CTA -->
+        <div>
+            <div class="booking-cta">
+                <h3>今すぐ予約</h3>
+                
+                <div class="mb-3">
+                    <span class="vacancy-badge vacancy-badge-lg vacancy-{{ vacancy_colors.get(shop.current_vacancy, 'secondary') }}">
+                        {{ vacancy_labels.get(shop.current_vacancy, '−') }}
+                    </span>
+                    {% if shop.vacancy_updated_at %}
+                    <p class="text-muted mt-2" style="font-size: 0.75rem;">
+                        {{ shop.vacancy_updated_at.strftime('%H:%M') }} 更新
+                    </p>
+                    {% endif %}
+                </div>
+                
+                {% if shop.phone %}
+                <a href="{{ url_for('public.booking', shop_id=shop.id) }}" class="phone-btn">
+                    電話で予約
+                </a>
+                <p class="text-muted mt-2" style="font-size: 0.75rem;">
+                    タップで予約受付へ
+                </p>
+                {% else %}
+                <p class="text-muted">
+                    電話番号が登録されていません
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.shop-gallery {
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+}
+
+.gallery-main {
+    width: 100%;
+    height: 400px;
+    background: var(--color-bg-elevated);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gallery-main img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.gallery-placeholder {
+    flex-direction: column;
+    color: var(--color-text-muted);
+}
+
+.gallery-placeholder span {
+    font-size: 4rem;
+    margin-bottom: var(--space-md);
+}
+
+.gallery-thumbs {
+    display: flex;
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+    background: var(--color-bg-card);
+    overflow-x: auto;
+}
+
+.gallery-thumb {
+    width: 80px;
+    height: 60px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color var(--transition-fast);
+}
+
+.gallery-thumb.active {
+    border-color: var(--color-primary);
+}
+
+.gallery-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.shop-detail-header-info {
+    padding: var(--space-lg);
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+}
+
+.shop-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+}
+
+.shop-tag {
+    padding: var(--space-xs) var(--space-md);
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    color: var(--color-primary);
+}
+
+@media (max-width: 768px) {
+    .gallery-main {
+        height: 250px;
+    }
+}
+</style>
+
+{% block extra_js %}
+<script>
+function setMainImage(url, thumb) {
+    document.getElementById('gallery-main-image').src = url;
+    
+    document.querySelectorAll('.gallery-thumb').forEach(t => {
+        t.classList.remove('active');
+    });
+    thumb.classList.add('active');
+}
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,46 @@
+{# Shop Card Partial - expects 'shop' variable #}
+<a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}" class="shop-card" data-shop-id="{{ shop.id }}">
+    {% if shop.main_image_url %}
+    <img src="{{ shop.main_image_url }}" alt="{{ shop.name }}" class="shop-card-image">
+    {% else %}
+    <div class="shop-card-image shop-card-placeholder">
+        <span>🌙</span>
+    </div>
+    {% endif %}
+    
+    <div class="shop-card-body">
+        <div class="shop-card-header">
+            <div>
+                <h3 class="shop-card-name">{{ shop.name }}</h3>
+                <span class="shop-card-area">📍 {{ shop.area }}</span>
+                {% if shop.category_label %}
+                <span class="shop-card-category">{{ shop.category_label }}</span>
+                {% endif %}
+            </div>
+            <span class="vacancy-badge vacancy-{{ vacancy_colors.get(shop.current_vacancy, 'secondary') }}">
+                {{ vacancy_labels.get(shop.current_vacancy, '−') }}
+            </span>
+        </div>
+        
+        <div class="shop-card-info">
+            {% if shop.business_hours %}
+            <span>🕐 {{ shop.business_hours }}</span>
+            {% endif %}
+            {% if shop.price_range %}
+            <span>💰 {{ shop.price_range }}</span>
+            {% endif %}
+        </div>
+        
+        {% if shop.is_featured %}
+        <div class="shop-card-badge">
+            <span class="badge badge-warning">おすすめ</span>
+        </div>
+        {% endif %}
+        
+        {% if shop.active_job %}
+        <div class="shop-card-job">
+            <span class="badge badge-danger">求人あり</span>
+        </div>
+        {% endif %}
+    </div>
+</a>

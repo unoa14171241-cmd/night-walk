@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}店舗情報編集 - {{ shop.name }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="container container-md">
+    <p class="mb-3">
+        <a href="{{ url_for('shop_admin.dashboard') }}">← ダッシュボードに戻る</a>
+    </p>
+    
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-between align-center">
+                <h1 class="card-title mb-0">店舗情報編集</h1>
+                <a href="{{ url_for('shop_admin.images') }}" class="btn btn-secondary">
+                    📷 画像管理
+                </a>
+            </div>
+        </div>
+        
+        <form method="POST" action="{{ url_for('shop_admin.edit') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- Basic Info -->
+            <h3 class="mb-3" style="font-size: 1rem; color: var(--color-text-muted);">基本情報</h3>
+            
+            <div class="form-group">
+                <label class="form-label" for="name">店舗名 *</label>
+                <input type="text" 
+                       id="name" 
+                       name="name" 
+                       class="form-control" 
+                       value="{{ shop.name }}"
+                       required>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+                <div class="form-group">
+                    <label class="form-label" for="area">エリア *</label>
+                    <select id="area" name="area" class="form-control" required>
+                        {% for area in areas %}
+                        <option value="{{ area }}" {% if shop.area == area %}selected{% endif %}>
+                            {{ area }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="category">業態カテゴリ</label>
+                    <select id="category" name="category" class="form-control">
+                        <option value="">選択してください</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {% if shop.category == cat %}selected{% endif %}>
+                            {{ category_labels[cat] }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="phone">電話番号</label>
+                <input type="tel" 
+                       id="phone" 
+                       name="phone" 
+                       class="form-control" 
+                       value="{{ shop.phone or '' }}"
+                       placeholder="086-XXX-XXXX">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="address">住所</label>
+                <input type="text" 
+                       id="address" 
+                       name="address" 
+                       class="form-control" 
+                       value="{{ shop.address or '' }}"
+                       placeholder="岡山県岡山市...">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="business_hours">営業時間</label>
+                <input type="text" 
+                       id="business_hours" 
+                       name="business_hours" 
+                       class="form-control" 
+                       value="{{ shop.business_hours or '' }}"
+                       placeholder="20:00〜02:00">
+            </div>
+            
+            <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+            
+            <!-- Price Info -->
+            <h3 class="mb-3" style="font-size: 1rem; color: var(--color-text-muted);">料金情報</h3>
+            
+            <div class="form-group">
+                <label class="form-label" for="price_range">料金目安（表示用）</label>
+                <input type="text" 
+                       id="price_range" 
+                       name="price_range" 
+                       class="form-control" 
+                       value="{{ shop.price_range or '' }}"
+                       placeholder="5,000円〜">
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+                <div class="form-group">
+                    <label class="form-label" for="price_min">最低料金（検索用・数値）</label>
+                    <input type="number" 
+                           id="price_min" 
+                           name="price_min" 
+                           class="form-control" 
+                           value="{{ shop.price_min or '' }}"
+                           placeholder="3000"
+                           min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="price_max">最高料金（検索用・数値）</label>
+                    <input type="number" 
+                           id="price_max" 
+                           name="price_max" 
+                           class="form-control" 
+                           value="{{ shop.price_max or '' }}"
+                           placeholder="10000"
+                           min="0">
+                </div>
+            </div>
+            
+            <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+            
+            <!-- Description -->
+            <h3 class="mb-3" style="font-size: 1rem; color: var(--color-text-muted);">紹介</h3>
+            
+            <div class="form-group">
+                <label class="form-label" for="description">紹介文</label>
+                <textarea id="description" 
+                          name="description" 
+                          class="form-control" 
+                          rows="5"
+                          placeholder="店舗の紹介文を入力してください...">{{ shop.description or '' }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="tags">タグ（カンマ区切り）</label>
+                <input type="text" 
+                       id="tags" 
+                       name="tags" 
+                       class="form-control" 
+                       value="{{ shop.tags or '' }}"
+                       placeholder="駅近,カラオケあり,個室あり">
+                <p class="text-muted" style="font-size: 0.75rem; margin-top: var(--space-xs);">
+                    ※ 検索でヒットしやすくするためのタグを設定できます
+                </p>
+            </div>
+            
+            <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+            
+            <!-- Visibility Settings -->
+            <h3 class="mb-3" style="font-size: 1rem; color: var(--color-text-muted);">公開設定</h3>
+            
+            <div class="form-group">
+                <label class="form-check">
+                    <input type="checkbox" 
+                           name="is_published" 
+                           class="form-check-input"
+                           {% if shop.is_published %}checked{% endif %}>
+                    <span>公開する</span>
+                </label>
+                <p class="text-muted" style="font-size: 0.75rem; margin-top: var(--space-xs);">
+                    ※ チェックを外すと店舗一覧に表示されなくなります
+                </p>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-check">
+                    <input type="checkbox" 
+                           name="is_featured" 
+                           class="form-check-input"
+                           {% if shop.is_featured %}checked{% endif %}>
+                    <span>おすすめとして表示する</span>
+                </label>
+                <p class="text-muted" style="font-size: 0.75rem; margin-top: var(--space-xs);">
+                    ※ チェックすると検索結果の上位に表示されます
+                </p>
+            </div>
+            
+            <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+            
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    保存する
+                </button>
+                <a href="{{ url_for('shop_admin.dashboard') }}" class="btn btn-secondary">
+                    キャンセル
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
