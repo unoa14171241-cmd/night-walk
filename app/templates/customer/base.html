@@ -290,36 +290,36 @@
                 <div class="sidebar-nav-section">メニュー</div>
                 
                 <a href="{{ url_for('customer.mypage') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.mypage' %}active{% endif %}">
-                    <span class="sidebar-nav-icon">🏠</span>
+                    <span class="sidebar-nav-icon">H</span>
                     <span class="sidebar-nav-text">マイページ</span>
                 </a>
                 
                 <a href="{{ url_for('customer.buy_points') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.buy_points' %}active{% endif %}">
-                    <span class="sidebar-nav-icon">💰</span>
+                    <span class="sidebar-nav-icon">P</span>
                     <span class="sidebar-nav-text">ポイント購入</span>
                 </a>
                 
                 <a href="{{ url_for('public.index') }}" class="sidebar-nav-item">
-                    <span class="sidebar-nav-icon">🔍</span>
+                    <span class="sidebar-nav-icon">S</span>
                     <span class="sidebar-nav-text">店舗を探す</span>
                 </a>
                 
                 <div class="sidebar-nav-section">履歴</div>
                 
                 <a href="{{ url_for('customer.gift_history') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.gift_history' %}active{% endif %}">
-                    <span class="sidebar-nav-icon">🎁</span>
+                    <span class="sidebar-nav-icon">G</span>
                     <span class="sidebar-nav-text">ギフト履歴</span>
                 </a>
                 
                 <a href="{{ url_for('customer.point_history') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.point_history' %}active{% endif %}">
-                    <span class="sidebar-nav-icon">📊</span>
+                    <span class="sidebar-nav-icon">T</span>
                     <span class="sidebar-nav-text">取引履歴</span>
                 </a>
                 
                 <div class="sidebar-nav-section">アカウント</div>
                 
                 <a href="{{ url_for('customer.logout') }}" class="sidebar-nav-item">
-                    <span class="sidebar-nav-icon">🚪</span>
+                    <span class="sidebar-nav-icon">X</span>
                     <span class="sidebar-nav-text">ログアウト</span>
                 </a>
             </nav>
