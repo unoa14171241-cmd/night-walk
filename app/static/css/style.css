@@ -633,6 +633,19 @@ textarea.form-control {
     margin-bottom: var(--space-xl);
 }
 
+/* Inline style - all in one row */
+.category-buttons-inline {
+    flex-wrap: nowrap;
+    gap: var(--space-sm);
+}
+
+.category-buttons-inline .category-btn {
+    flex-direction: row;
+    padding: var(--space-sm) var(--space-lg);
+    min-width: auto;
+    font-size: 0.9rem;
+}
+
 .category-btn {
     display: flex;
     flex-direction: column;
@@ -1127,9 +1140,19 @@ textarea.form-control {
         grid-template-columns: 1fr 1fr;
     }
     
-    .category-buttons {
+    .category-buttons:not(.category-buttons-inline) {
         flex-direction: column;
         align-items: stretch;
+    }
+    
+    .category-buttons-inline {
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+    }
+    
+    .category-buttons-inline .category-btn {
+        padding: var(--space-xs) var(--space-md);
+        font-size: 0.8rem;
     }
     
     .category-btn {

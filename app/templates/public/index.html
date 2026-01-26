@@ -41,23 +41,11 @@
         </div>
         
         <!-- Category Buttons -->
-        <div class="category-buttons">
-            <a href="{{ url_for('public.search', category='cabaret') }}" class="category-btn category-btn-pink">
-                <span class="category-btn-icon">🍸</span>
-                <span>キャバクラ</span>
-            </a>
-            <a href="{{ url_for('public.search', category='girls_bar') }}" class="category-btn category-btn-purple">
-                <span class="category-btn-icon">🍷</span>
-                <span>ガールズバー</span>
-            </a>
-            <a href="{{ url_for('public.search', category='lounge') }}" class="category-btn category-btn-blue">
-                <span class="category-btn-icon">🛋️</span>
-                <span>ラウンジ</span>
-            </a>
-            <a href="{{ url_for('public.search', category='other') }}" class="category-btn category-btn-gold">
-                <span class="category-btn-icon">✨</span>
-                <span>その他</span>
-            </a>
+        <div class="category-buttons category-buttons-inline">
+            <a href="{{ url_for('public.search', category='cabaret') }}" class="category-btn category-btn-pink">キャバクラ</a>
+            <a href="{{ url_for('public.search', category='girls_bar') }}" class="category-btn category-btn-purple">ガールズバー</a>
+            <a href="{{ url_for('public.search', category='lounge') }}" class="category-btn category-btn-blue">ラウンジ</a>
+            <a href="{{ url_for('public.search', category='other') }}" class="category-btn category-btn-gold">その他</a>
         </div>
         
         <!-- Feature Ribbons -->
