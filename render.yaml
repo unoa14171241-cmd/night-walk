@@ -8,7 +8,7 @@ services:
     region: singapore  # Closest to Japan
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn run:app --bind 0.0.0.0:$PORT
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT
     envVars:
       - key: FLASK_ENV
         value: production
