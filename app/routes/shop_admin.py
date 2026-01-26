@@ -428,7 +428,7 @@ def reorder_images():
 
 @shop_admin_bp.route('/casts')
 @login_required
-@owner_required
+@shop_access_required
 def casts():
     """Cast management page."""
     shop = g.current_shop
@@ -438,7 +438,7 @@ def casts():
 
 @shop_admin_bp.route('/casts/new', methods=['GET', 'POST'])
 @login_required
-@owner_required
+@shop_access_required
 def new_cast():
     """Create new cast."""
     shop = g.current_shop
@@ -492,7 +492,7 @@ def new_cast():
 
 @shop_admin_bp.route('/casts/<int:cast_id>/edit', methods=['GET', 'POST'])
 @login_required
-@owner_required
+@shop_access_required
 def edit_cast(cast_id):
     """Edit cast."""
     shop = g.current_shop
@@ -540,7 +540,7 @@ def edit_cast(cast_id):
 
 @shop_admin_bp.route('/casts/<int:cast_id>/delete', methods=['POST'])
 @login_required
-@owner_required
+@shop_access_required
 def delete_cast(cast_id):
     """Delete cast."""
     shop = g.current_shop
@@ -566,7 +566,7 @@ def delete_cast(cast_id):
 
 @shop_admin_bp.route('/casts/reorder', methods=['POST'])
 @login_required
-@owner_required
+@shop_access_required
 def reorder_casts():
     """Reorder casts via AJAX."""
     shop = g.current_shop
