@@ -59,6 +59,30 @@
     <hr style="border-color: var(--color-border); margin: var(--space-lg) 0;">
     
     <h4 class="text-muted mb-3" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">
+        ランキング
+    </h4>
+    
+    <ul class="sidebar-nav">
+        <li>
+            <a href="{{ url_for('admin.rankings') }}" class="{% if request.endpoint in ['admin.rankings', 'admin.calculate_rankings'] %}active{% endif %}">
+                🏆 ランキング管理
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('admin.ranking_config') }}" class="{% if request.endpoint == 'admin.ranking_config' %}active{% endif %}">
+                係数設定
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('admin.ranking_badges') }}" class="{% if request.endpoint == 'admin.ranking_badges' %}active{% endif %}">
+                バッジ・特典
+            </a>
+        </li>
+    </ul>
+    
+    <hr style="border-color: var(--color-border); margin: var(--space-lg) 0;">
+    
+    <h4 class="text-muted mb-3" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">
         コンテンツ管理
     </h4>
     

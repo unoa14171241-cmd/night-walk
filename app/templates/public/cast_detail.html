@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}{{ cast.name_display }} - {{ shop.name }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px; padding: var(--space-lg);">
+    
+    <p class="mb-3">
+        <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}">← {{ shop.name }}</a>
+    </p>
+    
+    <!-- ヘッダー -->
+    <div class="card mb-4" style="text-align: center; {% if cast.is_top1 %}background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.15));{% endif %}">
+        
+        <!-- バッジ表示 -->
+        {% if cast.best_badge %}
+        <div style="margin-bottom: var(--space-md);">
+            {% if cast.best_badge.badge_type == 'area_top1' %}
+            <span class="badge" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; font-size: 1rem; padding: var(--space-sm) var(--space-md);">
+                👑 {{ cast.best_badge.area_name }} TOP1
+            </span>
+            {% elif cast.best_badge.badge_type == 'area_top3' %}
+            <span class="badge" style="background: linear-gradient(135deg, #C0C0C0, #A0A0A0); color: #000; padding: var(--space-sm) var(--space-md);">
+                🥈 {{ cast.best_badge.area_name }} TOP3
+            </span>
+            {% elif cast.best_badge.badge_type == 'area_top10' %}
+            <span class="badge" style="background: linear-gradient(135deg, #CD7F32, #8B4513); color: #fff; padding: var(--space-sm) var(--space-md);">
+                🏅 {{ cast.best_badge.area_name }} TOP10
+            </span>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- 画像 -->
+        {% if cast.image_url %}
+        <img src="{{ cast.image_url }}" 
+             alt="{{ cast.name_display }}"
+             style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: var(--space-md);
+                    {% if cast.is_top1 %}border: 4px solid gold; box-shadow: 0 0 20px rgba(255,215,0,0.5);{% else %}border: 3px solid var(--color-border);{% endif %}">
+        {% endif %}
+        
+        <h1 style="margin: 0 0 var(--space-sm);">{{ cast.name_display }}</h1>
+        
+        <p class="text-muted mb-0">
+            <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}">{{ shop.name }}</a>
+            ・ {{ shop.area }}
+        </p>
+        
+        <!-- 現在のランキング -->
+        {% if cast.current_rank %}
+        <p style="margin-top: var(--space-sm);">
+            <span class="badge badge-primary">現在 {{ cast.area }}{{ cast.current_rank }}位</span>
+        </p>
+        {% endif %}
+    </div>
+    
+    <!-- プロフィール -->
+    {% if cast.profile %}
+    <div class="card mb-4">
+        <h3 class="mb-3">📝 自己紹介</h3>
+        <p style="margin: 0; white-space: pre-wrap;">{{ cast.profile }}</p>
+    </div>
+    {% endif %}
+    
+    <!-- SNS -->
+    {% if cast.twitter_url or cast.instagram_url %}
+    <div class="card mb-4">
+        <h3 class="mb-3">📱 SNS</h3>
+        <div class="d-flex gap-2">
+            {% if cast.twitter_url %}
+            <a href="{{ cast.twitter_url }}" target="_blank" class="btn btn-secondary" style="flex: 1;">
+                𝕏 Twitter
+            </a>
+            {% endif %}
+            {% if cast.instagram_url %}
+            <a href="{{ cast.instagram_url }}" target="_blank" class="btn btn-secondary" style="flex: 1;">
+                📷 Instagram
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- 累計情報 -->
+    <div class="card mb-4">
+        <h3 class="mb-3">💝 応援状況</h3>
+        <div class="d-flex gap-3">
+            <div style="flex: 1; text-align: center; padding: var(--space-md); background: var(--color-bg-elevated); border-radius: var(--radius);">
+                <div class="text-muted" style="font-size: 0.85rem;">受け取ったギフト</div>
+                <div style="font-size: 1.5rem; font-weight: bold;">{{ '{:,}'.format(cast.total_gifts_received) }}</div>
+            </div>
+            <div style="flex: 1; text-align: center; padding: var(--space-md); background: var(--color-bg-elevated); border-radius: var(--radius);">
+                <div class="text-muted" style="font-size: 0.85rem;">累計ポイント</div>
+                <div style="font-size: 1.5rem; font-weight: bold;">{{ '{:,}'.format(cast.total_points_received) }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ギフトを送る -->
+    {% if cast.is_accepting_gifts and gifts %}
+    <div class="card mb-4">
+        <h3 class="mb-3">🎁 ギフトを送る</h3>
+        
+        {% if current_user.is_authenticated and current_user.is_customer %}
+        <p class="text-muted mb-3">ポイント残高: {{ '{:,}'.format(current_user.point_balance) }}pt</p>
+        
+        <div class="d-flex gap-2" style="flex-wrap: wrap;">
+            {% for gift in gifts[:6] %}
+            <a href="{{ url_for('customer.send_gift', cast_id=cast.id, gift_id=gift.id) }}" 
+               class="card" 
+               style="flex: 1; min-width: 100px; text-align: center; text-decoration: none; padding: var(--space-md);">
+                {% if gift.image_url %}
+                <img src="{{ gift.image_url }}" style="width: 40px; height: 40px; margin: 0 auto var(--space-sm);">
+                {% endif %}
+                <div style="font-size: 0.85rem;">{{ gift.name }}</div>
+                <div style="font-weight: bold; color: var(--color-primary);">{{ gift.points }}pt</div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted text-center">
+            ギフトを送るには<a href="{{ url_for('customer.login') }}">ログイン</a>してください
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- バッジ履歴 -->
+    {% set badge_history = cast.badges.order_by(None).limit(6).all() %}
+    {% if badge_history %}
+    <div class="card mb-4">
+        <h3 class="mb-3">🏆 獲得バッジ</h3>
+        <div class="d-flex gap-2" style="flex-wrap: wrap;">
+            {% for badge in badge_history %}
+            <div style="text-align: center; padding: var(--space-sm); background: var(--color-bg-elevated); border-radius: var(--radius); min-width: 80px;">
+                {% if badge.badge_type == 'area_top1' %}
+                <div style="font-size: 1.5rem;">🥇</div>
+                {% elif badge.badge_type == 'area_top3' %}
+                <div style="font-size: 1.5rem;">🥈</div>
+                {% else %}
+                <div style="font-size: 1.5rem;">🥉</div>
+                {% endif %}
+                <div style="font-size: 0.75rem;">{{ badge.area_name }}</div>
+                <div style="font-size: 0.7rem; color: var(--color-text-secondary);">{{ badge.year }}/{{ badge.month }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- 店舗情報 -->
+    <div class="card">
+        <h3 class="mb-3">🏠 店舗情報</h3>
+        <p style="margin: 0;"><strong>{{ shop.name }}</strong></p>
+        <p class="text-muted mb-2">{{ shop.area }}</p>
+        
+        {% if shop.business_hours %}
+        <p style="margin: 0; font-size: 0.9rem;">🕐 {{ shop.business_hours }}</p>
+        {% endif %}
+        
+        <div style="margin-top: var(--space-md);">
+            <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}" class="btn btn-secondary" style="width: 100%;">
+                店舗詳細を見る
+            </a>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}

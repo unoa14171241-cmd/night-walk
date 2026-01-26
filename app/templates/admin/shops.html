@@ -21,6 +21,7 @@
                     <tr>
                         <th>店舗名</th>
                         <th>エリア</th>
+                        <th>カテゴリ</th>
                         <th>空席</th>
                         <th>状態</th>
                         <th>課金</th>
@@ -36,6 +37,7 @@
                             </a>
                         </td>
                         <td>{{ shop.area }}</td>
+                        <td>{{ shop.category_label or '未設定' }}</td>
                         <td>
                             <span class="vacancy-badge vacancy-{{ shop.vacancy_status.color if shop.vacancy_status else 'secondary' }}">
                                 {{ shop.vacancy_status.label if shop.vacancy_status else '−' }}

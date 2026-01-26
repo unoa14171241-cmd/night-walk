@@ -48,6 +48,23 @@
                     </td>
                 </tr>
                 <tr>
+                    <th>カテゴリ</th>
+                    <td>{{ shop.category_label or '未設定' }}</td>
+                </tr>
+                <tr>
+                    <th>送客手数料</th>
+                    <td>
+                        {% if custom_rate %}
+                        <span class="badge badge-primary">カスタム設定</span>
+                        {{ custom_rate.rate_display }}
+                        {% else %}
+                        <span class="badge" style="background: var(--color-bg-elevated);">デフォルト</span>
+                        ¥{{ '{:,}'.format(default_commission) }}/件
+                        {% endif %}
+                        <a href="{{ url_for('admin.edit_commission_rate', shop_id=shop.id) }}" class="text-primary" style="margin-left: 8px; font-size: 0.9em;">設定変更</a>
+                    </td>
+                </tr>
+                <tr>
                     <th>電話番号</th>
                     <td>{{ shop.phone or '−' }}</td>
                 </tr>

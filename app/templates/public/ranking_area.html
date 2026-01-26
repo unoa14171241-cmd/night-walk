@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}{{ area_info.name }}キャストランキング - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px; padding: var(--space-lg);">
+    
+    <p class="mb-3">
+        <a href="{{ url_for('public.ranking_index') }}">← ランキングトップ</a>
+    </p>
+    
+    <h1 class="text-center mb-2">📍 {{ area_info.name }}ランキング</h1>
+    <p class="text-center text-muted mb-4">{{ year }}年{{ month }}月</p>
+    
+    <!-- TOP1特集バナー -->
+    {% if top1 %}
+    <a href="{{ url_for('public.ranking_top1', area=area, year=year, month=month) }}" 
+       class="card mb-4" 
+       style="display: block; text-decoration: none; background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; text-align: center; padding: var(--space-xl);">
+        <div style="font-size: 2rem; margin-bottom: var(--space-sm);">👑</div>
+        <h2 style="margin: 0; color: #000;">{{ top1.cast.name_display }}</h2>
+        <p style="margin: var(--space-sm) 0 0; opacity: 0.8;">
+            {{ area_info.name }} TOP1 - タップして詳しく見る →
+        </p>
+    </a>
+    {% endif %}
+    
+    <!-- 期間選択 -->
+    <div class="card mb-4">
+        <form method="GET" class="d-flex gap-3" style="flex-wrap: wrap; align-items: flex-end;">
+            <div class="form-group mb-0">
+                <label class="form-label">年</label>
+                <select name="year" class="form-control" style="width: auto;">
+                    {% for y in range(2024, 2030) %}
+                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}年</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group mb-0">
+                <label class="form-label">月</label>
+                <select name="month" class="form-control" style="width: auto;">
+                    {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}月</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">表示</button>
+        </form>
+    </div>
+    
+    <!-- ランキング一覧 -->
+    {% if rankings %}
+    <div class="card">
+        <h3 class="mb-3">TOP {{ rankings|length }}</h3>
+        
+        <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+            {% for ranking in rankings %}
+            <a href="{{ url_for('public.shop_detail', shop_id=ranking.cast.shop_id) }}#cast-{{ ranking.cast.id }}" 
+               class="d-flex align-center gap-3" 
+               style="padding: var(--space-md); border-radius: var(--radius); text-decoration: none; transition: background 0.2s;
+                      {% if ranking.rank == 1 %}background: linear-gradient(90deg, rgba(255,215,0,0.2), transparent);
+                      {% elif ranking.rank == 2 %}background: linear-gradient(90deg, rgba(192,192,192,0.2), transparent);
+                      {% elif ranking.rank == 3 %}background: linear-gradient(90deg, rgba(205,127,50,0.2), transparent);
+                      {% elif ranking.rank <= 10 %}background: var(--color-bg-elevated);{% endif %}"
+               onmouseover="this.style.background='var(--color-bg-elevated)'"
+               onmouseout="this.style.background='{% if ranking.rank == 1 %}linear-gradient(90deg, rgba(255,215,0,0.2), transparent){% elif ranking.rank == 2 %}linear-gradient(90deg, rgba(192,192,192,0.2), transparent){% elif ranking.rank == 3 %}linear-gradient(90deg, rgba(205,127,50,0.2), transparent){% elif ranking.rank <= 10 %}var(--color-bg-elevated){% else %}transparent{% endif %}'">
+                
+                <!-- 順位 -->
+                <div style="width: 50px; text-align: center; flex-shrink: 0;">
+                    {% if ranking.rank == 1 %}
+                    <span style="font-size: 1.8rem;">🥇</span>
+                    {% elif ranking.rank == 2 %}
+                    <span style="font-size: 1.6rem;">🥈</span>
+                    {% elif ranking.rank == 3 %}
+                    <span style="font-size: 1.4rem;">🥉</span>
+                    {% else %}
+                    <span style="font-size: 1.2rem; font-weight: bold;">{{ ranking.rank }}</span>
+                    {% endif %}
+                    
+                    {% if ranking.rank_change %}
+                    <div style="font-size: 0.7rem; color: {% if '↑' in ranking.rank_change %}#4CAF50{% elif '↓' in ranking.rank_change %}#f44336{% else %}#999{% endif %};">
+                        {{ ranking.rank_change }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- 画像 -->
+                <div style="flex-shrink: 0;">
+                    {% if ranking.cast.image_url %}
+                    <img src="{{ ranking.cast.image_url }}" 
+                         alt="{{ ranking.cast.name_display }}"
+                         style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;
+                                {% if ranking.rank == 1 %}border: 2px solid gold;{% elif ranking.rank <= 3 %}border: 2px solid silver;{% endif %}">
+                    {% else %}
+                    <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--color-bg-elevated); display: flex; align-items: center; justify-content: center;">
+                        👤
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- 情報 -->
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: bold;">{{ ranking.cast.name_display }}</div>
+                    <div style="font-size: 0.85rem; color: var(--color-text-secondary);">
+                        {{ ranking.cast.shop.name if ranking.cast.shop else '' }}
+                    </div>
+                </div>
+                
+                <!-- スコア -->
+                <div style="text-align: right; flex-shrink: 0;">
+                    <div style="font-weight: bold; font-size: 0.9rem;">{{ '{:,.0f}'.format(ranking.total_score) }}pt</div>
+                    <div style="font-size: 0.75rem; color: var(--color-text-secondary);">
+                        PV:{{ ranking.pv_count }} / Gift:{{ ranking.gift_points }}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card text-center">
+        <p class="text-muted mb-0">この期間のランキングデータはまだありません</p>
+    </div>
+    {% endif %}
+    
+</div>
+{% endblock %}

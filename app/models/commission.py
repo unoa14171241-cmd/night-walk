@@ -5,6 +5,31 @@ from datetime import datetime, date
 from ..extensions import db
 
 
+# カテゴリ別デフォルト送客手数料（円）
+DEFAULT_COMMISSION_BY_CATEGORY = {
+    'snack': 700,       # スナック
+    'concafe': 700,     # コンカフェ
+    'kyabakura': 1800,  # キャバクラ
+    'fuzoku': 2000,     # 風俗
+    'deriheru': 2000,   # デリヘル
+    'lounge': 1000,     # ラウンジ
+    'club': 1000,       # クラブ
+    'bar': 700,         # バー
+    'other': 1000,      # その他
+}
+
+
+def get_default_commission(category):
+    """
+    カテゴリからデフォルト送客手数料を取得する。
+    Args:
+        category: 店舗カテゴリ
+    Returns:
+        int: デフォルト手数料（円）
+    """
+    return DEFAULT_COMMISSION_BY_CATEGORY.get(category, 1000)
+
+
 class CommissionRate(db.Model):
     """Commission rate settings per shop (店舗ごとの手数料設定)."""
     __tablename__ = 'commission_rates'
@@ -143,7 +168,9 @@ class Commission(db.Model):
         if rate:
             commission_amount = rate.calculate(guest_count=guest_count)
         else:
-            commission_amount = 1000 * guest_count  # Default
+            # カスタム設定がない場合はカテゴリ別デフォルト手数料を使用
+            default_rate = get_default_commission(shop.category)
+            commission_amount = default_rate * guest_count
         
         commission = cls(
             shop_id=shop.id,

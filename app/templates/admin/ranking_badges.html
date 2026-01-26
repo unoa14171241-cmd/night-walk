@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}バッジ管理 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <p class="mb-3">
+            <a href="{{ url_for('admin.rankings') }}">← ランキング管理に戻る</a>
+        </p>
+        
+        <div class="d-flex justify-between align-center mb-4">
+            <h1 class="mb-0">🏆 バッジ・特典管理</h1>
+        </div>
+        
+        <!-- フィルター -->
+        <div class="card mb-4">
+            <form method="GET" class="d-flex gap-3" style="flex-wrap: wrap; align-items: flex-end;">
+                <div class="form-group mb-0">
+                    <label class="form-label">年</label>
+                    <select name="year" class="form-control" style="width: auto;">
+                        {% for y in range(2024, 2030) %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}年</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="form-label">状態</label>
+                    <select name="status" class="form-control" style="width: auto;">
+                        <option value="" {% if not status %}selected{% endif %}>すべて</option>
+                        <option value="pending_ship" {% if status == 'pending_ship' %}selected{% endif %}>特典未発送</option>
+                        <option value="shipped" {% if status == 'shipped' %}selected{% endif %}>発送済み</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">表示</button>
+            </form>
+        </div>
+        
+        <!-- バッジ一覧 -->
+        <div class="card">
+            {% if badges %}
+            <div style="overflow-x: auto;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>期間</th>
+                            <th>エリア</th>
+                            <th>バッジ</th>
+                            <th>キャスト</th>
+                            <th>店舗</th>
+                            <th>有効期間</th>
+                            <th>特典発送</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for badge in badges %}
+                        <tr>
+                            <td>{{ badge.year }}年{{ badge.month }}月</td>
+                            <td>{{ badge.area_name }}</td>
+                            <td>
+                                {% if badge.badge_type == 'area_top1' %}
+                                <span class="badge" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #000;">🥇 TOP1</span>
+                                {% elif badge.badge_type == 'area_top3' %}
+                                <span class="badge" style="background: linear-gradient(135deg, #C0C0C0, #A0A0A0); color: #000;">🥈 TOP3</span>
+                                {% else %}
+                                <span class="badge" style="background: linear-gradient(135deg, #CD7F32, #8B4513); color: #fff;">🥉 TOP10</span>
+                                {% endif %}
+                            </td>
+                            <td><strong>{{ badge.cast.name_display }}</strong></td>
+                            <td>{{ badge.cast.shop.name if badge.cast.shop else '—' }}</td>
+                            <td>
+                                {{ badge.valid_from.strftime('%m/%d') }} 〜 {{ badge.valid_until.strftime('%m/%d') }}
+                                {% if badge.is_valid %}
+                                <span class="badge badge-success">有効</span>
+                                {% else %}
+                                <span class="badge" style="background: var(--color-bg-elevated);">終了</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if badge.is_top1 %}
+                                    {% if badge.prize_shipped %}
+                                    <span class="badge badge-success">発送済</span>
+                                    {% if badge.tracking_number %}
+                                    <br><small>{{ badge.tracking_number }}</small>
+                                    {% endif %}
+                                    {% elif badge.shipping_address %}
+                                    <span class="badge badge-warning">住所入力済</span>
+                                    {% else %}
+                                    <span class="badge badge-danger">未対応</span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if badge.is_top1 and not badge.prize_shipped %}
+                                <button type="button" class="btn btn-sm btn-primary"
+                                        onclick="showShipModal({{ badge.id }}, '{{ badge.cast.name_display }}')">
+                                    発送完了
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center">バッジデータがありません</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 発送完了モーダル -->
+<div id="shipModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="card" style="max-width: 400px; margin: auto;">
+        <h3 class="mb-3">特典発送完了</h3>
+        <form method="POST" id="shipForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <p id="shipCastName" style="font-weight: bold;"></p>
+            
+            <div class="form-group">
+                <label class="form-label">追跡番号（任意）</label>
+                <input type="text" name="tracking_number" class="form-control" placeholder="1234-5678-9012">
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">発送完了</button>
+                <button type="button" class="btn btn-secondary" onclick="closeShipModal()">キャンセル</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showShipModal(id, name) {
+    document.getElementById('shipModal').style.display = 'flex';
+    document.getElementById('shipCastName').textContent = name + ' への特典';
+    document.getElementById('shipForm').action = '/admin/rankings/badges/' + id + '/ship';
+}
+
+function closeShipModal() {
+    document.getElementById('shipModal').style.display = 'none';
+}
+</script>
+{% endblock %}

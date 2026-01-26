@@ -65,6 +65,62 @@ class Cast(db.Model):
             is_active=True
         ).order_by(cls.sort_order, cls.name).all()
     
+    @property
+    def area(self):
+        """キャストのエリア（店舗経由で取得）"""
+        if self.shop:
+            return self.shop.area
+        return None
+    
+    @property
+    def area_key(self):
+        """エリアキー（ランキング用）"""
+        # 店舗のarea（岡山、倉敷など）からエリアキーを取得
+        area = self.area
+        if area in ['岡山', '倉敷']:
+            return 'okayama'  # 岡山県として集計
+        return 'okayama'  # デフォルト
+    
+    @property
+    def active_badges(self):
+        """現在有効なバッジ"""
+        from .ranking import CastBadgeHistory
+        return CastBadgeHistory.get_active_badges(self.id)
+    
+    @property
+    def is_top1(self):
+        """現在TOP1かどうか"""
+        badges = self.active_badges
+        return any(b.badge_type == 'area_top1' for b in badges)
+    
+    @property
+    def best_badge(self):
+        """現在の最高ランクバッジ"""
+        badges = self.active_badges
+        if not badges:
+            return None
+        # TOP1 > TOP3 > TOP10の順で返す
+        for badge_type in ['area_top1', 'area_top3', 'area_top10']:
+            for badge in badges:
+                if badge.badge_type == badge_type:
+                    return badge
+        return badges[0] if badges else None
+    
+    @property
+    def current_rank(self):
+        """現在月のランキング順位"""
+        from datetime import date
+        from .ranking import CastMonthlyRanking
+        today = date.today()
+        ranking = CastMonthlyRanking.query.filter_by(
+            cast_id=self.id,
+            area=self.area_key,
+            year=today.year,
+            month=today.month,
+            is_finalized=True
+        ).first()
+        return ranking.rank if ranking else None
+    
     def __repr__(self):
         return f'<Cast {self.name_display}>'
 

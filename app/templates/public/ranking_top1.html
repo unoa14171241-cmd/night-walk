@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}👑 {{ area_info.name }}TOP1 {{ top1.cast.name_display }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div style="min-height: 100vh;">
+    
+    <!-- ヒーローセクション -->
+    <div style="background: linear-gradient(135deg, #FFD700, #FFA500); padding: var(--space-xl) var(--space-lg); text-align: center; color: #000;">
+        <p class="mb-2">
+            <a href="{{ url_for('public.ranking_area', area=area, year=year, month=month) }}" style="color: rgba(0,0,0,0.7);">
+                ← {{ area_info.name }}ランキングに戻る
+            </a>
+        </p>
+        
+        <div style="font-size: 4rem; margin-bottom: var(--space-md);">👑</div>
+        
+        <h1 style="margin: 0; font-size: 2.5rem; color: #000;">{{ area_info.name }} TOP1</h1>
+        <p style="margin: var(--space-sm) 0 var(--space-lg); opacity: 0.8;">{{ year }}年{{ month }}月</p>
+        
+        <!-- キャスト画像 -->
+        {% if top1.cast.image_url %}
+        <div style="margin: var(--space-lg) auto;">
+            <img src="{{ top1.cast.image_url }}" 
+                 alt="{{ top1.cast.name_display }}"
+                 style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 5px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+        </div>
+        {% endif %}
+        
+        <h2 style="margin: 0; font-size: 2rem; color: #000;">{{ top1.cast.name_display }}</h2>
+        
+        {% if top1.cast.shop %}
+        <p style="margin: var(--space-sm) 0 0; opacity: 0.8;">
+            {{ top1.cast.shop.name }}
+        </p>
+        {% endif %}
+    </div>
+    
+    <div class="container" style="max-width: 600px; padding: var(--space-xl) var(--space-lg);">
+        
+        <!-- スコア詳細 -->
+        <div class="card mb-4">
+            <h3 class="mb-3 text-center">🏆 獲得スコア</h3>
+            
+            <div class="d-flex gap-3 mb-3">
+                <div class="card" style="flex: 1; text-align: center; background: var(--color-bg-elevated);">
+                    <div class="text-muted mb-1">総合スコア</div>
+                    <div style="font-size: 1.8rem; font-weight: bold; color: var(--color-primary);">
+                        {{ '{:,.0f}'.format(top1.total_score) }}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex gap-3">
+                <div style="flex: 1; text-align: center; padding: var(--space-md); background: var(--color-bg-elevated); border-radius: var(--radius);">
+                    <div class="text-muted" style="font-size: 0.85rem;">PV</div>
+                    <div style="font-size: 1.3rem; font-weight: bold;">{{ '{:,}'.format(top1.pv_count) }}</div>
+                </div>
+                <div style="flex: 1; text-align: center; padding: var(--space-md); background: var(--color-bg-elevated); border-radius: var(--radius);">
+                    <div class="text-muted" style="font-size: 0.85rem;">ギフトpt</div>
+                    <div style="font-size: 1.3rem; font-weight: bold;">{{ '{:,}'.format(top1.gift_points) }}</div>
+                </div>
+                <div style="flex: 1; text-align: center; padding: var(--space-md); background: var(--color-bg-elevated); border-radius: var(--radius);">
+                    <div class="text-muted" style="font-size: 0.85rem;">ギフト数</div>
+                    <div style="font-size: 1.3rem; font-weight: bold;">{{ '{:,}'.format(top1.gift_count) }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 特典 -->
+        {% if badge and badge.is_top1 %}
+        <div class="card mb-4" style="background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,165,0,0.1));">
+            <h3 class="mb-3">🎁 TOP1特典</h3>
+            <ul style="margin: 0; padding-left: var(--space-lg);">
+                <li>エリア別トップバナー掲載（{{ badge.valid_from.strftime('%m/%d') }}〜{{ badge.valid_until.strftime('%m/%d') }}）</li>
+                <li>プロフィールのプラチナ装飾</li>
+                <li>エリアTOP1バッジ</li>
+                <li>特別プレゼント（美容グッズ等）</li>
+            </ul>
+        </div>
+        {% endif %}
+        
+        <!-- プロフィール -->
+        {% if top1.cast.profile %}
+        <div class="card mb-4">
+            <h3 class="mb-3">📝 プロフィール</h3>
+            <p style="margin: 0; white-space: pre-wrap;">{{ top1.cast.profile }}</p>
+        </div>
+        {% endif %}
+        
+        <!-- SNSリンク -->
+        {% if top1.cast.twitter_url or top1.cast.instagram_url %}
+        <div class="card mb-4">
+            <h3 class="mb-3">📱 SNS</h3>
+            <div class="d-flex gap-2">
+                {% if top1.cast.twitter_url %}
+                <a href="{{ top1.cast.twitter_url }}" target="_blank" class="btn btn-secondary" style="flex: 1;">
+                    𝕏 Twitter
+                </a>
+                {% endif %}
+                {% if top1.cast.instagram_url %}
+                <a href="{{ top1.cast.instagram_url }}" target="_blank" class="btn btn-secondary" style="flex: 1;">
+                    📷 Instagram
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- 店舗リンク -->
+        {% if top1.cast.shop %}
+        <a href="{{ url_for('public.shop_detail', shop_id=top1.cast.shop_id) }}" class="btn btn-primary" style="width: 100%;">
+            {{ top1.cast.shop.name }} を見る
+        </a>
+        {% endif %}
+        
+    </div>
+</div>
+{% endblock %}

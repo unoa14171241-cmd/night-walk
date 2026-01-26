@@ -13,7 +13,7 @@ from ..models.user import User, ShopMember
 from ..models.billing import Subscription
 from ..models.audit import AuditLog
 from ..models.content import Announcement, Advertisement
-from ..models.commission import CommissionRate, Commission, MonthlyBilling
+from ..models.commission import CommissionRate, Commission, MonthlyBilling, get_default_commission
 from ..utils.decorators import admin_required
 from ..utils.logger import audit_log
 
@@ -77,15 +77,28 @@ def new_shop():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         area = request.form.get('area', '')
+        category = request.form.get('category', '')
         phone = request.form.get('phone', '').strip()
         
+        errors = []
         if not name:
-            flash('店舗名は必須です。', 'danger')
-            return render_template('admin/shop_form.html', shop=None, areas=Shop.AREAS)
+            errors.append('店舗名は必須です。')
+        if not category or category not in Shop.CATEGORIES:
+            errors.append('カテゴリを選択してください。')
+        
+        if errors:
+            for error in errors:
+                flash(error, 'danger')
+            return render_template('admin/shop_form.html', 
+                                  shop=None, 
+                                  areas=Shop.AREAS,
+                                  categories=Shop.CATEGORIES,
+                                  category_labels=Shop.CATEGORY_LABELS)
         
         shop = Shop(
             name=name,
             area=area,
+            category=category,
             phone=phone,
             address=request.form.get('address', '').strip(),
             business_hours=request.form.get('business_hours', '').strip(),
@@ -107,12 +120,16 @@ def new_shop():
         db.session.commit()
         
         audit_log(AuditLog.ACTION_SHOP_CREATE, 'shop', shop.id,
-                 new_value={'name': name, 'area': area})
+                 new_value={'name': name, 'area': area, 'category': category})
         
         flash(f'店舗「{name}」を作成しました。', 'success')
         return redirect(url_for('admin.shops'))
     
-    return render_template('admin/shop_form.html', shop=None, areas=Shop.AREAS)
+    return render_template('admin/shop_form.html', 
+                          shop=None, 
+                          areas=Shop.AREAS,
+                          categories=Shop.CATEGORIES,
+                          category_labels=Shop.CATEGORY_LABELS)
 
 
 @admin_bp.route('/shops/<int:shop_id>')
@@ -121,7 +138,14 @@ def shop_detail(shop_id):
     """View shop details."""
     shop = Shop.query.get_or_404(shop_id)
     members = shop.members.all()
-    return render_template('admin/shop_detail.html', shop=shop, members=members)
+    # カスタム手数料設定の有無を確認
+    custom_rate = CommissionRate.query.filter_by(shop_id=shop_id, is_active=True).first()
+    default_commission = get_default_commission(shop.category) if shop.category else 1000
+    return render_template('admin/shop_detail.html', 
+                          shop=shop, 
+                          members=members,
+                          custom_rate=custom_rate,
+                          default_commission=default_commission)
 
 
 @admin_bp.route('/shops/<int:shop_id>/toggle', methods=['POST'])
@@ -606,13 +630,17 @@ def new_commission():
         
         # Get commission rate
         rate = CommissionRate.query.filter_by(shop_id=shop_id, is_active=True).first()
+        shop = Shop.query.get(shop_id)
+        
         if rate:
             commission_amount = rate.calculate(sales_amount, guest_count)
         else:
-            # Manual input or default
+            # Manual input or category default
             commission_amount = request.form.get('commission_amount', type=int)
             if not commission_amount:
-                commission_amount = 1000 * guest_count
+                # カテゴリ別デフォルト手数料を使用
+                default_rate = get_default_commission(shop.category) if shop else 1000
+                commission_amount = default_rate * guest_count
         
         commission = Commission(
             shop_id=shop_id,
@@ -978,3 +1006,240 @@ def send_invoice(id):
     return render_template('admin/send_invoice.html',
                           billing=billing,
                           default_email=default_email)
+
+
+# ============================================
+# Ranking Management (キャストランキング)
+# ============================================
+
+@admin_bp.route('/rankings')
+@admin_required
+def rankings():
+    """ランキング管理トップ"""
+    from ..models.ranking import CastMonthlyRanking, RankingConfig, AREA_DEFINITIONS
+    from ..services.ranking_service import RankingService
+    
+    # パラメータ
+    year = request.args.get('year', date.today().year, type=int)
+    month = request.args.get('month', type=int)
+    area = request.args.get('area', 'okayama')
+    
+    # 前月をデフォルトにする（当月はまだ集計中の可能性）
+    if not month:
+        if date.today().month == 1:
+            month = 12
+            year = year - 1
+        else:
+            month = date.today().month - 1
+    
+    # ランキング取得
+    rankings_list = CastMonthlyRanking.get_ranking(area, year, month, limit=100, finalized_only=False)
+    
+    # 統計
+    finalized_count = sum(1 for r in rankings_list if r.is_finalized)
+    total_pv = sum(r.pv_count for r in rankings_list)
+    total_gifts = sum(r.gift_points for r in rankings_list)
+    
+    # エリア一覧
+    active_areas = RankingService.get_active_areas()
+    
+    return render_template('admin/rankings.html',
+                          rankings=rankings_list,
+                          year=year,
+                          month=month,
+                          area=area,
+                          areas=active_areas,
+                          area_definitions=AREA_DEFINITIONS,
+                          finalized_count=finalized_count,
+                          total_pv=total_pv,
+                          total_gifts=total_gifts)
+
+
+@admin_bp.route('/rankings/calculate', methods=['POST'])
+@admin_required
+def calculate_rankings():
+    """ランキング計算（手動実行）"""
+    from ..services.ranking_service import RankingService
+    
+    year = request.form.get('year', date.today().year, type=int)
+    month = request.form.get('month', date.today().month, type=int)
+    area = request.form.get('area', 'okayama')
+    finalize = request.form.get('finalize') == 'on'
+    
+    try:
+        if area == 'all':
+            # 全エリア計算
+            for area_key in RankingService.get_active_areas():
+                RankingService.calculate_area_ranking(area_key, year, month, finalize=finalize)
+            flash(f'{year}年{month}月の全エリアランキングを{"確定" if finalize else "計算"}しました', 'success')
+        else:
+            RankingService.calculate_area_ranking(area, year, month, finalize=finalize)
+            flash(f'{year}年{month}月のランキングを{"確定" if finalize else "計算"}しました', 'success')
+    except Exception as e:
+        flash(f'ランキング計算エラー: {e}', 'danger')
+    
+    return redirect(url_for('admin.rankings', year=year, month=month, area=area))
+
+
+@admin_bp.route('/rankings/finalize-month', methods=['POST'])
+@admin_required
+def finalize_month_rankings():
+    """月次ランキング確定（全エリア・バッジ付与）"""
+    from ..services.ranking_service import RankingService
+    
+    year = request.form.get('year', type=int)
+    month = request.form.get('month', type=int)
+    
+    if not year or not month:
+        flash('年月を指定してください', 'danger')
+        return redirect(url_for('admin.rankings'))
+    
+    try:
+        results = RankingService.finalize_month(year, month)
+        total = sum(len(r) for r in results.values())
+        flash(f'{year}年{month}月のランキングを確定しました（{total}件、TOP10にバッジ付与）', 'success')
+    except Exception as e:
+        flash(f'ランキング確定エラー: {e}', 'danger')
+    
+    return redirect(url_for('admin.rankings', year=year, month=month))
+
+
+@admin_bp.route('/rankings/<int:id>/override', methods=['POST'])
+@admin_required
+def override_ranking(id):
+    """ランキング強制変更"""
+    from ..services.ranking_service import RankingService
+    from ..models.ranking import CastMonthlyRanking
+    
+    ranking = CastMonthlyRanking.query.get_or_404(id)
+    new_rank = request.form.get('new_rank', type=int)
+    reason = request.form.get('reason', '').strip()
+    
+    if not new_rank or not reason:
+        flash('新しい順位と理由を入力してください', 'danger')
+        return redirect(url_for('admin.rankings', 
+                                year=ranking.year, month=ranking.month, area=ranking.area))
+    
+    success = RankingService.override_ranking(id, new_rank, reason, current_user.id)
+    
+    if success:
+        flash(f'{ranking.cast.name_display}の順位を{new_rank}位に変更しました', 'success')
+    else:
+        flash('順位変更に失敗しました', 'danger')
+    
+    return redirect(url_for('admin.rankings', 
+                            year=ranking.year, month=ranking.month, area=ranking.area))
+
+
+@admin_bp.route('/rankings/<int:id>/disqualify', methods=['POST'])
+@admin_required
+def disqualify_ranking(id):
+    """キャスト失格（ランキング除外）"""
+    from ..services.ranking_service import RankingService
+    from ..models.ranking import CastMonthlyRanking
+    
+    ranking = CastMonthlyRanking.query.get_or_404(id)
+    reason = request.form.get('reason', '').strip()
+    
+    if not reason:
+        flash('失格理由を入力してください', 'danger')
+        return redirect(url_for('admin.rankings', 
+                                year=ranking.year, month=ranking.month, area=ranking.area))
+    
+    success = RankingService.disqualify_cast(id, reason, current_user.id)
+    
+    if success:
+        flash(f'{ranking.cast.name_display}を失格にしました', 'success')
+    else:
+        flash('失格処理に失敗しました', 'danger')
+    
+    return redirect(url_for('admin.rankings', 
+                            year=ranking.year, month=ranking.month, area=ranking.area))
+
+
+@admin_bp.route('/rankings/config', methods=['GET', 'POST'])
+@admin_required
+def ranking_config():
+    """ランキング係数設定"""
+    from ..models.ranking import RankingConfig
+    
+    if request.method == 'POST':
+        pv_weight = request.form.get('pv_weight', '1.0')
+        gift_weight = request.form.get('gift_weight', '1.0')
+        ranking_top_count = request.form.get('ranking_top_count', '100')
+        pv_unique_hours = request.form.get('pv_unique_hours', '24')
+        
+        try:
+            # バリデーション
+            float(pv_weight)
+            float(gift_weight)
+            int(ranking_top_count)
+            int(pv_unique_hours)
+            
+            # 保存
+            RankingConfig.set('pv_weight', pv_weight, current_user.id)
+            RankingConfig.set('gift_weight', gift_weight, current_user.id)
+            RankingConfig.set('ranking_top_count', ranking_top_count, current_user.id)
+            RankingConfig.set('pv_unique_hours', pv_unique_hours, current_user.id)
+            db.session.commit()
+            
+            flash('ランキング設定を保存しました', 'success')
+        except ValueError:
+            flash('入力値が不正です', 'danger')
+        
+        return redirect(url_for('admin.ranking_config'))
+    
+    # 現在の設定を取得
+    configs = RankingConfig.get_all()
+    
+    return render_template('admin/ranking_config.html', configs=configs)
+
+
+@admin_bp.route('/rankings/badges')
+@admin_required
+def ranking_badges():
+    """バッジ管理"""
+    from ..models.ranking import CastBadgeHistory
+    
+    # パラメータ
+    year = request.args.get('year', date.today().year, type=int)
+    status = request.args.get('status', '')  # pending_ship, shipped, all
+    
+    query = CastBadgeHistory.query.filter(CastBadgeHistory.year == year)
+    
+    if status == 'pending_ship':
+        query = query.filter(
+            CastBadgeHistory.badge_type == 'area_top1',
+            CastBadgeHistory.prize_shipped == False
+        )
+    elif status == 'shipped':
+        query = query.filter(CastBadgeHistory.prize_shipped == True)
+    
+    badges = query.order_by(
+        CastBadgeHistory.year.desc(),
+        CastBadgeHistory.month.desc(),
+        CastBadgeHistory.badge_type
+    ).all()
+    
+    return render_template('admin/ranking_badges.html',
+                          badges=badges,
+                          year=year,
+                          status=status)
+
+
+@admin_bp.route('/rankings/badges/<int:id>/ship', methods=['POST'])
+@admin_required
+def ship_badge_prize(id):
+    """特典発送完了"""
+    from ..models.ranking import CastBadgeHistory
+    
+    badge = CastBadgeHistory.query.get_or_404(id)
+    tracking_number = request.form.get('tracking_number', '').strip()
+    
+    badge.prize_shipped = True
+    badge.shipped_at = datetime.utcnow()
+    badge.tracking_number = tracking_number
+    db.session.commit()
+    
+    flash(f'{badge.cast.name_display}への特典発送を完了しました', 'success')
+    return redirect(url_for('admin.ranking_badges'))

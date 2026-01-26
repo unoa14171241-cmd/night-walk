@@ -15,18 +15,30 @@ class Shop(db.Model):
     AREAS = [AREA_OKAYAMA, AREA_KURASHIKI]
     
     # Categories (業態)
+    CATEGORY_SNACK = 'snack'
+    CATEGORY_CONCAFE = 'concafe'
+    CATEGORY_KYABAKURA = 'kyabakura'
+    CATEGORY_FUZOKU = 'fuzoku'
+    CATEGORY_DERIHERU = 'deriheru'
     CATEGORY_LOUNGE = 'lounge'
     CATEGORY_CLUB = 'club'
     CATEGORY_BAR = 'bar'
-    CATEGORY_SNACK = 'snack'
     CATEGORY_OTHER = 'other'
     
-    CATEGORIES = [CATEGORY_LOUNGE, CATEGORY_CLUB, CATEGORY_BAR, CATEGORY_SNACK, CATEGORY_OTHER]
+    CATEGORIES = [
+        CATEGORY_SNACK, CATEGORY_CONCAFE, CATEGORY_KYABAKURA, 
+        CATEGORY_FUZOKU, CATEGORY_DERIHERU, CATEGORY_LOUNGE, 
+        CATEGORY_CLUB, CATEGORY_BAR, CATEGORY_OTHER
+    ]
     CATEGORY_LABELS = {
+        CATEGORY_SNACK: 'スナック',
+        CATEGORY_CONCAFE: 'コンカフェ',
+        CATEGORY_KYABAKURA: 'キャバクラ',
+        CATEGORY_FUZOKU: '風俗',
+        CATEGORY_DERIHERU: 'デリヘル',
         CATEGORY_LOUNGE: 'ラウンジ',
         CATEGORY_CLUB: 'クラブ',
         CATEGORY_BAR: 'バー',
-        CATEGORY_SNACK: 'スナック',
         CATEGORY_OTHER: 'その他',
     }
     
@@ -50,7 +62,7 @@ class Shop(db.Model):
     price_max = db.Column(db.Integer)           # 最高料金（検索用）
     description = db.Column(db.Text)
     image_url = db.Column(db.String(500))       # メイン画像URL（後方互換）
-    category = db.Column(db.String(50), index=True)  # 業態カテゴリ
+    category = db.Column(db.String(50), nullable=False, index=True)  # 業態カテゴリ（必須）
     tags = db.Column(db.String(500))            # タグ（カンマ区切り）
     is_published = db.Column(db.Boolean, nullable=False, default=False, index=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True, index=True)

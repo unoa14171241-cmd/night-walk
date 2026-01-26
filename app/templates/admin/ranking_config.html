@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}ランキング係数設定 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <p class="mb-3">
+            <a href="{{ url_for('admin.rankings') }}">← ランキング管理に戻る</a>
+        </p>
+        
+        <div class="card" style="max-width: 600px;">
+            <div class="card-header">
+                <h1 class="card-title">ランキング係数設定</h1>
+            </div>
+            
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="mb-4" style="padding: var(--space-md); background: var(--color-bg-elevated); border-radius: var(--radius);">
+                    <p style="margin: 0; font-size: 0.9rem;">
+                        <strong>スコア計算式：</strong><br>
+                        <code>score = (pv_weight × PV数) + (gift_weight × ギフトpt)</code>
+                    </p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">PVスコア係数 (pv_weight)</label>
+                    <input type="number" 
+                           name="pv_weight" 
+                           class="form-control" 
+                           value="{{ configs.pv_weight.value }}"
+                           step="0.1"
+                           min="0"
+                           required>
+                    <small class="text-muted">PV数に掛ける係数（デフォルト: 1.0）</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">ギフトスコア係数 (gift_weight)</label>
+                    <input type="number" 
+                           name="gift_weight" 
+                           class="form-control" 
+                           value="{{ configs.gift_weight.value }}"
+                           step="0.1"
+                           min="0"
+                           required>
+                    <small class="text-muted">ギフトポイントに掛ける係数（デフォルト: 1.0）</small>
+                </div>
+                
+                <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+                
+                <div class="form-group">
+                    <label class="form-label">表示ランキング数</label>
+                    <input type="number" 
+                           name="ranking_top_count" 
+                           class="form-control" 
+                           value="{{ configs.ranking_top_count.value }}"
+                           min="10"
+                           max="500"
+                           required>
+                    <small class="text-muted">ランキング表示件数（デフォルト: 100）</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">PVユニーク判定時間（時間）</label>
+                    <input type="number" 
+                           name="pv_unique_hours" 
+                           class="form-control" 
+                           value="{{ configs.pv_unique_hours.value }}"
+                           min="1"
+                           max="168"
+                           required>
+                    <small class="text-muted">同一ユーザーのPVを重複カウントしない時間（デフォルト: 24時間）</small>
+                </div>
+                
+                <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <a href="{{ url_for('admin.rankings') }}" class="btn btn-secondary">キャンセル</a>
+                </div>
+            </form>
+            
+            <!-- 現在の設定状態 -->
+            <div style="margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border);">
+                <h4 class="mb-3">現在の設定</h4>
+                <table class="table" style="font-size: 0.9rem;">
+                    <thead>
+                        <tr>
+                            <th>キー</th>
+                            <th>値</th>
+                            <th>状態</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for key, config in configs.items() %}
+                        <tr>
+                            <td><code>{{ key }}</code></td>
+                            <td>{{ config.value }}</td>
+                            <td>
+                                {% if config.is_default %}
+                                <span class="badge" style="background: var(--color-bg-elevated);">デフォルト</span>
+                                {% else %}
+                                <span class="badge badge-primary">カスタム</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
