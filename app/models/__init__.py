@@ -18,6 +18,11 @@ from .ranking import (
     CastPageView, CastMonthlyRanking, CastBadgeHistory, RankingConfig,
     AREA_DEFINITIONS
 )
+# 広告・露出制御システム
+from .ad_entitlement import AdPlacement, AdEntitlement
+from .store_plan import StorePlan, StorePlanHistory
+from .shop_ranking import ShopPageView, ShopMonthlyRanking, TrendingShop, TrendingCast
+from .cast_shift import CastShift, ShiftTemplate
 
 __all__ = [
     'User',
@@ -54,4 +59,15 @@ __all__ = [
     'CastBadgeHistory',
     'RankingConfig',
     'AREA_DEFINITIONS',
+    # 広告・露出制御システム
+    'AdPlacement',
+    'AdEntitlement',
+    'StorePlan',
+    'StorePlanHistory',
+    'ShopPageView',
+    'ShopMonthlyRanking',
+    'TrendingShop',
+    'TrendingCast',
+    'CastShift',
+    'ShiftTemplate',
 ]

@@ -2,7 +2,7 @@
 Night-Walk MVP - Internal API Routes
 """
 from datetime import datetime
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, jsonify, request, g, session
 from flask_login import login_required, current_user
 from ..extensions import db, limiter
 from ..models.shop import Shop, VacancyStatus, VacancyHistory
@@ -10,6 +10,8 @@ from ..models.audit import AuditLog
 from ..utils.decorators import shop_access_required
 from ..utils.logger import audit_log
 from ..utils.helpers import get_client_ip
+from ..services.ad_service import AdService
+from ..services.trending_service import TrendingService
 
 api_bp = Blueprint('api', __name__)
 
@@ -172,4 +174,187 @@ def get_stats():
             'label': vacancy.label if vacancy else '−',
             'updated_at': vacancy.updated_at.isoformat() if vacancy and vacancy.updated_at else None,
         }
+    })
+
+
+# ============================================
+# PV Recording API
+# ============================================
+
+@api_bp.route('/pv', methods=['POST'])
+@limiter.limit("120 per minute")
+def record_pv():
+    """
+    PVを記録
+    
+    Request body:
+        target_type: 'shop' or 'cast'
+        target_id: int
+        page_type: 'detail', 'booking', 'job' (optional)
+    """
+    import uuid
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
+    target_type = data.get('target_type')
+    target_id = data.get('target_id')
+    page_type = data.get('page_type', 'detail')
+    
+    if target_type not in ['shop', 'cast']:
+        return jsonify({'error': 'Invalid target_type'}), 400
+    
+    if not target_id:
+        return jsonify({'error': 'target_id is required'}), 400
+    
+    # ユーザー識別
+    customer_id = None
+    session_id = None
+    
+    if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+        if hasattr(current_user, 'is_customer') and current_user.is_customer:
+            customer_id = current_user.id
+    
+    if not customer_id:
+        if 'visitor_id' not in session:
+            session['visitor_id'] = str(uuid.uuid4())
+        session_id = session['visitor_id']
+    
+    # PV記録
+    recorded = False
+    if target_type == 'shop':
+        recorded = TrendingService.record_shop_view(
+            shop_id=target_id,
+            customer_id=customer_id,
+            session_id=session_id,
+            ip_address=get_client_ip(),
+            user_agent=request.user_agent.string if request.user_agent else None,
+            referrer=request.referrer,
+            page_type=page_type
+        )
+    else:
+        from ..services.ranking_service import RankingService
+        recorded = RankingService.record_page_view(
+            cast_id=target_id,
+            customer_id=customer_id,
+            session_id=session_id,
+            ip_address=get_client_ip(),
+            user_agent=request.user_agent.string if request.user_agent else None
+        )
+    
+    if recorded:
+        db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'recorded': recorded
+    })
+
+
+# ============================================
+# Trending API
+# ============================================
+
+@api_bp.route('/trending', methods=['GET'])
+@limiter.limit("60 per minute")
+def get_trending():
+    """
+    急上昇データを取得
+    
+    Query params:
+        area: エリア（岡山、倉敷）
+        type: 'shop' or 'cast' or 'both' (default: 'both')
+        limit: 表示件数 (default: 10)
+    """
+    area = request.args.get('area', '')
+    target_type = request.args.get('type', 'both')
+    limit = request.args.get('limit', 10, type=int)
+    
+    # エリアバリデーション
+    if area and area not in Shop.AREAS:
+        area = None
+    
+    result = {}
+    
+    if target_type in ['shop', 'both']:
+        trending_shops = TrendingService.get_trending_shops(area=area, limit=limit)
+        result['shops'] = [{
+            'rank': t.rank,
+            'shop_id': t.shop_id,
+            'shop_name': t.shop.name if t.shop else None,
+            'area': t.area,
+            'current_pv': t.current_pv,
+            'previous_pv': t.previous_pv,
+            'growth_rate': round(t.growth_rate, 2),
+            'image_url': t.shop.main_image_url if t.shop else None,
+        } for t in trending_shops]
+    
+    if target_type in ['cast', 'both']:
+        trending_casts = TrendingService.get_trending_casts(area=area, limit=limit)
+        result['casts'] = [{
+            'rank': t.rank,
+            'cast_id': t.cast_id,
+            'cast_name': t.cast.name_display if t.cast else None,
+            'shop_name': t.cast.shop.name if t.cast and t.cast.shop else None,
+            'area': t.area,
+            'current_pv': t.current_pv,
+            'previous_pv': t.previous_pv,
+            'growth_rate': round(t.growth_rate, 2),
+            'image_url': t.cast.image_url if t.cast else None,
+        } for t in trending_casts]
+    
+    return jsonify(result)
+
+
+# ============================================
+# Banner API
+# ============================================
+
+@api_bp.route('/banners/<area>', methods=['GET'])
+@limiter.limit("60 per minute")
+def get_banners(area):
+    """
+    エリアのトップバナーを取得
+    """
+    if area not in Shop.AREAS:
+        return jsonify({'error': 'Invalid area'}), 400
+    
+    banners = AdService.get_top_banner(area)
+    
+    result = [{
+        'target_type': b['target_type'],
+        'target_id': b['target'].id if b['target'] else None,
+        'target_name': b['target'].name if b['target_type'] == 'shop' and b['target'] else (b['target'].name_display if b['target'] else None),
+        'image_url': b['image_url'],
+        'link_url': b['link_url'],
+        'priority': b['priority'],
+    } for b in banners]
+    
+    return jsonify({'banners': result})
+
+
+# ============================================
+# Badge API
+# ============================================
+
+@api_bp.route('/badges/<target_type>/<int:target_id>', methods=['GET'])
+@limiter.limit("120 per minute")
+def get_badges(target_type, target_id):
+    """
+    対象のバッジ情報を取得
+    """
+    if target_type not in ['shop', 'cast']:
+        return jsonify({'error': 'Invalid target_type'}), 400
+    
+    if target_type == 'shop':
+        badges = AdService.get_shop_badges(target_id)
+    else:
+        badges = AdService.get_cast_badges(target_id)
+    
+    best_badge = AdService.get_best_badge(target_type, target_id)
+    
+    return jsonify({
+        'badges': badges,
+        'best_badge': best_badge
     })

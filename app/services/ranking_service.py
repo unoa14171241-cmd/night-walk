@@ -289,3 +289,102 @@ class RankingService:
             ip_address=ip_address,
             user_agent=user_agent
         )
+    
+    @classmethod
+    def generate_entitlements_for_rankings(cls, year, month, user_id=None):
+        """
+        確定ランキングから広告権利(entitlement)を自動生成
+        
+        生成される権利:
+        - TOP1: top_banner, top_badge, platinum (翌月1ヶ月)
+        - TOP2-3: top_badge, platinum (翌月1ヶ月)
+        - TOP4-10: top_badge (翌月1ヶ月)
+        """
+        from calendar import monthrange
+        from ..models.ad_entitlement import AdEntitlement, AdPlacement
+        
+        # 有効期間を計算（翌月1日〜月末）
+        if month == 12:
+            valid_year = year + 1
+            valid_month = 1
+        else:
+            valid_year = year
+            valid_month = month + 1
+        
+        starts_at = datetime(valid_year, valid_month, 1, 0, 0, 0)
+        _, last_day = monthrange(valid_year, valid_month)
+        ends_at = datetime(valid_year, valid_month, last_day, 23, 59, 59)
+        
+        created_count = 0
+        
+        for area_key in cls.get_active_areas():
+            # 確定済みTOP10を取得
+            rankings = CastMonthlyRanking.get_ranking(area_key, year, month, limit=10)
+            
+            for ranking in rankings:
+                if not ranking.rank:
+                    continue
+                
+                rank = ranking.rank
+                
+                # TOP1: バナー + バッジ + プラチナ
+                if rank == 1:
+                    # トップバナー権利
+                    AdEntitlement.create_from_ranking(
+                        ranking=ranking,
+                        placement_type=AdPlacement.TYPE_TOP_BANNER,
+                        starts_at=starts_at,
+                        ends_at=ends_at,
+                        metadata={'rank': rank, 'year': year, 'month': month, 'banner_eligible': True},
+                        user_id=user_id
+                    )
+                    created_count += 1
+                
+                # TOP1-3: バッジ + プラチナ
+                if rank <= 3:
+                    # プラチナプロフィール権利
+                    level = 3 if rank == 1 else (2 if rank == 2 else 1)
+                    AdEntitlement.create_from_ranking(
+                        ranking=ranking,
+                        placement_type=AdPlacement.TYPE_PLATINUM_PROFILE,
+                        starts_at=starts_at,
+                        ends_at=ends_at,
+                        metadata={'rank': rank, 'year': year, 'month': month, 'level': level},
+                        user_id=user_id
+                    )
+                    created_count += 1
+                
+                # TOP1-10: バッジ
+                if rank <= 10:
+                    # TOPバッジ権利
+                    AdEntitlement.create_from_ranking(
+                        ranking=ranking,
+                        placement_type=AdPlacement.TYPE_TOP_BADGE,
+                        starts_at=starts_at,
+                        ends_at=ends_at,
+                        metadata={'rank': rank, 'year': year, 'month': month},
+                        user_id=user_id
+                    )
+                    created_count += 1
+        
+        db.session.commit()
+        return created_count
+    
+    @classmethod
+    def finalize_month_with_entitlements(cls, year, month, user_id=None):
+        """
+        月次ランキングを確定し、広告権利も自動生成
+        
+        Returns:
+            dict: {'rankings': dict, 'entitlements_created': int}
+        """
+        # ランキング確定
+        rankings = cls.finalize_month(year, month)
+        
+        # entitlement自動生成
+        entitlements_count = cls.generate_entitlements_for_rankings(year, month, user_id)
+        
+        return {
+            'rankings': rankings,
+            'entitlements_created': entitlements_count
+        }

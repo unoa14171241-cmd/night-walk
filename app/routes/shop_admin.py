@@ -3,7 +3,7 @@ Night-Walk MVP - Shop Admin Routes (店舗管理)
 """
 import os
 import uuid
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from flask import Blueprint, render_template, redirect, url_for, flash, request, g, session, current_app, jsonify
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
@@ -656,3 +656,219 @@ def save_cast_image(file, shop_id):
     file.save(filepath)
     
     return filename
+
+
+# ============================================
+# Shift Management (出勤管理)
+# ============================================
+
+@shop_admin_bp.route('/shifts')
+@login_required
+@shop_access_required
+def shifts():
+    """出勤シフト管理ページ"""
+    from ..models.cast_shift import CastShift
+    from ..services.ad_service import AdService
+    
+    shop = g.current_shop
+    
+    # キャスト出勤表示権限があるか確認
+    can_manage_shifts = AdService.can_show_cast_shift(shop.id)
+    
+    if not can_manage_shifts:
+        flash('この機能を利用するには有料プランへのアップグレードが必要です。', 'warning')
+        return redirect(url_for('shop_admin.dashboard'))
+    
+    # 今週のシフトを取得
+    today = date.today()
+    start_of_week = today - timedelta(days=today.weekday())
+    
+    week_shifts = CastShift.get_week_shifts(shop.id, start_of_week)
+    
+    # キャスト一覧
+    casts = Cast.get_active_by_shop(shop.id)
+    
+    # 日付リスト（今週）
+    dates = [start_of_week + timedelta(days=i) for i in range(7)]
+    
+    # シフトをキャスト×日付のマトリックスに整理
+    shift_matrix = {}
+    for cast in casts:
+        shift_matrix[cast.id] = {}
+        for d in dates:
+            shift_matrix[cast.id][d] = None
+    
+    for shift in week_shifts:
+        if shift.cast_id in shift_matrix:
+            shift_matrix[shift.cast_id][shift.shift_date] = shift
+    
+    return render_template('shop_admin/shifts.html',
+                          shop=shop,
+                          casts=casts,
+                          dates=dates,
+                          shift_matrix=shift_matrix,
+                          today=today,
+                          can_manage_shifts=can_manage_shifts)
+
+
+@shop_admin_bp.route('/shifts/update', methods=['POST'])
+@login_required
+@shop_access_required
+def update_shift():
+    """シフトを更新（AJAX）"""
+    from ..models.cast_shift import CastShift
+    from ..services.ad_service import AdService
+    
+    shop = g.current_shop
+    
+    # 権限確認
+    if not AdService.can_show_cast_shift(shop.id):
+        return jsonify({'error': '権限がありません'}), 403
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'データが不正です'}), 400
+    
+    cast_id = data.get('cast_id')
+    shift_date_str = data.get('shift_date')
+    start_time_str = data.get('start_time')
+    end_time_str = data.get('end_time')
+    status = data.get('status')
+    
+    # キャストが自店舗のものか確認
+    cast = Cast.query.filter_by(id=cast_id, shop_id=shop.id).first()
+    if not cast:
+        return jsonify({'error': 'キャストが見つかりません'}), 404
+    
+    # 日付パース
+    try:
+        shift_date = datetime.strptime(shift_date_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        return jsonify({'error': '日付形式が不正です'}), 400
+    
+    # 時間パース
+    start_time = None
+    end_time = None
+    if start_time_str:
+        try:
+            start_time = datetime.strptime(start_time_str, '%H:%M').time()
+        except ValueError:
+            pass
+    if end_time_str:
+        try:
+            end_time = datetime.strptime(end_time_str, '%H:%M').time()
+        except ValueError:
+            pass
+    
+    # シフト作成/更新
+    shift = CastShift.create_or_update(
+        cast_id=cast_id,
+        shop_id=shop.id,
+        shift_date=shift_date,
+        start_time=start_time,
+        end_time=end_time,
+        status=status or CastShift.STATUS_SCHEDULED,
+        user_id=current_user.id
+    )
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'shift_id': shift.id,
+        'status': shift.status,
+        'time_display': shift.time_display
+    })
+
+
+@shop_admin_bp.route('/shifts/<int:shift_id>/start', methods=['POST'])
+@login_required
+@shop_access_required
+def start_shift(shift_id):
+    """出勤開始"""
+    from ..models.cast_shift import CastShift
+    
+    shop = g.current_shop
+    
+    shift = CastShift.query.filter_by(id=shift_id, shop_id=shop.id).first_or_404()
+    shift.start_working()
+    db.session.commit()
+    
+    flash(f'{shift.cast.name_display}さんの出勤を開始しました。', 'success')
+    return redirect(url_for('shop_admin.shifts'))
+
+
+@shop_admin_bp.route('/shifts/<int:shift_id>/finish', methods=['POST'])
+@login_required
+@shop_access_required
+def finish_shift(shift_id):
+    """退勤"""
+    from ..models.cast_shift import CastShift
+    
+    shop = g.current_shop
+    
+    shift = CastShift.query.filter_by(id=shift_id, shop_id=shop.id).first_or_404()
+    shift.finish_working()
+    db.session.commit()
+    
+    flash(f'{shift.cast.name_display}さんが退勤しました。', 'success')
+    return redirect(url_for('shop_admin.shifts'))
+
+
+@shop_admin_bp.route('/shifts/<int:shift_id>/cancel', methods=['POST'])
+@login_required
+@shop_access_required
+def cancel_shift(shift_id):
+    """シフトキャンセル"""
+    from ..models.cast_shift import CastShift
+    
+    shop = g.current_shop
+    
+    shift = CastShift.query.filter_by(id=shift_id, shop_id=shop.id).first_or_404()
+    reason = request.form.get('reason', '')
+    shift.cancel(reason)
+    db.session.commit()
+    
+    flash(f'{shift.cast.name_display}さんのシフトをキャンセルしました。', 'success')
+    return redirect(url_for('shop_admin.shifts'))
+
+
+# ============================================
+# Store Plan Status (プラン状況)
+# ============================================
+
+@shop_admin_bp.route('/plan')
+@login_required
+@owner_required
+def plan():
+    """プラン状況ページ"""
+    from ..models.store_plan import StorePlan
+    from ..models.ad_entitlement import AdEntitlement
+    from ..services.ad_service import AdService
+    
+    shop = g.current_shop
+    
+    # プラン取得（なければ無料プランを作成）
+    store_plan = StorePlan.query.filter_by(shop_id=shop.id).first()
+    if not store_plan:
+        store_plan = StorePlan.get_or_create_free(shop.id)
+        db.session.commit()
+    
+    # 現在有効な広告権利を取得
+    entitlements = AdEntitlement.get_for_target(
+        target_type='shop',
+        target_id=shop.id,
+        active_only=True
+    )
+    
+    # バッジ情報
+    badges = AdService.get_shop_badges(shop.id)
+    
+    return render_template('shop_admin/plan.html',
+                          shop=shop,
+                          store_plan=store_plan,
+                          entitlements=entitlements,
+                          badges=badges,
+                          plan_labels=StorePlan.PLAN_LABELS,
+                          plan_prices=StorePlan.PLAN_PRICES,
+                          plan_features=StorePlan.PLAN_FEATURES)

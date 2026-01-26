@@ -1,13 +1,106 @@
 # wsgi.py
 """WSGI entry point for production (Gunicorn)"""
 
+import os
+import logging
 from app import create_app
 from app.extensions import db
 from app.models.user import User, ShopMember
 from app.models.shop import Shop, VacancyStatus
 from app.models.billing import Subscription
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = create_app('production')
+
+
+# ============================================
+# Scheduled Jobs (APScheduler)
+# ============================================
+
+def setup_scheduler():
+    """APSchedulerを設定してジョブを登録"""
+    try:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        from apscheduler.triggers.cron import CronTrigger
+        from apscheduler.triggers.interval import IntervalTrigger
+        
+        scheduler = BackgroundScheduler()
+        
+        # 急上昇更新ジョブ（15分ごと）
+        def run_trending_job():
+            with app.app_context():
+                from app.jobs.trending_job import update_trending
+                update_trending()
+        
+        scheduler.add_job(
+            run_trending_job,
+            IntervalTrigger(minutes=15),
+            id='update_trending',
+            name='Update Trending Data',
+            replace_existing=True
+        )
+        
+        # 月次ランキング確定ジョブ（毎月1日 0:00 JST）
+        def run_ranking_job():
+            with app.app_context():
+                from app.jobs.ranking_job import finalize_monthly_rankings
+                finalize_monthly_rankings(auto_entitlements=True)
+        
+        scheduler.add_job(
+            run_ranking_job,
+            CronTrigger(day=1, hour=0, minute=0, timezone='Asia/Tokyo'),
+            id='finalize_rankings',
+            name='Finalize Monthly Rankings',
+            replace_existing=True
+        )
+        
+        # プラン権利同期ジョブ（毎日 3:00 JST）
+        def run_plan_sync_job():
+            with app.app_context():
+                from app.jobs.ranking_job import sync_plan_entitlements
+                sync_plan_entitlements()
+        
+        scheduler.add_job(
+            run_plan_sync_job,
+            CronTrigger(hour=3, minute=0, timezone='Asia/Tokyo'),
+            id='sync_plan_entitlements',
+            name='Sync Plan Entitlements',
+            replace_existing=True
+        )
+        
+        # PVクリーンアップジョブ（毎日 4:00 JST）
+        def run_cleanup_job():
+            with app.app_context():
+                from app.jobs.trending_job import cleanup_old_page_views
+                cleanup_old_page_views()
+        
+        scheduler.add_job(
+            run_cleanup_job,
+            CronTrigger(hour=4, minute=0, timezone='Asia/Tokyo'),
+            id='cleanup_page_views',
+            name='Cleanup Old Page Views',
+            replace_existing=True
+        )
+        
+        scheduler.start()
+        logger.info("[SCHEDULER] APScheduler started with %d jobs", len(scheduler.get_jobs()))
+        
+        return scheduler
+        
+    except ImportError:
+        logger.warning("[SCHEDULER] APScheduler not installed. Scheduled jobs disabled.")
+        return None
+    except Exception as e:
+        logger.error("[SCHEDULER] Failed to setup scheduler: %s", e)
+        return None
+
+
+# Production環境でのみスケジューラを起動
+if os.environ.get('FLASK_ENV') == 'production' or os.environ.get('ENABLE_SCHEDULER') == '1':
+    scheduler = setup_scheduler()
 
 def auto_seed():
     """デプロイ時にデータベースが空なら自動でシードデータを作成"""

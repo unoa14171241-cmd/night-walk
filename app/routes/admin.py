@@ -14,6 +14,7 @@ from ..models.billing import Subscription
 from ..models.audit import AuditLog
 from ..models.content import Announcement, Advertisement
 from ..models.commission import CommissionRate, Commission, MonthlyBilling, get_default_commission
+from ..models.gift import Cast
 from ..utils.decorators import admin_required
 from ..utils.logger import audit_log
 
@@ -1303,3 +1304,292 @@ def ship_badge_prize(id):
     
     flash(f'{badge.cast.name_display}への特典発送を完了しました', 'success')
     return redirect(url_for('admin.ranking_badges'))
+
+
+# ============================================
+# Ad Entitlement Management (広告権利管理)
+# ============================================
+
+@admin_bp.route('/entitlements')
+@admin_required
+def entitlements():
+    """広告権利一覧"""
+    from ..models.ad_entitlement import AdEntitlement, AdPlacement
+    
+    # フィルタパラメータ
+    target_type = request.args.get('target_type', '')
+    placement_type = request.args.get('placement_type', '')
+    status = request.args.get('status', 'active')  # active, expired, all
+    
+    query = AdEntitlement.query
+    
+    if target_type:
+        query = query.filter(AdEntitlement.target_type == target_type)
+    
+    if placement_type:
+        query = query.filter(AdEntitlement.placement_type == placement_type)
+    
+    now = datetime.utcnow()
+    if status == 'active':
+        query = query.filter(
+            AdEntitlement.is_active == True,
+            AdEntitlement.starts_at <= now,
+            AdEntitlement.ends_at >= now
+        )
+    elif status == 'expired':
+        query = query.filter(AdEntitlement.ends_at < now)
+    
+    entitlements_list = query.order_by(
+        AdEntitlement.ends_at.desc(),
+        AdEntitlement.created_at.desc()
+    ).limit(200).all()
+    
+    # 統計
+    active_count = AdEntitlement.query.filter(
+        AdEntitlement.is_active == True,
+        AdEntitlement.starts_at <= now,
+        AdEntitlement.ends_at >= now
+    ).count()
+    
+    return render_template('admin/entitlements.html',
+                          entitlements=entitlements_list,
+                          active_count=active_count,
+                          selected_target_type=target_type,
+                          selected_placement_type=placement_type,
+                          selected_status=status,
+                          placement_types=AdPlacement.PLACEMENT_TYPES,
+                          placement_labels=AdPlacement.PLACEMENT_LABELS,
+                          source_labels=AdEntitlement.SOURCE_LABELS)
+
+
+@admin_bp.route('/entitlements/new', methods=['GET', 'POST'])
+@admin_required
+def new_entitlement():
+    """広告権利を手動付与"""
+    from ..models.ad_entitlement import AdEntitlement, AdPlacement
+    from ..models.gift import Cast
+    
+    if request.method == 'POST':
+        target_type = request.form.get('target_type')
+        target_id = request.form.get('target_id', type=int)
+        placement_type = request.form.get('placement_type')
+        area = request.form.get('area', '').strip() or None
+        priority = request.form.get('priority', 0, type=int)
+        starts_at_str = request.form.get('starts_at', '')
+        ends_at_str = request.form.get('ends_at', '')
+        
+        errors = []
+        if not target_type or target_type not in ['shop', 'cast']:
+            errors.append('対象タイプを選択してください')
+        if not target_id:
+            errors.append('対象IDを入力してください')
+        if not placement_type:
+            errors.append('広告枠を選択してください')
+        if not starts_at_str or not ends_at_str:
+            errors.append('期間を設定してください')
+        
+        if errors:
+            for e in errors:
+                flash(e, 'danger')
+            shops = Shop.query.filter_by(is_active=True).order_by(Shop.name).all()
+            casts = Cast.query.filter_by(is_active=True).order_by(Cast.name).all()
+            return render_template('admin/entitlement_form.html',
+                                  entitlement=None,
+                                  shops=shops,
+                                  casts=casts,
+                                  placement_types=AdPlacement.PLACEMENT_TYPES,
+                                  placement_labels=AdPlacement.PLACEMENT_LABELS,
+                                  areas=Shop.AREAS)
+        
+        try:
+            starts_at = datetime.strptime(starts_at_str, '%Y-%m-%dT%H:%M')
+            ends_at = datetime.strptime(ends_at_str, '%Y-%m-%dT%H:%M')
+        except ValueError:
+            flash('日時の形式が不正です', 'danger')
+            return redirect(url_for('admin.new_entitlement'))
+        
+        entitlement = AdEntitlement(
+            target_type=target_type,
+            target_id=target_id,
+            placement_type=placement_type,
+            area=area,
+            priority=priority,
+            starts_at=starts_at,
+            ends_at=ends_at,
+            source_type=AdEntitlement.SOURCE_MANUAL,
+            is_active=True,
+            created_by=current_user.id
+        )
+        db.session.add(entitlement)
+        db.session.commit()
+        
+        # 監査ログ
+        audit_log('entitlement.create', 'entitlement', entitlement.id,
+                 new_value={'target': f'{target_type}:{target_id}', 'placement': placement_type})
+        
+        flash('広告権利を付与しました', 'success')
+        return redirect(url_for('admin.entitlements'))
+    
+    shops = Shop.query.filter_by(is_active=True).order_by(Shop.name).all()
+    casts = Cast.query.filter_by(is_active=True).order_by(Cast.name).all()
+    
+    return render_template('admin/entitlement_form.html',
+                          entitlement=None,
+                          shops=shops,
+                          casts=casts,
+                          placement_types=AdPlacement.PLACEMENT_TYPES,
+                          placement_labels=AdPlacement.PLACEMENT_LABELS,
+                          areas=Shop.AREAS)
+
+
+@admin_bp.route('/entitlements/<int:id>/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_entitlement(id):
+    """広告権利を編集"""
+    from ..models.ad_entitlement import AdEntitlement, AdPlacement
+    from ..models.gift import Cast
+    
+    entitlement = AdEntitlement.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        area = request.form.get('area', '').strip() or None
+        priority = request.form.get('priority', 0, type=int)
+        starts_at_str = request.form.get('starts_at', '')
+        ends_at_str = request.form.get('ends_at', '')
+        is_active = request.form.get('is_active') == 'on'
+        
+        try:
+            starts_at = datetime.strptime(starts_at_str, '%Y-%m-%dT%H:%M')
+            ends_at = datetime.strptime(ends_at_str, '%Y-%m-%dT%H:%M')
+        except ValueError:
+            flash('日時の形式が不正です', 'danger')
+            return redirect(url_for('admin.edit_entitlement', id=id))
+        
+        old_values = {
+            'priority': entitlement.priority,
+            'is_active': entitlement.is_active,
+        }
+        
+        entitlement.area = area
+        entitlement.priority = priority
+        entitlement.starts_at = starts_at
+        entitlement.ends_at = ends_at
+        entitlement.is_active = is_active
+        entitlement.updated_by = current_user.id
+        
+        db.session.commit()
+        
+        # 監査ログ
+        audit_log('entitlement.edit', 'entitlement', entitlement.id,
+                 old_value=old_values,
+                 new_value={'priority': priority, 'is_active': is_active})
+        
+        flash('広告権利を更新しました', 'success')
+        return redirect(url_for('admin.entitlements'))
+    
+    shops = Shop.query.filter_by(is_active=True).order_by(Shop.name).all()
+    casts = Cast.query.filter_by(is_active=True).order_by(Cast.name).all()
+    
+    return render_template('admin/entitlement_form.html',
+                          entitlement=entitlement,
+                          shops=shops,
+                          casts=casts,
+                          placement_types=AdPlacement.PLACEMENT_TYPES,
+                          placement_labels=AdPlacement.PLACEMENT_LABELS,
+                          areas=Shop.AREAS)
+
+
+@admin_bp.route('/entitlements/<int:id>/deactivate', methods=['POST'])
+@admin_required
+def deactivate_entitlement(id):
+    """広告権利を無効化"""
+    from ..models.ad_entitlement import AdEntitlement
+    
+    entitlement = AdEntitlement.query.get_or_404(id)
+    reason = request.form.get('reason', '').strip()
+    
+    entitlement.deactivate(current_user.id, reason)
+    db.session.commit()
+    
+    # 監査ログ
+    audit_log('entitlement.deactivate', 'entitlement', entitlement.id,
+             new_value={'reason': reason})
+    
+    flash('広告権利を無効化しました', 'success')
+    return redirect(url_for('admin.entitlements'))
+
+
+# ============================================
+# Store Plan Management (店舗プラン管理)
+# ============================================
+
+@admin_bp.route('/store-plans')
+@admin_required
+def store_plans():
+    """店舗プラン一覧"""
+    from ..models.store_plan import StorePlan
+    
+    plan_type = request.args.get('plan_type', '')
+    status = request.args.get('status', '')
+    
+    query = StorePlan.query.join(Shop)
+    
+    if plan_type:
+        query = query.filter(StorePlan.plan_type == plan_type)
+    
+    if status:
+        query = query.filter(StorePlan.status == status)
+    
+    plans = query.order_by(Shop.name).all()
+    
+    # 統計
+    stats = {
+        'total': StorePlan.query.count(),
+        'premium': StorePlan.query.filter_by(plan_type=StorePlan.PLAN_PREMIUM, status=StorePlan.STATUS_ACTIVE).count(),
+        'standard': StorePlan.query.filter_by(plan_type=StorePlan.PLAN_STANDARD, status=StorePlan.STATUS_ACTIVE).count(),
+        'free': StorePlan.query.filter_by(plan_type=StorePlan.PLAN_FREE).count(),
+    }
+    
+    return render_template('admin/store_plans.html',
+                          plans=plans,
+                          stats=stats,
+                          selected_plan_type=plan_type,
+                          selected_status=status,
+                          plan_types=StorePlan.PLAN_TYPES,
+                          plan_labels=StorePlan.PLAN_LABELS)
+
+
+@admin_bp.route('/store-plans/<int:shop_id>/upgrade', methods=['POST'])
+@admin_required
+def upgrade_store_plan(shop_id):
+    """店舗プランをアップグレード"""
+    from ..models.store_plan import StorePlan, StorePlanHistory
+    
+    new_plan_type = request.form.get('plan_type')
+    
+    if new_plan_type not in StorePlan.PLAN_TYPES:
+        flash('無効なプランタイプです', 'danger')
+        return redirect(url_for('admin.store_plans'))
+    
+    plan = StorePlan.query.filter_by(shop_id=shop_id).first()
+    if not plan:
+        plan = StorePlan.get_or_create_free(shop_id)
+    
+    old_plan_type = plan.plan_type
+    plan.upgrade(new_plan_type, current_user.id)
+    plan.sync_entitlements(current_user.id)
+    
+    # 履歴記録
+    StorePlanHistory.log(
+        shop_id=shop_id,
+        action='upgraded',
+        plan_id=plan.id,
+        from_plan=old_plan_type,
+        to_plan=new_plan_type,
+        user_id=current_user.id
+    )
+    
+    db.session.commit()
+    
+    flash(f'プランを{StorePlan.PLAN_LABELS[new_plan_type]}に変更しました', 'success')
+    return redirect(url_for('admin.store_plans'))

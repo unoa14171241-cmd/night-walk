@@ -1,10 +1,13 @@
 """
 Night-Walk MVP - Public Routes (公開ページ)
 """
-from flask import Blueprint, render_template, request, current_app
+from flask import Blueprint, render_template, request, current_app, session
+from flask_login import current_user
 from ..models.shop import Shop, VacancyStatus
 from ..models.content import Announcement, Advertisement
 from ..models.gift import Cast
+from ..services.ad_service import AdService
+from ..services.trending_service import TrendingService
 
 public_bp = Blueprint('public', __name__)
 
@@ -15,11 +18,16 @@ def index():
     # Get active announcements
     announcements = Announcement.get_active(limit=5)
     
-    # Get banner ads
+    # Get banner ads (既存の広告 + entitlementベースのバナー)
     top_ads = Advertisement.get_active(position='top', limit=3)
     
-    # Get featured shops
-    featured_shops = Shop.search(featured_only=True)[:6]
+    # エリア別トップバナー（entitlementベース）
+    area_banners = {}
+    for area in Shop.AREAS:
+        area_banners[area] = AdService.get_top_banner(area)[:3]
+    
+    # Get featured shops (広告優先ロジック適用)
+    featured_shops = AdService.get_search_results(featured_only=True)[:6]
     
     # Get recent shops
     recent_shops = Shop.query.filter_by(
@@ -27,11 +35,18 @@ def index():
         is_active=True
     ).order_by(Shop.created_at.desc()).limit(6).all()
     
+    # 急上昇（店舗・キャスト）
+    trending_shops = TrendingService.get_trending_shops(limit=5)
+    trending_casts = TrendingService.get_trending_casts(limit=5)
+    
     return render_template('public/index.html',
                           announcements=announcements,
                           top_ads=top_ads,
+                          area_banners=area_banners,
                           featured_shops=featured_shops,
                           recent_shops=recent_shops,
+                          trending_shops=trending_shops,
+                          trending_casts=trending_casts,
                           areas=Shop.AREAS,
                           categories=Shop.CATEGORIES,
                           category_labels=Shop.CATEGORY_LABELS,
@@ -51,8 +66,8 @@ def search():
     vacancy = request.args.get('vacancy', '')
     has_job = request.args.get('has_job', '') == '1'
     
-    # Perform search
-    shops = Shop.search(
+    # Perform search with ad priority (広告優先ロジック適用)
+    shops = AdService.get_search_results(
         keyword=keyword if keyword else None,
         area=area if area else None,
         category=category if category else None,
@@ -61,11 +76,19 @@ def search():
         has_job=has_job if has_job else None
     )
     
+    # 店舗にバッジ情報を付加
+    shops_with_badges = AdService.enrich_shop_list(shops)
+    
     # Get ads for sidebar
     sidebar_ads = Advertisement.get_active(position='sidebar', limit=2)
     
+    # 一覧内広告を取得
+    inline_ads = AdService.get_inline_ads(area=area if area else None, limit=3)
+    
     return render_template('public/search.html',
                           shops=shops,
+                          shops_with_badges=shops_with_badges,
+                          inline_ads=inline_ads,
                           keyword=keyword,
                           selected_area=area,
                           selected_category=category,
@@ -105,14 +128,47 @@ def shops():
 @public_bp.route('/shops/<int:shop_id>')
 def shop_detail(shop_id):
     """Shop detail page."""
+    import uuid
+    from ..extensions import db
+    from ..models.cast_shift import CastShift
+    
     shop = Shop.query.filter_by(
         id=shop_id,
         is_published=True,
         is_active=True
     ).first_or_404()
     
+    # PVを記録
+    customer_id = None
+    session_id = None
+    
+    if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+        if hasattr(current_user, 'is_customer') and current_user.is_customer:
+            customer_id = current_user.id
+    
+    if not customer_id:
+        if 'visitor_id' not in session:
+            session['visitor_id'] = str(uuid.uuid4())
+        session_id = session['visitor_id']
+    
+    recorded = TrendingService.record_shop_view(
+        shop_id=shop_id,
+        customer_id=customer_id,
+        session_id=session_id,
+        ip_address=request.remote_addr,
+        user_agent=request.user_agent.string if request.user_agent else None,
+        referrer=request.referrer,
+        page_type='detail'
+    )
+    
+    if recorded:
+        db.session.commit()
+    
     # Get active job if any
     job = shop.active_job
+    
+    # 求人表示可能か確認
+    can_show_job = AdService.can_show_job(shop_id)
     
     # Get shop images
     images = shop.all_images
@@ -120,11 +176,26 @@ def shop_detail(shop_id):
     # Get active casts
     casts = Cast.get_active_by_shop(shop_id)
     
+    # キャスト出勤表示可能か確認
+    can_show_shifts = AdService.can_show_cast_shift(shop_id)
+    working_casts = []
+    if can_show_shifts:
+        working_casts = CastShift.get_working_now(shop_id)
+    
+    # バッジ情報を取得
+    shop_badges = AdService.get_shop_badges(shop_id)
+    best_badge = AdService.get_best_badge('shop', shop_id)
+    
     return render_template('public/shop_detail.html',
                           shop=shop,
-                          job=job,
+                          job=job if can_show_job else None,
+                          can_show_job=can_show_job,
                           images=images,
                           casts=casts,
+                          working_casts=working_casts,
+                          can_show_shifts=can_show_shifts,
+                          shop_badges=shop_badges,
+                          best_badge=best_badge,
                           vacancy_labels=VacancyStatus.STATUS_LABELS,
                           vacancy_colors=VacancyStatus.STATUS_COLORS)
 
@@ -132,8 +203,7 @@ def shop_detail(shop_id):
 @public_bp.route('/casts/<int:cast_id>')
 def cast_detail(cast_id):
     """キャスト詳細ページ（PVカウント発火）"""
-    from flask import session
-    from flask_login import current_user
+    import uuid
     from ..extensions import db
     from ..services.ranking_service import RankingService
     
@@ -148,12 +218,13 @@ def cast_detail(cast_id):
     customer_id = None
     session_id = None
     
-    if hasattr(current_user, 'is_customer') and current_user.is_customer:
-        customer_id = current_user.id
-    else:
+    if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+        if hasattr(current_user, 'is_customer') and current_user.is_customer:
+            customer_id = current_user.id
+    
+    if not customer_id:
         # セッションIDを使用（非ログインユーザー）
         if 'visitor_id' not in session:
-            import uuid
             session['visitor_id'] = str(uuid.uuid4())
         session_id = session['visitor_id']
     
@@ -173,10 +244,16 @@ def cast_detail(cast_id):
     from ..models.gift import Gift
     gifts = Gift.get_active_gifts()
     
+    # バッジ情報を取得
+    cast_badges = AdService.get_cast_badges(cast_id)
+    best_badge = AdService.get_best_badge('cast', cast_id)
+    
     return render_template('public/cast_detail.html',
                           cast=cast,
                           shop=cast.shop,
                           gifts=gifts,
+                          cast_badges=cast_badges,
+                          best_badge=best_badge,
                           vacancy_labels=VacancyStatus.STATUS_LABELS,
                           vacancy_colors=VacancyStatus.STATUS_COLORS)
 
@@ -276,6 +353,27 @@ def ranking_area(area):
                           top1=top1,
                           year=year,
                           month=month)
+
+
+@public_bp.route('/trending')
+def trending():
+    """急上昇ページ"""
+    area = request.args.get('area', '')
+    target_type = request.args.get('type', 'shop')  # 'shop' or 'cast'
+    
+    if area and area not in Shop.AREAS:
+        area = None
+    
+    if target_type == 'cast':
+        trending_list = TrendingService.get_trending_casts(area=area, limit=50)
+    else:
+        trending_list = TrendingService.get_trending_shops(area=area, limit=50)
+    
+    return render_template('public/trending.html',
+                          trending_list=trending_list,
+                          target_type=target_type,
+                          selected_area=area,
+                          areas=Shop.AREAS)
 
 
 @public_bp.route('/ranking/<area>/top1')

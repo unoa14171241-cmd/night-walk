@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}{{ '権利編集' if entitlement else '権利付与' }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <h1 class="mb-4">{{ '権利編集' if entitlement else '広告権利を付与' }}</h1>
+        
+        <div class="card">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                {% if not entitlement %}
+                <!-- 新規作成時のみ対象選択 -->
+                <div class="form-group">
+                    <label class="form-label required">対象タイプ</label>
+                    <select name="target_type" id="target_type" class="form-control" required onchange="toggleTargetSelect()">
+                        <option value="">選択してください</option>
+                        <option value="shop">店舗</option>
+                        <option value="cast">キャスト</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="shop_select" style="display: none;">
+                    <label class="form-label required">店舗</label>
+                    <select name="target_id" class="form-control target-select" disabled>
+                        <option value="">選択してください</option>
+                        {% for shop in shops %}
+                        <option value="{{ shop.id }}">{{ shop.name }} ({{ shop.area }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group" id="cast_select" style="display: none;">
+                    <label class="form-label required">キャスト</label>
+                    <select name="target_id" class="form-control target-select" disabled>
+                        <option value="">選択してください</option>
+                        {% for cast in casts %}
+                        <option value="{{ cast.id }}">{{ cast.name_display }} ({{ cast.shop.name if cast.shop else '?' }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">広告枠タイプ</label>
+                    <select name="placement_type" class="form-control" required>
+                        <option value="">選択してください</option>
+                        {% for ptype in placement_types %}
+                        <option value="{{ ptype }}">{{ placement_labels.get(ptype, ptype) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% else %}
+                <!-- 編集時は対象を表示 -->
+                <div class="form-group">
+                    <label class="form-label">対象</label>
+                    <p class="form-control-static">
+                        {% if entitlement.target_type == 'shop' %}
+                        <span class="badge badge-info">店舗</span>
+                        {{ entitlement.target.name if entitlement.target else entitlement.target_id }}
+                        {% else %}
+                        <span class="badge badge-warning">キャスト</span>
+                        {{ entitlement.target.name_display if entitlement.target else entitlement.target_id }}
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">広告枠</label>
+                    <p class="form-control-static">
+                        {{ placement_labels.get(entitlement.placement_type, entitlement.placement_type) }}
+                    </p>
+                </div>
+                {% endif %}
+                
+                <div class="form-group">
+                    <label class="form-label">エリア制限</label>
+                    <select name="area" class="form-control">
+                        <option value="">全エリア</option>
+                        {% for area in areas %}
+                        <option value="{{ area }}" {{ 'selected' if entitlement and entitlement.area == area }}>{{ area }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-text">指定しない場合は全エリアで有効</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">優先度</label>
+                    <input type="number" name="priority" class="form-control" 
+                           value="{{ entitlement.priority if entitlement else 0 }}"
+                           min="0" max="100">
+                    <small class="form-text">大きいほど優先表示（0-100）</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">開始日時</label>
+                    <input type="datetime-local" name="starts_at" class="form-control" required
+                           value="{{ entitlement.starts_at.strftime('%Y-%m-%dT%H:%M') if entitlement else '' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">終了日時</label>
+                    <input type="datetime-local" name="ends_at" class="form-control" required
+                           value="{{ entitlement.ends_at.strftime('%Y-%m-%dT%H:%M') if entitlement else '' }}">
+                </div>
+                
+                {% if entitlement %}
+                <div class="form-group">
+                    <label class="form-check">
+                        <input type="checkbox" name="is_active" class="form-check-input" {{ 'checked' if entitlement.is_active }}>
+                        <span class="form-check-label">有効</span>
+                    </label>
+                </div>
+                {% endif %}
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">{{ '更新' if entitlement else '付与' }}</button>
+                    <a href="{{ url_for('admin.entitlements') }}" class="btn btn-secondary">キャンセル</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleTargetSelect() {
+    const targetType = document.getElementById('target_type').value;
+    const shopSelect = document.getElementById('shop_select');
+    const castSelect = document.getElementById('cast_select');
+    const shopInput = shopSelect.querySelector('select');
+    const castInput = castSelect.querySelector('select');
+    
+    if (targetType === 'shop') {
+        shopSelect.style.display = 'block';
+        castSelect.style.display = 'none';
+        shopInput.disabled = false;
+        shopInput.name = 'target_id';
+        castInput.disabled = true;
+        castInput.name = '';
+    } else if (targetType === 'cast') {
+        shopSelect.style.display = 'none';
+        castSelect.style.display = 'block';
+        shopInput.disabled = true;
+        shopInput.name = '';
+        castInput.disabled = false;
+        castInput.name = 'target_id';
+    } else {
+        shopSelect.style.display = 'none';
+        castSelect.style.display = 'none';
+        shopInput.disabled = true;
+        castInput.disabled = true;
+    }
+}
+</script>
+{% endblock %}

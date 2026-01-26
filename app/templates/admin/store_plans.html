@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}店舗プラン管理 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <h1 class="mb-4">店舗プラン管理</h1>
+        
+        <!-- 統計 -->
+        <div class="card mb-4">
+            <div class="d-flex gap-4 flex-wrap">
+                <div>
+                    <span class="text-muted">合計:</span>
+                    <strong>{{ stats.total }}店舗</strong>
+                </div>
+                <div>
+                    <span class="badge badge-warning">プレミアム</span>
+                    <strong>{{ stats.premium }}</strong>
+                </div>
+                <div>
+                    <span class="badge badge-info">スタンダード</span>
+                    <strong>{{ stats.standard }}</strong>
+                </div>
+                <div>
+                    <span class="badge">無料</span>
+                    <strong>{{ stats.free }}</strong>
+                </div>
+            </div>
+        </div>
+        
+        <!-- フィルタ -->
+        <div class="card mb-4">
+            <form method="GET" class="d-flex gap-2 flex-wrap">
+                <select name="plan_type" class="form-control" style="width: auto;">
+                    <option value="">全プラン</option>
+                    {% for ptype in plan_types %}
+                    <option value="{{ ptype }}" {{ 'selected' if selected_plan_type == ptype }}>
+                        {{ plan_labels.get(ptype, ptype) }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <select name="status" class="form-control" style="width: auto;">
+                    <option value="">全ステータス</option>
+                    <option value="active" {{ 'selected' if selected_status == 'active' }}>有効</option>
+                    <option value="trial" {{ 'selected' if selected_status == 'trial' }}>トライアル</option>
+                    <option value="canceled" {{ 'selected' if selected_status == 'canceled' }}>キャンセル</option>
+                </select>
+                <button type="submit" class="btn btn-secondary">絞り込み</button>
+            </form>
+        </div>
+        
+        <!-- 一覧 -->
+        <div class="card">
+            {% if plans %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>店舗</th>
+                        <th>プラン</th>
+                        <th>ステータス</th>
+                        <th>開始日</th>
+                        <th>月額</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plan in plans %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('admin.shop_detail', id=plan.shop_id) }}">
+                                {{ plan.shop.name if plan.shop else plan.shop_id }}
+                            </a>
+                            <br>
+                            <small class="text-muted">{{ plan.shop.area if plan.shop else '' }}</small>
+                        </td>
+                        <td>
+                            {% if plan.plan_type == 'premium' %}
+                            <span class="badge badge-warning">プレミアム</span>
+                            {% elif plan.plan_type == 'standard' %}
+                            <span class="badge badge-info">スタンダード</span>
+                            {% else %}
+                            <span class="badge">無料</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if plan.status == 'active' %}
+                            <span class="badge badge-success">有効</span>
+                            {% elif plan.status == 'trial' %}
+                            <span class="badge badge-warning">トライアル</span>
+                            {% if plan.days_until_trial_ends %}
+                            <br><small class="text-muted">残り{{ plan.days_until_trial_ends }}日</small>
+                            {% endif %}
+                            {% elif plan.status == 'canceled' %}
+                            <span class="badge badge-danger">キャンセル</span>
+                            {% else %}
+                            <span class="badge">{{ plan.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ plan.starts_at.strftime('%Y/%m/%d') if plan.starts_at else '-' }}
+                        </td>
+                        <td>
+                            {% if plan.monthly_price > 0 %}
+                            ¥{{ '{:,}'.format(plan.monthly_price) }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" data-toggle="dropdown">
+                                    プラン変更
+                                </button>
+                                <div class="dropdown-menu">
+                                    {% for ptype in plan_types %}
+                                    {% if ptype != plan.plan_type %}
+                                    <form method="POST" action="{{ url_for('admin.upgrade_store_plan', shop_id=plan.shop_id) }}" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="plan_type" value="{{ ptype }}">
+                                        <button type="submit" class="dropdown-item" onclick="return confirm('{{ plan_labels.get(ptype) }}に変更しますか？')">
+                                            {{ plan_labels.get(ptype, ptype) }}に変更
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">該当するプランがありません</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+.dropdown-toggle::after {
+    content: ' ▼';
+    font-size: 0.7em;
+}
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    min-width: 160px;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+}
+.dropdown:hover .dropdown-menu,
+.dropdown:focus-within .dropdown-menu {
+    display: block;
+}
+.dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--color-text);
+    cursor: pointer;
+}
+.dropdown-item:hover {
+    background: var(--color-bg-elevated);
+}
+</style>
+{% endblock %}

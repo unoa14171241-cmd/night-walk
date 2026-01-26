@@ -1,0 +1,24 @@
+{
+  "name": "Night-Walk - 岡山・倉敷ナイトレジャー検索",
+  "short_name": "Night-Walk",
+  "description": "岡山・倉敷エリアのナイトレジャー店舗検索サービス",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0B18",
+  "theme_color": "#0B0B18",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
