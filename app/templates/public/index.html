@@ -31,43 +31,47 @@
     </div>
     {% endif %}
     
-    <!-- Announcements -->
-    {% if announcements %}
-    <div class="announcements-section mb-4">
-        <div class="announcements-header">
-            <span class="announcements-icon"></span>
-            <span class="announcements-title">お知らせ</span>
-        </div>
-        <div class="announcements-list">
-            {% for announcement in announcements %}
-            <div class="announcement-item">
-                <span class="announcement-date">{{ announcement.created_at.strftime('%m/%d') }}</span>
-                <span class="announcement-text">{{ announcement.title }}</span>
-                {% if announcement.link_url %}
-                <a href="{{ announcement.link_url }}" class="announcement-link">
-                    {{ announcement.link_text or '詳細' }} →
-                </a>
-                {% endif %}
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-    
     <!-- Search Section -->
     <div class="search-section">
         <div class="search-hero">
             <h1 class="search-title">
-                岡山・倉敷の<span class="text-primary">ナイトスポット</span>を探す
+                ✨ 岡山・倉敷のナイトスポット ✨
             </h1>
-            <p class="search-subtitle">リアルタイムの空席状況をチェック</p>
+            <p class="search-subtitle">Night-Walkで探すなら決まり！</p>
+        </div>
+        
+        <!-- Category Buttons -->
+        <div class="category-buttons">
+            <a href="{{ url_for('public.search', category='cabaret') }}" class="category-btn category-btn-pink">
+                <span class="category-btn-icon">🍸</span>
+                <span>キャバクラ</span>
+            </a>
+            <a href="{{ url_for('public.search', category='girls_bar') }}" class="category-btn category-btn-purple">
+                <span class="category-btn-icon">🍷</span>
+                <span>ガールズバー</span>
+            </a>
+            <a href="{{ url_for('public.search', category='lounge') }}" class="category-btn category-btn-blue">
+                <span class="category-btn-icon">🛋️</span>
+                <span>ラウンジ</span>
+            </a>
+            <a href="{{ url_for('public.search', category='other') }}" class="category-btn category-btn-gold">
+                <span class="category-btn-icon">✨</span>
+                <span>その他</span>
+            </a>
+        </div>
+        
+        <!-- Feature Ribbons -->
+        <div class="feature-ribbons">
+            <span class="ribbon">高待遇のお仕事</span>
+            <span class="ribbon">体入歓迎</span>
+            <span class="ribbon">送りあり</span>
         </div>
         
         <!-- Keyword Search -->
         <form action="{{ url_for('public.search') }}" method="GET" class="search-form">
             <div class="keyword-search">
                 <div class="search-input-wrapper">
-                    <span class="search-icon"></span>
+                    <span class="search-icon">🔍</span>
                     <input type="text" 
                            name="q" 
                            class="search-input" 
@@ -81,7 +85,7 @@
         <!-- Condition Search -->
         <div class="condition-search">
             <div class="condition-header" onclick="toggleConditions()">
-                <span>条件を指定して探す</span>
+                <span>🎯 条件を指定して探す</span>
                 <span class="condition-toggle" id="condition-toggle">▼</span>
             </div>
             <form action="{{ url_for('public.search') }}" method="GET" class="condition-form" id="condition-form">
@@ -133,18 +137,41 @@
                     </label>
                 </div>
                 
-                <button type="submit" class="btn btn-primary btn-block">この条件で検索</button>
+                <button type="submit" class="btn btn-gold btn-block">✨ この条件で検索</button>
             </form>
         </div>
     </div>
     
+    <!-- Announcements -->
+    {% if announcements %}
+    <div class="announcements-section mb-4">
+        <div class="announcements-header">
+            <span class="announcements-icon">📢</span>
+            <span class="announcements-title">お知らせ</span>
+        </div>
+        <div class="announcements-list">
+            {% for announcement in announcements %}
+            <div class="announcement-item">
+                <span class="announcement-date">{{ announcement.created_at.strftime('%m/%d') }}</span>
+                <span class="announcement-text">{{ announcement.title }}</span>
+                {% if announcement.link_url %}
+                <a href="{{ announcement.link_url }}" class="announcement-link">
+                    {{ announcement.link_text or '詳細' }} →
+                </a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
     <!-- Quick Area Links -->
     <div class="quick-links mb-4">
-        <h3 class="section-title">エリアから探す</h3>
+        <h3 class="section-title">📍 エリアから探す</h3>
         <div class="area-buttons">
             {% for area in areas %}
             <a href="{{ url_for('public.search', area=area) }}" class="area-btn">
-                📍 {{ area }}
+                {{ area }}
             </a>
             {% endfor %}
         </div>
@@ -154,7 +181,7 @@
     {% if featured_shops %}
     <div class="featured-section mb-4">
         <h3 class="section-title">
-            おすすめ店舗
+            ⭐ おすすめ店舗
         </h3>
         <div class="shop-grid">
             {% for shop in featured_shops %}
@@ -168,7 +195,7 @@
     {% if recent_shops %}
     <div class="recent-section mb-4">
         <h3 class="section-title">
-            新着店舗
+            🆕 新着店舗
         </h3>
         <div class="shop-grid">
             {% for shop in recent_shops %}
@@ -177,8 +204,8 @@
         </div>
         
         <div class="text-center mt-3">
-            <a href="{{ url_for('public.search') }}" class="btn btn-outline">
-                すべての店舗を見る →
+            <a href="{{ url_for('public.search') }}" class="btn btn-gold">
+                ✨ すべての店舗を見る →
             </a>
         </div>
     </div>
