@@ -23,23 +23,24 @@
         /* Customer Sidebar */
         .customer-sidebar {
             width: 240px;
-            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            background: linear-gradient(180deg, rgba(30, 15, 45, 0.98) 0%, rgba(20, 10, 35, 0.95) 100%);
             padding: 1.5rem 0;
             flex-shrink: 0;
-            border-right: 1px solid rgba(255,255,255,0.1);
+            border-right: 1px solid rgba(255, 215, 0, 0.2);
         }
         
         .sidebar-user {
             padding: 0 1.5rem 1.5rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
             margin-bottom: 1rem;
         }
         
         .sidebar-user-name {
-            color: #fff;
+            color: #ffd700;
             font-weight: 600;
             font-size: 1rem;
             margin-bottom: 0.25rem;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
         }
         
         .sidebar-user-email {
@@ -48,11 +49,12 @@
         }
         
         .sidebar-points {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
             margin: 1rem 1rem 1.5rem;
             padding: 1rem;
             border-radius: 12px;
             text-align: center;
+            box-shadow: 0 4px 20px rgba(236, 72, 153, 0.3);
         }
         
         .sidebar-points-label {
@@ -65,6 +67,7 @@
             color: #fff;
             font-size: 1.5rem;
             font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
         
         .sidebar-points-value span {
@@ -78,7 +81,7 @@
         
         .sidebar-nav-section {
             padding: 0.5rem 1rem;
-            color: rgba(255,255,255,0.4);
+            color: rgba(255, 215, 0, 0.6);
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -96,14 +99,14 @@
         }
         
         .sidebar-nav-item:hover {
-            background: rgba(255,255,255,0.05);
-            color: #fff;
+            background: rgba(255, 215, 0, 0.1);
+            color: #ffd700;
         }
         
         .sidebar-nav-item.active {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
-            border-left-color: #667eea;
+            background: rgba(255, 215, 0, 0.15);
+            color: #ffd700;
+            border-left-color: #ffd700;
         }
         
         .sidebar-nav-icon {
@@ -113,42 +116,72 @@
             align-items: center;
             justify-content: center;
             font-size: 0.875rem;
+            color: #ec4899;
         }
         
         .sidebar-nav-text {
             font-size: 0.875rem;
         }
         
-        /* Customer Main Content */
+        /* Customer Main Content - Dark Theme */
         .customer-main {
             flex: 1;
             padding: 2rem;
-            background: #f8f9fa;
+            background: linear-gradient(180deg, #1a0a25 0%, #0f0515 50%, #150820 100%);
             overflow-y: auto;
+            position: relative;
+        }
+        
+        /* Sparkle effect for main content */
+        .customer-main::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 215, 0, 0.08) 0%, transparent 30%),
+                radial-gradient(circle at 90% 30%, rgba(236, 72, 153, 0.06) 0%, transparent 35%),
+                radial-gradient(circle at 50% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .customer-main > * {
+            position: relative;
+            z-index: 1;
         }
         
         /* Customer Navbar */
         .customer-navbar {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: linear-gradient(135deg, rgba(30, 15, 45, 0.98) 0%, rgba(20, 10, 35, 0.95) 100%);
             padding: 0 2rem;
             height: 60px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
             position: sticky;
             top: 0;
             z-index: 100;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
         }
         
         .customer-navbar-brand {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            color: #fff;
+            color: #ffd700;
             text-decoration: none;
             font-size: 1.25rem;
             font-weight: 600;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+        
+        .customer-navbar-brand:hover {
+            color: #ffe44d;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
         }
         
         .customer-navbar-menu {
@@ -167,17 +200,18 @@
         }
         
         .customer-navbar-link:hover {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
+            background: rgba(255, 215, 0, 0.1);
+            color: #ffd700;
         }
         
         .customer-navbar-points {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
             padding: 0.4rem 1rem;
             border-radius: 20px;
-            color: #fff;
+            color: #1a0a25;
             font-weight: 600;
             font-size: 0.875rem;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
         }
         
         /* No sidebar layout */
@@ -207,7 +241,7 @@
     <!-- Customer Navbar -->
     <nav class="customer-navbar">
         <a href="{{ url_for('public.index') }}" class="customer-navbar-brand">
-            Night-Walk
+            🌙 Night-Walk
         </a>
         <div class="customer-navbar-menu">
             <a href="{{ url_for('public.index') }}" class="customer-navbar-link">店舗を探す</a>
@@ -216,7 +250,7 @@
                 <a href="{{ url_for('customer.logout') }}" class="customer-navbar-link">ログアウト</a>
             {% else %}
                 <a href="{{ url_for('customer.login') }}" class="customer-navbar-link">ログイン</a>
-                <a href="{{ url_for('customer.register') }}" class="customer-navbar-link" style="background: #667eea; color: #fff;">新規登録</a>
+                <a href="{{ url_for('customer.register') }}" class="customer-navbar-link" style="background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%); color: #fff;">新規登録</a>
             {% endif %}
         </div>
     </nav>
@@ -256,36 +290,36 @@
                 <div class="sidebar-nav-section">メニュー</div>
                 
                 <a href="{{ url_for('customer.mypage') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.mypage' %}active{% endif %}">
-                    <span class="sidebar-nav-icon">H</span>
+                    <span class="sidebar-nav-icon">🏠</span>
                     <span class="sidebar-nav-text">マイページ</span>
                 </a>
                 
                 <a href="{{ url_for('customer.buy_points') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.buy_points' %}active{% endif %}">
-                    <span class="sidebar-nav-icon">P</span>
+                    <span class="sidebar-nav-icon">💰</span>
                     <span class="sidebar-nav-text">ポイント購入</span>
                 </a>
                 
                 <a href="{{ url_for('public.index') }}" class="sidebar-nav-item">
-                    <span class="sidebar-nav-icon">S</span>
+                    <span class="sidebar-nav-icon">🔍</span>
                     <span class="sidebar-nav-text">店舗を探す</span>
                 </a>
                 
                 <div class="sidebar-nav-section">履歴</div>
                 
                 <a href="{{ url_for('customer.gift_history') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.gift_history' %}active{% endif %}">
-                    <span class="sidebar-nav-icon">G</span>
+                    <span class="sidebar-nav-icon">🎁</span>
                     <span class="sidebar-nav-text">ギフト履歴</span>
                 </a>
                 
                 <a href="{{ url_for('customer.point_history') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.point_history' %}active{% endif %}">
-                    <span class="sidebar-nav-icon">T</span>
+                    <span class="sidebar-nav-icon">📊</span>
                     <span class="sidebar-nav-text">取引履歴</span>
                 </a>
                 
                 <div class="sidebar-nav-section">アカウント</div>
                 
                 <a href="{{ url_for('customer.logout') }}" class="sidebar-nav-item">
-                    <span class="sidebar-nav-icon">X</span>
+                    <span class="sidebar-nav-icon">🚪</span>
                     <span class="sidebar-nav-text">ログアウト</span>
                 </a>
             </nav>
@@ -299,7 +333,7 @@
     </div>
     
     <!-- Footer -->
-    <footer class="footer" style="background: #1a1a2e; color: rgba(255,255,255,0.6); padding: 1rem; text-align: center; font-size: 0.875rem;">
+    <footer class="footer" style="background: linear-gradient(180deg, rgba(20, 10, 30, 0.95) 0%, rgba(15, 5, 21, 0.98) 100%); color: rgba(255,255,255,0.5); padding: 1rem; text-align: center; font-size: 0.875rem; border-top: 1px solid rgba(255, 215, 0, 0.2);">
         <p>&copy; 2026 Night-Walk. All rights reserved.</p>
     </footer>
     
