@@ -47,15 +47,14 @@
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label" for="category">業態カテゴリ</label>
-                    <select id="category" name="category" class="form-control">
-                        <option value="">選択してください</option>
-                        {% for cat in categories %}
-                        <option value="{{ cat }}" {% if shop.category == cat %}selected{% endif %}>
-                            {{ category_labels[cat] }}
-                        </option>
-                        {% endfor %}
-                    </select>
+                    <label class="form-label">業態カテゴリ</label>
+                    <input type="text" 
+                           class="form-control" 
+                           value="{{ shop.category_label or '未設定' }}" 
+                           disabled 
+                           readonly
+                           style="background: var(--color-bg-elevated); cursor: not-allowed;">
+                    <small class="text-muted">※ カテゴリは運営管理者のみ変更可能です</small>
                 </div>
             </div>
             

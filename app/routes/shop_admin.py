@@ -174,7 +174,8 @@ def edit():
         shop.business_hours = request.form.get('business_hours', '').strip()
         shop.price_range = request.form.get('price_range', '').strip()
         shop.description = request.form.get('description', '').strip()
-        shop.category = request.form.get('category', '')
+        # カテゴリは管理者のみ変更可能（店舗側では変更不可）
+        # shop.category = request.form.get('category', '')
         shop.tags = request.form.get('tags', '').strip()
         shop.is_published = request.form.get('is_published') == 'on'
         shop.is_featured = request.form.get('is_featured') == 'on'
