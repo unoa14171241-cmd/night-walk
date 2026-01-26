@@ -61,13 +61,13 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     """Production configuration."""
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
     
-    # Fix for Render PostgreSQL URL
-    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
-        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace(
-            'postgres://', 'postgresql://', 1
-        )
+    # Get DATABASE_URL directly - Render provides postgresql:// format
+    _db_url = os.environ.get('DATABASE_URL', '')
+    # Fix for older postgres:// URL format
+    if _db_url.startswith('postgres://'):
+        _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+    SQLALCHEMY_DATABASE_URI = _db_url if _db_url else None
 
 
 class TestingConfig(Config):
