@@ -18,8 +18,8 @@
             <p class="cast-shop">{{ cast.shop.name }}</p>
             
             {% if cast.profile %}
-            <div class="cast-bio">
-                {{ cast.profile | nl2br }}
+            <div class="cast-bio" style="white-space: pre-line;">
+                {{ cast.profile }}
             </div>
             {% endif %}
             
