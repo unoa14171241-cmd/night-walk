@@ -64,9 +64,14 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{{ url_for('shop_admin.select_shop', shop_id=shop.id) }}" class="btn btn-sm btn-secondary">
-                                管理
-                            </a>
+                            <div class="d-flex gap-1">
+                                <a href="{{ url_for('admin.edit_shop', shop_id=shop.id) }}" class="btn btn-sm btn-secondary">
+                                    編集
+                                </a>
+                                <a href="{{ url_for('shop_admin.select_shop', shop_id=shop.id) }}" class="btn btn-sm btn-primary">
+                                    管理
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

@@ -17,6 +17,9 @@
                 <p class="text-muted mb-0">📍 {{ shop.area }}</p>
             </div>
             <div class="d-flex gap-2">
+                <a href="{{ url_for('admin.edit_shop', shop_id=shop.id) }}" class="btn btn-secondary">
+                    編集
+                </a>
                 <a href="{{ url_for('shop_admin.select_shop', shop_id=shop.id) }}" class="btn btn-primary">
                     店舗として管理
                 </a>

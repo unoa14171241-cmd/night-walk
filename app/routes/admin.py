@@ -132,6 +132,66 @@ def new_shop():
                           category_labels=Shop.CATEGORY_LABELS)
 
 
+@admin_bp.route('/shops/<int:shop_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_shop(shop_id):
+    """Edit existing shop (admin only)."""
+    shop = Shop.query.get_or_404(shop_id)
+    
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        area = request.form.get('area', '')
+        category = request.form.get('category', '')
+        
+        errors = []
+        if not name:
+            errors.append('店舗名は必須です。')
+        if not category or category not in Shop.CATEGORIES:
+            errors.append('カテゴリを選択してください。')
+        
+        if errors:
+            for error in errors:
+                flash(error, 'danger')
+            return render_template('admin/shop_form.html', 
+                                  shop=shop, 
+                                  areas=Shop.AREAS,
+                                  categories=Shop.CATEGORIES,
+                                  category_labels=Shop.CATEGORY_LABELS)
+        
+        # 変更前の値を記録
+        old_values = {
+            'name': shop.name,
+            'area': shop.area,
+            'category': shop.category
+        }
+        
+        # 店舗情報を更新
+        shop.name = name
+        shop.area = area
+        shop.category = category
+        shop.phone = request.form.get('phone', '').strip()
+        shop.address = request.form.get('address', '').strip()
+        shop.business_hours = request.form.get('business_hours', '').strip()
+        shop.price_range = request.form.get('price_range', '').strip()
+        shop.description = request.form.get('description', '').strip()
+        
+        db.session.commit()
+        
+        # 監査ログ
+        audit_log(AuditLog.ACTION_SHOP_UPDATE, 'shop', shop.id,
+                 old_value=old_values,
+                 new_value={'name': name, 'area': area, 'category': category})
+        
+        flash(f'店舗「{name}」を更新しました。', 'success')
+        return redirect(url_for('admin.shop_detail', shop_id=shop.id))
+    
+    return render_template('admin/shop_form.html', 
+                          shop=shop, 
+                          areas=Shop.AREAS,
+                          categories=Shop.CATEGORIES,
+                          category_labels=Shop.CATEGORY_LABELS)
+
+
 @admin_bp.route('/shops/<int:shop_id>')
 @admin_required
 def shop_detail(shop_id):
