@@ -10,7 +10,7 @@ Flask-WTF==1.2.1
 
 # Database
 SQLAlchemy>=2.0.30
-# psycopg2-binary==2.9.9  # Uncomment for PostgreSQL (production)
+psycopg2-binary==2.9.9  # PostgreSQL for production
 
 # Security
 Werkzeug==3.0.1
