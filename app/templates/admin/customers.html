@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}一般ユーザ管理 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <div class="d-flex justify-between align-center mb-4">
+            <h1 class="mb-0">一般ユーザ管理</h1>
+        </div>
+        
+        <!-- 統計 -->
+        <div class="stats-grid mb-4">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_count }}</div>
+                <div class="stat-label">総ユーザー数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ active_count }}</div>
+                <div class="stat-label">有効ユーザー</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ verified_count }}</div>
+                <div class="stat-label">認証済み</div>
+            </div>
+        </div>
+        
+        <!-- フィルタ -->
+        <div class="card mb-4">
+            <form method="GET" class="d-flex gap-3 align-center flex-wrap">
+                <div class="form-group mb-0">
+                    <input type="text" name="search" class="form-control" placeholder="メール、ニックネーム、電話番号で検索" 
+                           value="{{ search_query }}" style="min-width: 250px;">
+                </div>
+                <div class="form-group mb-0">
+                    <select name="status" class="form-control">
+                        <option value="">すべて</option>
+                        <option value="active" {% if selected_status == 'active' %}selected{% endif %}>有効のみ</option>
+                        <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>無効のみ</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">検索</button>
+                {% if search_query or selected_status %}
+                <a href="{{ url_for('admin.customers') }}" class="btn btn-secondary">クリア</a>
+                {% endif %}
+            </form>
+        </div>
+        
+        <!-- ユーザー一覧 -->
+        <div class="card">
+            {% if customers %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ニックネーム</th>
+                        <th>メールアドレス</th>
+                        <th>電話番号</th>
+                        <th>ポイント残高</th>
+                        <th>状態</th>
+                        <th>登録日</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in customers %}
+                    <tr>
+                        <td>{{ customer.id }}</td>
+                        <td><strong>{{ customer.nickname }}</strong></td>
+                        <td>{{ customer.email }}</td>
+                        <td>{{ customer.phone or '−' }}</td>
+                        <td>
+                            <span style="color: var(--color-primary); font-weight: 600;">
+                                {{ "{:,}".format(customer.point_balance) }} pt
+                            </span>
+                        </td>
+                        <td>
+                            {% if customer.is_active %}
+                            <span class="badge badge-success">有効</span>
+                            {% else %}
+                            <span class="badge badge-danger">無効</span>
+                            {% endif %}
+                            {% if customer.is_verified %}
+                            <span class="badge badge-info" style="background: var(--color-info);">認証済</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ customer.created_at.strftime('%Y/%m/%d') }}</td>
+                        <td>
+                            <a href="{{ url_for('admin.customer_detail', customer_id=customer.id) }}" class="btn btn-sm btn-outline">
+                                詳細
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center py-4">
+                {% if search_query or selected_status %}
+                条件に一致するユーザーが見つかりません
+                {% else %}
+                まだ一般ユーザーが登録されていません
+                {% endif %}
+            </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-md);
+}
+.stat-card {
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius);
+    padding: var(--space-lg);
+    text-align: center;
+}
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+.stat-label {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+.gap-3 {
+    gap: var(--space-md);
+}
+.flex-wrap {
+    flex-wrap: wrap;
+}
+.py-4 {
+    padding-top: var(--space-xl);
+    padding-bottom: var(--space-xl);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}{{ customer.nickname }}を編集 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <div class="mb-4">
+            <a href="{{ url_for('admin.customer_detail', customer_id=customer.id) }}" class="text-muted" style="text-decoration: none;">
+                ← {{ customer.nickname }} に戻る
+            </a>
+            <h1 class="mb-0 mt-2">一般ユーザ編集</h1>
+        </div>
+        
+        <div class="card" style="max-width: 600px;">
+            <form method="POST">
+                <div class="form-group">
+                    <label for="email">メールアドレス（ログインID）</label>
+                    <input type="text" id="email" class="form-control" value="{{ customer.email }}" disabled>
+                    <small class="text-muted">メールアドレスは変更できません</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="nickname">ニックネーム <span class="text-danger">*</span></label>
+                    <input type="text" id="nickname" name="nickname" class="form-control" 
+                           value="{{ customer.nickname }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">電話番号</label>
+                    <input type="tel" id="phone" name="phone" class="form-control" 
+                           value="{{ customer.phone or '' }}" placeholder="090-1234-5678">
+                </div>
+                
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <a href="{{ url_for('admin.customer_detail', customer_id=customer.id) }}" class="btn btn-secondary">
+                        キャンセル
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.mt-2 {
+    margin-top: var(--space-sm);
+}
+.mt-4 {
+    margin-top: var(--space-lg);
+}
+.gap-2 {
+    gap: var(--space-sm);
+}
+</style>
+{% endblock %}

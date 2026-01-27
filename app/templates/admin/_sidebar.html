@@ -16,8 +16,13 @@
             </a>
         </li>
         <li>
-            <a href="{{ url_for('admin.users') }}" class="{% if 'admin.user' in request.endpoint %}active{% endif %}">
+            <a href="{{ url_for('admin.users') }}" class="{% if 'admin.user' in request.endpoint and 'customer' not in request.endpoint %}active{% endif %}">
                 ユーザー管理
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('admin.customers') }}" class="{% if 'admin.customer' in request.endpoint %}active{% endif %}">
+                一般ユーザ管理
             </a>
         </li>
         <li>
@@ -65,7 +70,7 @@
     <ul class="sidebar-nav">
         <li>
             <a href="{{ url_for('admin.rankings') }}" class="{% if request.endpoint in ['admin.rankings', 'admin.calculate_rankings'] %}active{% endif %}">
-                🏆 ランキング管理
+                ランキング管理
             </a>
         </li>
         <li>
@@ -89,17 +94,17 @@
     <ul class="sidebar-nav">
         <li>
             <a href="{{ url_for('admin.entitlements') }}" class="{% if 'entitlement' in request.endpoint %}active{% endif %}">
-                📋 広告権利管理
+                広告権利管理
             </a>
         </li>
         <li>
             <a href="{{ url_for('admin.store_plans') }}" class="{% if 'store_plan' in request.endpoint %}active{% endif %}">
-                💳 店舗プラン
+                店舗プラン
             </a>
         </li>
         <li>
             <a href="{{ url_for('admin.advertisements') }}" class="{% if 'advertisement' in request.endpoint %}active{% endif %}">
-                🖼️ バナー広告
+                バナー広告
             </a>
         </li>
     </ul>

@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.name }} - ユーザー詳細 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <div class="d-flex justify-between align-center mb-4">
+            <div>
+                <a href="{{ url_for('admin.users') }}" class="text-muted" style="text-decoration: none;">
+                    ← ユーザー一覧
+                </a>
+                <h1 class="mb-0 mt-2">{{ user.name }}</h1>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-primary">
+                    編集
+                </a>
+                {% if user.id != current_user.id %}
+                <form action="{{ url_for('admin.toggle_user', user_id=user.id) }}" method="POST" style="display: inline;">
+                    {% if user.is_active %}
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('このユーザーを無効化しますか？')">
+                        無効化
+                    </button>
+                    {% else %}
+                    <button type="submit" class="btn btn-success">
+                        有効化
+                    </button>
+                    {% endif %}
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="grid-2">
+            <!-- 基本情報 -->
+            <div class="card">
+                <h3 class="mb-3">基本情報</h3>
+                <table class="detail-table">
+                    <tr>
+                        <th>ID</th>
+                        <td>{{ user.id }}</td>
+                    </tr>
+                    <tr>
+                        <th>名前</th>
+                        <td>{{ user.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>ログインID</th>
+                        <td><code>{{ user.email }}</code></td>
+                    </tr>
+                    <tr>
+                        <th>権限</th>
+                        <td>
+                            {% if user.role == 'admin' %}
+                            <span class="badge badge-danger">管理者</span>
+                            {% elif user.role == 'owner' %}
+                            <span class="badge badge-warning">オーナー</span>
+                            {% else %}
+                            <span class="badge" style="background: var(--color-bg-elevated);">スタッフ</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>状態</th>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="badge badge-success">有効</span>
+                            {% else %}
+                            <span class="badge badge-danger">無効</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>登録日</th>
+                        <td>{{ user.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
+                    </tr>
+                    <tr>
+                        <th>最終ログイン</th>
+                        <td>{{ user.last_login_at.strftime('%Y/%m/%d %H:%M') if user.last_login_at else '−' }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- パスワードリセット -->
+            <div class="card">
+                <h3 class="mb-3">パスワード管理</h3>
+                <p class="text-muted mb-3">
+                    パスワードをリセットすると、新しいランダムなパスワードが生成されます。<br>
+                    新しいパスワードは一度だけ表示されます。
+                </p>
+                <form action="{{ url_for('admin.reset_user_password', user_id=user.id) }}" method="POST">
+                    <button type="submit" class="btn btn-warning" onclick="return confirm('パスワードをリセットしますか？新しいパスワードが生成されます。')">
+                        🔑 パスワードをリセット
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- 所属店舗 -->
+        <div class="card mt-4">
+            <h3 class="mb-3">所属店舗</h3>
+            {% if memberships %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>店舗名</th>
+                        <th>エリア</th>
+                        <th>役割</th>
+                        <th>登録日</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for membership in memberships %}
+                    <tr>
+                        <td><strong>{{ membership.shop.name }}</strong></td>
+                        <td>{{ membership.shop.area }}</td>
+                        <td>
+                            {% if membership.role == 'owner' %}
+                            <span class="badge badge-warning">オーナー</span>
+                            {% else %}
+                            <span class="badge" style="background: var(--color-bg-elevated);">スタッフ</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ membership.created_at.strftime('%Y/%m/%d') }}</td>
+                        <td>
+                            <a href="{{ url_for('admin.shop_detail', shop_id=membership.shop.id) }}" class="btn btn-sm btn-outline">
+                                店舗詳細
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">所属店舗はありません</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-lg);
+}
+@media (max-width: 768px) {
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+.detail-table {
+    width: 100%;
+}
+.detail-table th {
+    text-align: left;
+    padding: var(--space-sm) 0;
+    color: var(--color-text-muted);
+    width: 40%;
+    font-weight: normal;
+}
+.detail-table td {
+    padding: var(--space-sm) 0;
+}
+.gap-2 {
+    gap: var(--space-sm);
+}
+.mt-2 {
+    margin-top: var(--space-sm);
+}
+.mt-4 {
+    margin-top: var(--space-lg);
+}
+code {
+    background: var(--color-bg-elevated);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+</style>
+{% endblock %}

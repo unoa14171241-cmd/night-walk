@@ -3,6 +3,7 @@ Night-Walk MVP - Admin Routes (運営管理)
 """
 import os
 import uuid
+import secrets
 from datetime import datetime, date
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
@@ -15,6 +16,7 @@ from ..models.audit import AuditLog
 from ..models.content import Announcement, Advertisement
 from ..models.commission import CommissionRate, Commission, MonthlyBilling, get_default_commission
 from ..models.gift import Cast
+from ..models.customer import Customer
 from ..utils.decorators import admin_required
 from ..utils.logger import audit_log
 
@@ -118,12 +120,53 @@ def new_shop():
         subscription = Subscription(shop_id=shop.id, status='trial')
         db.session.add(subscription)
         
+        # ============================================
+        # 自動でオーナー・スタッフアカウントを作成
+        # ============================================
+        # パスワード生成（8文字のランダム文字列）
+        owner_password = secrets.token_urlsafe(6)
+        staff_password = secrets.token_urlsafe(6)
+        
+        # オーナーアカウント作成
+        owner_login_id = f"{name}_owner"
+        owner = User(
+            email=owner_login_id,
+            name=f"【{name}】オーナー",
+            role=User.ROLE_OWNER,
+        )
+        owner.set_password(owner_password)
+        db.session.add(owner)
+        db.session.flush()
+        
+        # オーナーを店舗に紐付け
+        owner_membership = ShopMember(shop_id=shop.id, user_id=owner.id, role=ShopMember.ROLE_OWNER)
+        db.session.add(owner_membership)
+        
+        # スタッフアカウント作成
+        staff_login_id = f"{name}_staff"
+        staff = User(
+            email=staff_login_id,
+            name=f"【{name}】スタッフ",
+            role=User.ROLE_STAFF,
+        )
+        staff.set_password(staff_password)
+        db.session.add(staff)
+        db.session.flush()
+        
+        # スタッフを店舗に紐付け
+        staff_membership = ShopMember(shop_id=shop.id, user_id=staff.id, role=ShopMember.ROLE_STAFF)
+        db.session.add(staff_membership)
+        
         db.session.commit()
         
         audit_log(AuditLog.ACTION_SHOP_CREATE, 'shop', shop.id,
                  new_value={'name': name, 'area': area, 'category': category})
         
+        # 成功メッセージ（ログイン情報を表示）
         flash(f'店舗「{name}」を作成しました。', 'success')
+        flash(f'🔑 オーナー: {owner_login_id} / パスワード: {owner_password}', 'info')
+        flash(f'🔑 スタッフ: {staff_login_id} / パスワード: {staff_password}', 'info')
+        
         return redirect(url_for('admin.shops'))
     
     return render_template('admin/shop_form.html', 
@@ -1593,3 +1636,246 @@ def upgrade_store_plan(shop_id):
     
     flash(f'プランを{StorePlan.PLAN_LABELS[new_plan_type]}に変更しました', 'success')
     return redirect(url_for('admin.store_plans'))
+
+
+# ============================================
+# Customer Management (一般ユーザ管理)
+# ============================================
+
+@admin_bp.route('/customers')
+@admin_required
+def customers():
+    """一般ユーザ一覧"""
+    # フィルタパラメータ
+    status = request.args.get('status', '')  # active, inactive, all
+    search = request.args.get('search', '').strip()
+    
+    query = Customer.query
+    
+    if status == 'active':
+        query = query.filter(Customer.is_active == True)
+    elif status == 'inactive':
+        query = query.filter(Customer.is_active == False)
+    
+    if search:
+        search_filter = f'%{search}%'
+        query = query.filter(
+            db.or_(
+                Customer.email.ilike(search_filter),
+                Customer.nickname.ilike(search_filter),
+                Customer.phone.ilike(search_filter)
+            )
+        )
+    
+    customers_list = query.order_by(Customer.created_at.desc()).limit(200).all()
+    
+    # 統計
+    total_count = Customer.query.count()
+    active_count = Customer.query.filter_by(is_active=True).count()
+    verified_count = Customer.query.filter_by(is_verified=True).count()
+    
+    return render_template('admin/customers.html',
+                          customers=customers_list,
+                          total_count=total_count,
+                          active_count=active_count,
+                          verified_count=verified_count,
+                          selected_status=status,
+                          search_query=search)
+
+
+@admin_bp.route('/customers/<int:customer_id>')
+@admin_required
+def customer_detail(customer_id):
+    """一般ユーザ詳細"""
+    customer = Customer.query.get_or_404(customer_id)
+    
+    # ポイント履歴（最新20件）
+    point_transactions = customer.point_transactions.order_by(
+        db.text('created_at DESC')
+    ).limit(20).all()
+    
+    # ギフト履歴（最新20件）
+    gift_transactions = customer.gift_transactions.order_by(
+        db.text('created_at DESC')
+    ).limit(20).all()
+    
+    return render_template('admin/customer_detail.html',
+                          customer=customer,
+                          point_transactions=point_transactions,
+                          gift_transactions=gift_transactions)
+
+
+@admin_bp.route('/customers/<int:customer_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_customer(customer_id):
+    """一般ユーザ編集"""
+    customer = Customer.query.get_or_404(customer_id)
+    
+    if request.method == 'POST':
+        nickname = request.form.get('nickname', '').strip()
+        phone = request.form.get('phone', '').strip()
+        
+        if not nickname:
+            flash('ニックネームは必須です。', 'danger')
+            return render_template('admin/customer_form.html', customer=customer)
+        
+        old_values = {
+            'nickname': customer.nickname,
+            'phone': customer.phone
+        }
+        
+        customer.nickname = nickname
+        customer.phone = phone
+        
+        db.session.commit()
+        
+        audit_log('customer.edit', 'customer', customer.id,
+                 old_value=old_values,
+                 new_value={'nickname': nickname, 'phone': phone})
+        
+        flash(f'{customer.nickname}さんの情報を更新しました', 'success')
+        return redirect(url_for('admin.customer_detail', customer_id=customer_id))
+    
+    return render_template('admin/customer_form.html', customer=customer)
+
+
+@admin_bp.route('/customers/<int:customer_id>/toggle', methods=['POST'])
+@admin_required
+def toggle_customer(customer_id):
+    """一般ユーザの有効/無効切り替え"""
+    customer = Customer.query.get_or_404(customer_id)
+    old_status = customer.is_active
+    customer.is_active = not customer.is_active
+    db.session.commit()
+    
+    audit_log('customer.toggle', 'customer', customer.id,
+             old_value={'is_active': old_status},
+             new_value={'is_active': customer.is_active})
+    
+    status = '有効' if customer.is_active else '無効'
+    flash(f'{customer.nickname}さんを{status}にしました', 'success')
+    return redirect(url_for('admin.customer_detail', customer_id=customer_id))
+
+
+@admin_bp.route('/customers/<int:customer_id>/adjust-points', methods=['POST'])
+@admin_required
+def adjust_customer_points(customer_id):
+    """一般ユーザのポイント調整"""
+    customer = Customer.query.get_or_404(customer_id)
+    
+    amount = request.form.get('amount', 0, type=int)
+    reason = request.form.get('reason', '').strip()
+    
+    if amount == 0:
+        flash('調整ポイント数を入力してください', 'danger')
+        return redirect(url_for('admin.customer_detail', customer_id=customer_id))
+    
+    old_balance = customer.point_balance
+    customer.point_balance += amount
+    
+    # 負にならないようにする
+    if customer.point_balance < 0:
+        customer.point_balance = 0
+    
+    db.session.commit()
+    
+    audit_log('customer.points_adjust', 'customer', customer.id,
+             old_value={'balance': old_balance},
+             new_value={'balance': customer.point_balance, 'adjustment': amount, 'reason': reason})
+    
+    flash(f'ポイントを調整しました（{old_balance} → {customer.point_balance}）', 'success')
+    return redirect(url_for('admin.customer_detail', customer_id=customer_id))
+
+
+# ============================================
+# User Management Extended (ユーザー管理拡張)
+# ============================================
+
+@admin_bp.route('/users/<int:user_id>')
+@admin_required
+def user_detail(user_id):
+    """ユーザー詳細"""
+    user = User.query.get_or_404(user_id)
+    
+    # 所属店舗
+    memberships = user.shop_memberships.all()
+    
+    return render_template('admin/user_detail.html',
+                          user=user,
+                          memberships=memberships)
+
+
+@admin_bp.route('/users/<int:user_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_user(user_id):
+    """ユーザー編集"""
+    user = User.query.get_or_404(user_id)
+    
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        role = request.form.get('role', 'staff')
+        
+        if not name:
+            flash('名前は必須です。', 'danger')
+            return render_template('admin/user_edit_form.html', user=user)
+        
+        old_values = {
+            'name': user.name,
+            'role': user.role
+        }
+        
+        user.name = name
+        user.role = role
+        
+        db.session.commit()
+        
+        audit_log('user.edit', 'user', user.id,
+                 old_value=old_values,
+                 new_value={'name': name, 'role': role})
+        
+        flash(f'{user.name}さんの情報を更新しました', 'success')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+    
+    return render_template('admin/user_edit_form.html', user=user)
+
+
+@admin_bp.route('/users/<int:user_id>/toggle', methods=['POST'])
+@admin_required
+def toggle_user(user_id):
+    """ユーザーの有効/無効切り替え"""
+    user = User.query.get_or_404(user_id)
+    
+    # 自分自身は無効化できない
+    if user.id == current_user.id:
+        flash('自分自身を無効化することはできません', 'danger')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+    
+    old_status = user.is_active
+    user.is_active = not user.is_active
+    db.session.commit()
+    
+    audit_log('user.toggle', 'user', user.id,
+             old_value={'is_active': old_status},
+             new_value={'is_active': user.is_active})
+    
+    status = '有効' if user.is_active else '無効'
+    flash(f'{user.name}さんを{status}にしました', 'success')
+    return redirect(url_for('admin.user_detail', user_id=user_id))
+
+
+@admin_bp.route('/users/<int:user_id>/reset-password', methods=['POST'])
+@admin_required
+def reset_user_password(user_id):
+    """ユーザーのパスワードリセット"""
+    user = User.query.get_or_404(user_id)
+    
+    # 新しいパスワードを生成
+    new_password = secrets.token_urlsafe(6)
+    user.set_password(new_password)
+    db.session.commit()
+    
+    audit_log('user.password_reset', 'user', user.id)
+    
+    flash(f'{user.name}さんのパスワードをリセットしました', 'success')
+    flash(f'🔑 新しいパスワード: {new_password}', 'info')
+    return redirect(url_for('admin.user_detail', user_id=user_id))

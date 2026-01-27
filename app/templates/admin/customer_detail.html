@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}{{ customer.nickname }} - 一般ユーザ詳細 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <div class="d-flex justify-between align-center mb-4">
+            <div>
+                <a href="{{ url_for('admin.customers') }}" class="text-muted" style="text-decoration: none;">
+                    ← 一般ユーザ一覧
+                </a>
+                <h1 class="mb-0 mt-2">{{ customer.nickname }}</h1>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('admin.edit_customer', customer_id=customer.id) }}" class="btn btn-primary">
+                    編集
+                </a>
+                <form action="{{ url_for('admin.toggle_customer', customer_id=customer.id) }}" method="POST" style="display: inline;">
+                    {% if customer.is_active %}
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('このユーザーを無効化しますか？')">
+                        無効化
+                    </button>
+                    {% else %}
+                    <button type="submit" class="btn btn-success">
+                        有効化
+                    </button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+        
+        <div class="grid-2">
+            <!-- 基本情報 -->
+            <div class="card">
+                <h3 class="mb-3">基本情報</h3>
+                <table class="detail-table">
+                    <tr>
+                        <th>ID</th>
+                        <td>{{ customer.id }}</td>
+                    </tr>
+                    <tr>
+                        <th>ニックネーム</th>
+                        <td>{{ customer.nickname }}</td>
+                    </tr>
+                    <tr>
+                        <th>メールアドレス</th>
+                        <td>{{ customer.email }}</td>
+                    </tr>
+                    <tr>
+                        <th>電話番号</th>
+                        <td>{{ customer.phone or '未設定' }}</td>
+                    </tr>
+                    <tr>
+                        <th>状態</th>
+                        <td>
+                            {% if customer.is_active %}
+                            <span class="badge badge-success">有効</span>
+                            {% else %}
+                            <span class="badge badge-danger">無効</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>メール認証</th>
+                        <td>
+                            {% if customer.is_verified %}
+                            <span class="badge badge-info" style="background: var(--color-info);">認証済み</span>
+                            {% else %}
+                            <span class="badge badge-warning">未認証</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>登録日</th>
+                        <td>{{ customer.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
+                    </tr>
+                    <tr>
+                        <th>最終ログイン</th>
+                        <td>{{ customer.last_login_at.strftime('%Y/%m/%d %H:%M') if customer.last_login_at else '−' }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- ポイント情報 -->
+            <div class="card">
+                <h3 class="mb-3">ポイント情報</h3>
+                <div class="point-balance-box mb-4">
+                    <div class="point-label">現在のポイント残高</div>
+                    <div class="point-value">{{ "{:,}".format(customer.point_balance) }} <span>pt</span></div>
+                </div>
+                <table class="detail-table mb-4">
+                    <tr>
+                        <th>累計購入ポイント</th>
+                        <td>{{ "{:,}".format(customer.total_purchased_points) }} pt</td>
+                    </tr>
+                    <tr>
+                        <th>累計使用ポイント</th>
+                        <td>{{ "{:,}".format(customer.total_spent_points) }} pt</td>
+                    </tr>
+                </table>
+                
+                <!-- ポイント調整フォーム -->
+                <h4 class="mb-2">ポイント調整</h4>
+                <form action="{{ url_for('admin.adjust_customer_points', customer_id=customer.id) }}" method="POST">
+                    <div class="form-group">
+                        <input type="number" name="amount" class="form-control" placeholder="調整ポイント数（±）" required>
+                        <small class="text-muted">正の値で加算、負の値で減算</small>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" name="reason" class="form-control" placeholder="調整理由">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('ポイントを調整しますか？')">
+                        ポイント調整
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- ポイント履歴 -->
+        <div class="card mt-4">
+            <h3 class="mb-3">ポイント履歴（最新20件）</h3>
+            {% if point_transactions %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>日時</th>
+                        <th>種別</th>
+                        <th>ポイント</th>
+                        <th>残高</th>
+                        <th>備考</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in point_transactions %}
+                    <tr>
+                        <td>{{ tx.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
+                        <td>{{ tx.transaction_type }}</td>
+                        <td>
+                            {% if tx.amount > 0 %}
+                            <span style="color: var(--color-success);">+{{ "{:,}".format(tx.amount) }}</span>
+                            {% else %}
+                            <span style="color: var(--color-danger);">{{ "{:,}".format(tx.amount) }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ "{:,}".format(tx.balance_after) }} pt</td>
+                        <td>{{ tx.description or '−' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">ポイント履歴はありません</p>
+            {% endif %}
+        </div>
+        
+        <!-- ギフト履歴 -->
+        <div class="card mt-4">
+            <h3 class="mb-3">ギフト履歴（最新20件）</h3>
+            {% if gift_transactions %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>日時</th>
+                        <th>送り先</th>
+                        <th>ギフト</th>
+                        <th>ポイント</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in gift_transactions %}
+                    <tr>
+                        <td>{{ tx.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
+                        <td>{{ tx.cast.name if tx.cast else '−' }}</td>
+                        <td>{{ tx.gift.name if tx.gift else '−' }}</td>
+                        <td>{{ "{:,}".format(tx.points_spent) }} pt</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">ギフト履歴はありません</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-lg);
+}
+@media (max-width: 768px) {
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+.detail-table {
+    width: 100%;
+}
+.detail-table th {
+    text-align: left;
+    padding: var(--space-sm) 0;
+    color: var(--color-text-muted);
+    width: 40%;
+    font-weight: normal;
+}
+.detail-table td {
+    padding: var(--space-sm) 0;
+}
+.point-balance-box {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+    border-radius: var(--radius);
+    padding: var(--space-lg);
+    text-align: center;
+    color: white;
+}
+.point-label {
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+.point-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+.point-value span {
+    font-size: 1rem;
+    font-weight: normal;
+}
+.gap-2 {
+    gap: var(--space-sm);
+}
+.mt-2 {
+    margin-top: var(--space-sm);
+}
+.mt-4 {
+    margin-top: var(--space-lg);
+}
+</style>
+{% endblock %}

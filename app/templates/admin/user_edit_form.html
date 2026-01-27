@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.name }}を編集 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <div class="mb-4">
+            <a href="{{ url_for('admin.user_detail', user_id=user.id) }}" class="text-muted" style="text-decoration: none;">
+                ← {{ user.name }} に戻る
+            </a>
+            <h1 class="mb-0 mt-2">ユーザー編集</h1>
+        </div>
+        
+        <div class="card" style="max-width: 600px;">
+            <form method="POST">
+                <div class="form-group">
+                    <label for="email">ログインID</label>
+                    <input type="text" id="email" class="form-control" value="{{ user.email }}" disabled>
+                    <small class="text-muted">ログインIDは変更できません</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="name">名前 <span class="text-danger">*</span></label>
+                    <input type="text" id="name" name="name" class="form-control" 
+                           value="{{ user.name }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="role">権限 <span class="text-danger">*</span></label>
+                    <select id="role" name="role" class="form-control" required>
+                        <option value="staff" {% if user.role == 'staff' %}selected{% endif %}>スタッフ</option>
+                        <option value="owner" {% if user.role == 'owner' %}selected{% endif %}>オーナー</option>
+                        <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>管理者</option>
+                    </select>
+                    <small class="text-muted">
+                        管理者：運営管理画面へのフルアクセス<br>
+                        オーナー：所属店舗の全機能<br>
+                        スタッフ：所属店舗の基本機能
+                    </small>
+                </div>
+                
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <a href="{{ url_for('admin.user_detail', user_id=user.id) }}" class="btn btn-secondary">
+                        キャンセル
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.mt-2 {
+    margin-top: var(--space-sm);
+}
+.mt-4 {
+    margin-top: var(--space-lg);
+}
+.gap-2 {
+    gap: var(--space-sm);
+}
+</style>
+{% endblock %}
