@@ -269,7 +269,59 @@
             }
             
             .customer-main {
-                padding: 1rem;
+                padding: 0.75rem;
+            }
+            
+            /* Compact Navbar for Mobile */
+            .customer-navbar {
+                padding: 0 0.75rem;
+                height: 50px;
+            }
+            
+            .customer-navbar-brand {
+                font-size: 1rem;
+            }
+            
+            .customer-navbar-menu {
+                gap: 0.25rem;
+                flex-wrap: nowrap;
+            }
+            
+            .customer-navbar-link {
+                padding: 0.35rem 0.5rem;
+                font-size: 0.7rem;
+                white-space: nowrap;
+            }
+            
+            .customer-navbar-points {
+                padding: 0.25rem 0.6rem;
+                font-size: 0.7rem;
+                white-space: nowrap;
+            }
+        }
+        
+        /* Even smaller screens */
+        @media (max-width: 400px) {
+            .customer-navbar {
+                padding: 0 0.5rem;
+            }
+            
+            .customer-navbar-brand {
+                font-size: 0.9rem;
+            }
+            
+            .customer-navbar-menu {
+                gap: 0.15rem;
+            }
+            
+            .customer-navbar-link {
+                padding: 0.25rem 0.4rem;
+                font-size: 0.65rem;
+            }
+            
+            .customer-navbar-points {
+                padding: 0.2rem 0.5rem;
+                font-size: 0.65rem;
             }
         }
     </style>

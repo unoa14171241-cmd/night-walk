@@ -2482,3 +2482,215 @@ textarea.form-control {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* Compact Mypage for Mobile */
+@media (max-width: 768px) {
+    .mypage {
+        padding: var(--space-sm) 0;
+    }
+    
+    .mypage .page-title {
+        font-size: 1.25rem;
+        margin-bottom: var(--space-md);
+    }
+    
+    /* Compact Point Card */
+    .point-card {
+        padding: var(--space-md);
+        margin-bottom: var(--space-md);
+        border-radius: var(--radius-md);
+    }
+    
+    .point-card-inner {
+        margin-bottom: var(--space-md);
+    }
+    
+    .point-label {
+        font-size: 0.75rem;
+    }
+    
+    .point-balance {
+        font-size: 2rem;
+    }
+    
+    .point-unit {
+        font-size: 1rem;
+    }
+    
+    .point-card .btn {
+        padding: 0.5rem 1.25rem;
+        font-size: 0.8rem;
+    }
+    
+    .point-stats {
+        padding-top: var(--space-md);
+    }
+    
+    .point-stats .stat-label {
+        font-size: 0.65rem;
+    }
+    
+    .point-stats .stat-value {
+        font-size: 0.85rem;
+    }
+    
+    /* Compact Quick Actions - 4 in a row */
+    .quick-actions {
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--space-xs);
+        margin-bottom: var(--space-md);
+    }
+    
+    .quick-action {
+        padding: var(--space-sm);
+        border-radius: var(--radius-sm);
+    }
+    
+    .quick-action-icon {
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .quick-action-label {
+        font-size: 0.65rem;
+        line-height: 1.2;
+    }
+    
+    /* Compact Sections */
+    .section {
+        margin-bottom: var(--space-md);
+    }
+    
+    .section-header {
+        margin-bottom: var(--space-sm);
+    }
+    
+    .section-header h2 {
+        font-size: 0.95rem;
+    }
+    
+    .section-header a {
+        font-size: 0.75rem;
+    }
+    
+    /* Compact Gift List */
+    .gift-list {
+        border-radius: var(--radius-sm);
+    }
+    
+    .gift-item {
+        padding: var(--space-sm);
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .gift-info {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+    
+    .gift-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .gift-cast {
+        font-size: 0.8rem;
+    }
+    
+    .gift-name {
+        font-size: 0.7rem;
+        margin-left: 0;
+    }
+    
+    .gift-points {
+        font-size: 0.8rem;
+    }
+    
+    .gift-date {
+        font-size: 0.65rem;
+    }
+    
+    /* Compact Transaction List */
+    .transaction-list {
+        border-radius: var(--radius-sm);
+    }
+    
+    .transaction-item {
+        padding: var(--space-sm);
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .transaction-info {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+    
+    .transaction-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .transaction-type {
+        font-size: 0.8rem;
+    }
+    
+    .transaction-desc {
+        font-size: 0.7rem;
+        margin-left: 0;
+    }
+    
+    .transaction-amount {
+        font-size: 0.8rem;
+    }
+    
+    .transaction-date {
+        font-size: 0.65rem;
+    }
+    
+    /* Compact Account Info */
+    .account-info {
+        padding: var(--space-md);
+        border-radius: var(--radius-sm);
+    }
+    
+    .info-row {
+        padding: var(--space-xs) 0;
+    }
+    
+    .info-label {
+        font-size: 0.8rem;
+    }
+    
+    .info-value {
+        font-size: 0.8rem;
+    }
+}
+
+/* Ultra Compact for very small screens */
+@media (max-width: 380px) {
+    .point-balance {
+        font-size: 1.75rem;
+    }
+    
+    .quick-action {
+        padding: 0.4rem;
+    }
+    
+    .quick-action-icon {
+        font-size: 0.9rem;
+    }
+    
+    .quick-action-label {
+        font-size: 0.55rem;
+    }
+}
