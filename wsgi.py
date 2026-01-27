@@ -180,5 +180,47 @@ def auto_seed():
 # アプリ起動時に自動シード実行
 auto_seed()
 
+
+def auto_seed_point_packages():
+    """ポイントパッケージ・ギフトが存在しなければ自動で追加"""
+    with app.app_context():
+        from app.models import PointPackage, Gift
+        
+        # ポイントパッケージが0件なら追加
+        if PointPackage.query.count() == 0:
+            print("[INFO] Seeding point packages...")
+            packages = [
+                {'name': 'ライト', 'price': 500, 'points': 500, 'bonus_points': 0, 'sort_order': 1},
+                {'name': 'スタンダード', 'price': 1000, 'points': 1000, 'bonus_points': 0, 'sort_order': 2},
+                {'name': 'お得パック', 'price': 3000, 'points': 3000, 'bonus_points': 300, 'sort_order': 3, 'is_featured': True},
+                {'name': 'バリューパック', 'price': 5000, 'points': 5000, 'bonus_points': 500, 'sort_order': 4},
+                {'name': 'プレミアムパック', 'price': 10000, 'points': 10000, 'bonus_points': 2000, 'sort_order': 5, 'is_featured': True},
+                {'name': 'VIPパック', 'price': 30000, 'points': 30000, 'bonus_points': 10000, 'sort_order': 6},
+            ]
+            for pkg_data in packages:
+                db.session.add(PointPackage(**pkg_data))
+            db.session.commit()
+            print("[SUCCESS] Point packages seeded!")
+        
+        # ギフトが0件なら追加
+        if Gift.query.count() == 0:
+            print("[INFO] Seeding gifts...")
+            gifts = [
+                {'name': 'ライト', 'description': '気軽に送れるギフト', 'points': 100, 'cast_rate': 50, 'shop_rate': 20, 'platform_rate': 30, 'sort_order': 1},
+                {'name': 'スタンダード', 'description': '定番のギフト', 'points': 500, 'cast_rate': 50, 'shop_rate': 20, 'platform_rate': 30, 'sort_order': 2},
+                {'name': 'スペシャル', 'description': '特別な応援に', 'points': 1000, 'cast_rate': 50, 'shop_rate': 20, 'platform_rate': 30, 'sort_order': 3},
+                {'name': 'プレミアム', 'description': '本気の応援', 'points': 5000, 'cast_rate': 50, 'shop_rate': 20, 'platform_rate': 30, 'sort_order': 4},
+                {'name': 'ラグジュアリー', 'description': '最高級ギフト', 'points': 10000, 'cast_rate': 50, 'shop_rate': 20, 'platform_rate': 30, 'sort_order': 5},
+                {'name': 'ゴッド', 'description': '伝説のギフト', 'points': 30000, 'cast_rate': 50, 'shop_rate': 20, 'platform_rate': 30, 'sort_order': 6},
+            ]
+            for gift_data in gifts:
+                db.session.add(Gift(**gift_data))
+            db.session.commit()
+            print("[SUCCESS] Gifts seeded!")
+
+
+# ポイントパッケージ・ギフトの自動シード
+auto_seed_point_packages()
+
 if __name__ == '__main__':
     app.run()
