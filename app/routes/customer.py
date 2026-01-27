@@ -4,6 +4,7 @@
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
+import stripe
 from ..extensions import db, limiter
 from ..models import Customer, PointPackage, PointTransaction, Gift, Cast, GiftTransaction, Earning, Shop
 from ..utils.logger import audit_log
@@ -186,21 +187,22 @@ def buy_points():
 @limiter.limit("5 per minute")
 def purchase_package(package_id):
     """ポイントパッケージ購入処理（Stripe Checkout）"""
-    import stripe
-    
     package = PointPackage.query.get_or_404(package_id)
     
     if not package.is_active:
         flash('このパッケージは現在購入できません。', 'warning')
         return redirect(url_for('customer.buy_points'))
     
-    stripe.api_key = current_app.config.get('STRIPE_SECRET_KEY')
+    api_key = current_app.config.get('STRIPE_SECRET_KEY')
     
-    if not stripe.api_key:
+    if not api_key:
         flash('決済システムが設定されていません。', 'danger')
         return redirect(url_for('customer.buy_points'))
     
     try:
+        # Stripe APIキー設定
+        stripe.api_key = api_key
+        
         # Stripe Checkout Session作成
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -237,15 +239,15 @@ def purchase_package(package_id):
 @customer_login_required
 def purchase_success():
     """購入成功ページ"""
-    import stripe
-    
     session_id = request.args.get('session_id')
     if not session_id:
         return redirect(url_for('customer.mypage'))
     
-    stripe.api_key = current_app.config.get('STRIPE_SECRET_KEY')
+    api_key = current_app.config.get('STRIPE_SECRET_KEY')
     
     try:
+        # Stripe APIキー設定
+        stripe.api_key = api_key
         checkout_session = stripe.checkout.Session.retrieve(session_id)
         
         if checkout_session.payment_status == 'paid':

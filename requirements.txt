@@ -19,7 +19,7 @@ email-validator==2.1.0
 
 # External APIs
 twilio==8.10.0
-stripe==7.8.0
+stripe>=5.0.0,<7.0.0
 
 # Scheduler
 APScheduler==3.10.4
