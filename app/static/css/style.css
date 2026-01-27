@@ -721,6 +721,19 @@ textarea.form-control {
     margin: var(--space-xl) 0;
 }
 
+/* Inline style - all in one row */
+.feature-ribbons-inline {
+    flex-wrap: nowrap;
+    gap: var(--space-sm);
+}
+
+.feature-ribbons-inline .ribbon {
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.85rem;
+    clip-path: none;
+    border-radius: var(--radius);
+}
+
 .ribbon {
     position: relative;
     display: inline-flex;
@@ -732,11 +745,6 @@ textarea.form-control {
     font-size: 1.1rem;
     clip-path: polygon(10% 0%, 90% 0%, 100% 50%, 90% 100%, 10% 100%, 0% 50%);
     box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
-}
-
-.ribbon::before {
-    content: '★';
-    margin-right: var(--space-sm);
 }
 
 /* ============================================
@@ -1157,6 +1165,16 @@ textarea.form-control {
     
     .category-btn {
         min-width: auto;
+    }
+    
+    .feature-ribbons-inline {
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+    }
+    
+    .feature-ribbons-inline .ribbon {
+        padding: var(--space-xs) var(--space-sm);
+        font-size: 0.75rem;
     }
 }
 
