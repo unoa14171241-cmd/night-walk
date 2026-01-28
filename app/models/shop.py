@@ -59,23 +59,26 @@ class Shop(db.Model):
     SCENE_GROUPS = {
         SCENE_LIGHT: {
             'name': 'ライトナイト',
-            'description': '気軽に飲む・話す',
-            'icon': '🍸',
-            'color': '#4ECDC4',
+            'description': '一人飲み・軽く一杯・会話中心',
+            'categories_display': 'スナック / バー / 立ち飲み',
+            'price_range': '3,000〜6,000円目安',
+            'color': '#10b981',
             'categories': ['snack', 'concafe', 'girls_bar', 'lounge', 'bar']
         },
         SCENE_ENTERTAINMENT: {
             'name': 'エンタメナイト',
-            'description': '盛り上がる・しっかり遊ぶ',
-            'icon': '🎉',
-            'color': '#FF6B6B',
-            'categories': ['kyabakura', 'club', 'luxury_lounge']
+            'description': '複数人・盛り上がりたい夜',
+            'categories_display': 'キャバクラ / コンカフェ / ガールズバー',
+            'price_range': '6,000〜15,000円目安',
+            'color': '#ef4444',
+            'categories': ['kyabakura', 'club', 'luxury_lounge', 'concafe', 'girls_bar']
         },
         SCENE_ADULT: {
             'name': 'アダルトナイト',
-            'description': '大人のサービス',
-            'icon': '🌙',
-            'color': '#9B59B6',
+            'description': '大人向け・特別な体験',
+            'categories_display': '風俗 / デリヘル / 個室系',
+            'price_range': '',
+            'color': '#9b59b6',
             'categories': ['fuzoku', 'deriheru', 'mens_esthe']
         }
     }

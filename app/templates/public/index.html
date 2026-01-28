@@ -47,9 +47,14 @@
                 <a href="{{ url_for('public.search', scene=scene_key) }}" 
                    class="scene-card" 
                    style="--scene-color: {{ scene.color }}">
+                    <div class="scene-indicator" style="background: {{ scene.color }}"></div>
                     <div class="scene-content">
                         <div class="scene-name">{{ scene.name }}</div>
                         <div class="scene-desc">{{ scene.description }}</div>
+                        <div class="scene-categories">{{ scene.categories_display }}</div>
+                        {% if scene.price_range %}
+                        <div class="scene-price">{{ scene.price_range }}</div>
+                        {% endif %}
                     </div>
                     <div class="scene-arrow">→</div>
                 </a>

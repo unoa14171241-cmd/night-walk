@@ -2726,7 +2726,7 @@ textarea.form-control {
     display: flex;
     align-items: center;
     gap: var(--space-lg);
-    padding: var(--space-xl) var(--space-lg);
+    padding: var(--space-lg) var(--space-lg) var(--space-lg) var(--space-xl);
     background: var(--color-bg-card);
     border: 2px solid var(--scene-color, var(--color-border));
     border-radius: var(--radius-xl);
@@ -2778,8 +2778,17 @@ textarea.form-control {
     z-index: 1;
 }
 
+.scene-indicator {
+    width: 6px;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+}
+
 .scene-name {
-    font-size: 1.25rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: var(--scene-color, var(--color-primary));
     margin-bottom: var(--space-xs);
@@ -2787,9 +2796,22 @@ textarea.form-control {
 }
 
 .scene-desc {
-    font-size: 0.9rem;
-    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    color: var(--color-text);
     line-height: 1.4;
+    margin-bottom: var(--space-xs);
+}
+
+.scene-categories {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-xs);
+}
+
+.scene-price {
+    font-size: 0.75rem;
+    color: var(--color-primary);
+    font-weight: 600;
 }
 
 .scene-arrow {
@@ -2813,13 +2835,8 @@ textarea.form-control {
     }
     
     .scene-card {
-        padding: var(--space-lg) var(--space-md);
+        padding: var(--space-md) var(--space-md) var(--space-md) var(--space-lg);
         gap: var(--space-md);
-    }
-    
-    .scene-icon {
-        font-size: 2.5rem;
-        width: 50px;
     }
     
     .scene-name {
@@ -2827,7 +2844,15 @@ textarea.form-control {
     }
     
     .scene-desc {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+    }
+    
+    .scene-categories {
+        font-size: 0.7rem;
+    }
+    
+    .scene-price {
+        font-size: 0.65rem;
     }
 }
 
