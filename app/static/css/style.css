@@ -2700,35 +2700,36 @@ textarea.form-control {
    ============================================ */
 
 .scene-selection {
-    margin-bottom: var(--space-xl);
+    margin-bottom: var(--space-2xl);
     text-align: center;
+    padding: var(--space-lg) 0;
 }
 
 .scene-title {
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-size: 1.5rem;
+    font-weight: 700;
     color: var(--color-primary);
-    margin-bottom: var(--space-lg);
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    margin-bottom: var(--space-xl);
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    letter-spacing: 0.1em;
 }
 
 .scene-cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: var(--space-md);
-    max-width: 600px;
+    max-width: 500px;
     margin: 0 auto;
 }
 
 .scene-card {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: var(--space-lg) var(--space-md);
+    gap: var(--space-lg);
+    padding: var(--space-xl) var(--space-lg);
     background: var(--color-bg-card);
     border: 2px solid var(--scene-color, var(--color-border));
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
     text-decoration: none;
     color: var(--color-text);
     transition: all var(--transition-base);
@@ -2740,39 +2741,69 @@ textarea.form-control {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, var(--scene-color, var(--color-primary)) 0%, transparent 60%);
+    background: linear-gradient(90deg, var(--scene-color, var(--color-primary)) 0%, transparent 50%);
     opacity: 0.1;
     transition: opacity var(--transition-base);
 }
 
 .scene-card:hover {
-    transform: translateY(-4px);
+    transform: translateX(8px) scale(1.02);
     border-color: var(--scene-color, var(--color-primary));
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
-                0 0 20px color-mix(in srgb, var(--scene-color, var(--color-primary)) 30%, transparent);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
+                0 0 30px color-mix(in srgb, var(--scene-color, var(--color-primary)) 40%, transparent);
 }
 
 .scene-card:hover::before {
-    opacity: 0.2;
+    opacity: 0.25;
+}
+
+.scene-card:active {
+    transform: translateX(4px) scale(1.01);
 }
 
 .scene-icon {
-    font-size: 2.5rem;
-    margin-bottom: var(--space-sm);
+    font-size: 3rem;
     line-height: 1;
+    flex-shrink: 0;
+    width: 60px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.scene-content {
+    flex: 1;
+    text-align: left;
+    position: relative;
+    z-index: 1;
 }
 
 .scene-name {
-    font-size: 0.9rem;
+    font-size: 1.25rem;
     font-weight: 700;
     color: var(--scene-color, var(--color-primary));
     margin-bottom: var(--space-xs);
+    letter-spacing: 0.05em;
 }
 
 .scene-desc {
-    font-size: 0.7rem;
+    font-size: 0.9rem;
     color: var(--color-text-muted);
-    line-height: 1.3;
+    line-height: 1.4;
+}
+
+.scene-arrow {
+    font-size: 1.5rem;
+    color: var(--scene-color, var(--color-primary));
+    opacity: 0.5;
+    transition: all var(--transition-fast);
+    position: relative;
+    z-index: 1;
+}
+
+.scene-card:hover .scene-arrow {
+    opacity: 1;
+    transform: translateX(4px);
 }
 
 /* Responsive - Small screens */
@@ -2782,19 +2813,21 @@ textarea.form-control {
     }
     
     .scene-card {
-        padding: var(--space-md) var(--space-sm);
+        padding: var(--space-lg) var(--space-md);
+        gap: var(--space-md);
     }
     
     .scene-icon {
-        font-size: 2rem;
+        font-size: 2.5rem;
+        width: 50px;
     }
     
     .scene-name {
-        font-size: 0.75rem;
+        font-size: 1.1rem;
     }
     
     .scene-desc {
-        font-size: 0.6rem;
+        font-size: 0.8rem;
     }
 }
 

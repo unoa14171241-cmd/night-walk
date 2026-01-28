@@ -41,7 +41,7 @@
         
         <!-- 目的別選択（シーン選択） -->
         <div class="scene-selection">
-            <h2 class="scene-title">今夜はどんな気分？</h2>
+            <h2 class="scene-title">✨ 今夜はどんな気分？ ✨</h2>
             <div class="scene-cards">
                 {% for scene_key in scenes %}
                 {% set scene = scene_groups[scene_key] %}
@@ -49,8 +49,11 @@
                    class="scene-card" 
                    style="--scene-color: {{ scene.color }}">
                     <div class="scene-icon">{{ scene.icon }}</div>
-                    <div class="scene-name">{{ scene.name }}</div>
-                    <div class="scene-desc">{{ scene.description }}</div>
+                    <div class="scene-content">
+                        <div class="scene-name">{{ scene.name }}</div>
+                        <div class="scene-desc">{{ scene.description }}</div>
+                    </div>
+                    <div class="scene-arrow">→</div>
                 </a>
                 {% endfor %}
             </div>
