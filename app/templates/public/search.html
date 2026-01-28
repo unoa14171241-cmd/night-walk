@@ -13,7 +13,6 @@
             {% if selected_scene and scene_groups[selected_scene] %}
             <div class="scene-filter-section">
                 <div class="scene-filter-header">
-                    <span class="scene-filter-icon">{{ scene_groups[selected_scene].icon }}</span>
                     <span class="scene-filter-name">{{ scene_groups[selected_scene].name }}</span>
                     <span class="scene-filter-desc">- {{ scene_groups[selected_scene].description }}</span>
                     <a href="{{ url_for('public.search', q=keyword, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}" 
@@ -38,7 +37,7 @@
                 {% set scene = scene_groups[scene_key] %}
                 <a href="{{ url_for('public.search', scene=scene_key, q=keyword, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}" 
                    class="scene-quick-btn" style="--scene-color: {{ scene.color }}">
-                    {{ scene.icon }} {{ scene.name }}
+                    {{ scene.name }}
                 </a>
                 {% endfor %}
             </div>
@@ -144,7 +143,7 @@
                 <span class="active-filters-label">絞り込み:</span>
                 {% if selected_scene and scene_groups[selected_scene] %}
                 <span class="filter-tag filter-tag-scene" style="--scene-color: {{ scene_groups[selected_scene].color }}">
-                    {{ scene_groups[selected_scene].icon }} {{ scene_groups[selected_scene].name }}
+                    {{ scene_groups[selected_scene].name }}
                     <a href="{{ url_for('public.search', q=keyword, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
                 </span>
                 {% endif %}
