@@ -48,6 +48,8 @@ def index():
                           trending_shops=trending_shops,
                           trending_casts=trending_casts,
                           areas=Shop.AREAS,
+                          scenes=Shop.SCENES,
+                          scene_groups=Shop.SCENE_GROUPS,
                           categories=Shop.CATEGORIES,
                           category_labels=Shop.CATEGORY_LABELS,
                           price_ranges=Shop.PRICE_RANGES,
@@ -61,15 +63,22 @@ def search():
     # Get search parameters
     keyword = request.args.get('q', '').strip()
     area = request.args.get('area', '')
+    scene = request.args.get('scene', '')
     category = request.args.get('category', '')
     price_range_key = request.args.get('price', '')
     vacancy = request.args.get('vacancy', '')
     has_job = request.args.get('has_job', '') == '1'
     
+    # シーンが選択されている場合、そのシーンのカテゴリリストを取得
+    scene_categories = []
+    if scene and scene in Shop.SCENES:
+        scene_categories = Shop.get_categories_by_scene(scene)
+    
     # Perform search with ad priority (広告優先ロジック適用)
     shops = AdService.get_search_results(
         keyword=keyword if keyword else None,
         area=area if area else None,
+        scene=scene if scene else None,
         category=category if category else None,
         price_range_key=price_range_key if price_range_key else None,
         vacancy_status=vacancy if vacancy else None,
@@ -91,11 +100,15 @@ def search():
                           inline_ads=inline_ads,
                           keyword=keyword,
                           selected_area=area,
+                          selected_scene=scene,
                           selected_category=category,
                           selected_price=price_range_key,
                           selected_vacancy=vacancy,
                           has_job=has_job,
                           areas=Shop.AREAS,
+                          scenes=Shop.SCENES,
+                          scene_groups=Shop.SCENE_GROUPS,
+                          scene_categories=scene_categories,
                           categories=Shop.CATEGORIES,
                           category_labels=Shop.CATEGORY_LABELS,
                           price_ranges=Shop.PRICE_RANGES,

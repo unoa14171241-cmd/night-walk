@@ -21,7 +21,7 @@ class AdService:
     """
     
     @classmethod
-    def get_search_results(cls, area=None, keyword=None, category=None, 
+    def get_search_results(cls, area=None, keyword=None, scene=None, category=None, 
                           price_range_key=None, vacancy_status=None, 
                           has_job=None, featured_only=False):
         """
@@ -37,6 +37,7 @@ class AdService:
         shops = Shop.search(
             keyword=keyword,
             area=area,
+            scene=scene,
             category=category,
             price_range_key=price_range_key,
             vacancy_status=vacancy_status,

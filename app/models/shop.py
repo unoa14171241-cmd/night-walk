@@ -17,30 +17,83 @@ class Shop(db.Model):
     # Categories (業態)
     CATEGORY_SNACK = 'snack'
     CATEGORY_CONCAFE = 'concafe'
+    CATEGORY_GIRLS_BAR = 'girls_bar'
     CATEGORY_KYABAKURA = 'kyabakura'
     CATEGORY_FUZOKU = 'fuzoku'
     CATEGORY_DERIHERU = 'deriheru'
     CATEGORY_LOUNGE = 'lounge'
+    CATEGORY_LUXURY_LOUNGE = 'luxury_lounge'
     CATEGORY_CLUB = 'club'
     CATEGORY_BAR = 'bar'
+    CATEGORY_MENS_ESTHE = 'mens_esthe'
     CATEGORY_OTHER = 'other'
     
     CATEGORIES = [
-        CATEGORY_SNACK, CATEGORY_CONCAFE, CATEGORY_KYABAKURA, 
-        CATEGORY_FUZOKU, CATEGORY_DERIHERU, CATEGORY_LOUNGE, 
-        CATEGORY_CLUB, CATEGORY_BAR, CATEGORY_OTHER
+        CATEGORY_SNACK, CATEGORY_CONCAFE, CATEGORY_GIRLS_BAR,
+        CATEGORY_KYABAKURA, CATEGORY_FUZOKU, CATEGORY_DERIHERU, 
+        CATEGORY_LOUNGE, CATEGORY_LUXURY_LOUNGE, CATEGORY_CLUB, 
+        CATEGORY_BAR, CATEGORY_MENS_ESTHE, CATEGORY_OTHER
     ]
     CATEGORY_LABELS = {
         CATEGORY_SNACK: 'スナック',
         CATEGORY_CONCAFE: 'コンカフェ',
+        CATEGORY_GIRLS_BAR: 'ガールズバー',
         CATEGORY_KYABAKURA: 'キャバクラ',
         CATEGORY_FUZOKU: '風俗',
         CATEGORY_DERIHERU: 'デリヘル',
         CATEGORY_LOUNGE: 'ラウンジ',
+        CATEGORY_LUXURY_LOUNGE: '高級ラウンジ',
         CATEGORY_CLUB: 'クラブ',
         CATEGORY_BAR: 'バー',
+        CATEGORY_MENS_ESTHE: 'メンズエステ',
         CATEGORY_OTHER: 'その他',
     }
+    
+    # シーン別グループ（目的別検索用）
+    SCENE_LIGHT = 'light'
+    SCENE_ENTERTAINMENT = 'entertainment'
+    SCENE_ADULT = 'adult'
+    
+    SCENES = [SCENE_LIGHT, SCENE_ENTERTAINMENT, SCENE_ADULT]
+    
+    SCENE_GROUPS = {
+        SCENE_LIGHT: {
+            'name': 'ライトナイト',
+            'description': '気軽に飲む・話す',
+            'icon': '🍸',
+            'color': '#4ECDC4',
+            'categories': ['snack', 'concafe', 'girls_bar', 'lounge', 'bar']
+        },
+        SCENE_ENTERTAINMENT: {
+            'name': 'エンタメナイト',
+            'description': '盛り上がる・しっかり遊ぶ',
+            'icon': '🎉',
+            'color': '#FF6B6B',
+            'categories': ['kyabakura', 'club', 'luxury_lounge']
+        },
+        SCENE_ADULT: {
+            'name': 'アダルトナイト',
+            'description': '大人のサービス',
+            'icon': '🌙',
+            'color': '#9B59B6',
+            'categories': ['fuzoku', 'deriheru', 'mens_esthe']
+        }
+    }
+    
+    @classmethod
+    def get_categories_by_scene(cls, scene):
+        """シーンに含まれるカテゴリリストを取得"""
+        if scene in cls.SCENE_GROUPS:
+            return cls.SCENE_GROUPS[scene]['categories']
+        return []
+    
+    @classmethod
+    def get_scene_for_category(cls, category):
+        """カテゴリが属するシーンを取得"""
+        for scene, data in cls.SCENE_GROUPS.items():
+            if category in data['categories']:
+                return scene
+        return None
     
     # Price ranges for search
     PRICE_RANGES = [
@@ -153,8 +206,8 @@ class Shop(db.Model):
         return query.order_by(cls.name).all()
     
     @classmethod
-    def search(cls, keyword=None, area=None, category=None, price_range_key=None, 
-               vacancy_status=None, has_job=None, featured_only=False):
+    def search(cls, keyword=None, area=None, category=None, scene=None,
+               price_range_key=None, vacancy_status=None, has_job=None, featured_only=False):
         """
         Search shops with various filters.
         
@@ -162,6 +215,7 @@ class Shop(db.Model):
             keyword: Search keyword (matches name, description, tags)
             area: Area filter
             category: Category filter
+            scene: Scene (purpose) filter ('light', 'entertainment', 'adult')
             price_range_key: Price range index (0-4)
             vacancy_status: Vacancy status filter ('empty', 'busy', 'full')
             has_job: Filter for shops with active job postings
@@ -185,7 +239,13 @@ class Shop(db.Model):
         if area and area in cls.AREAS:
             query = query.filter_by(area=area)
         
-        # Category filter
+        # Scene (purpose) filter - シーンに含まれるカテゴリで絞り込み
+        if scene and scene in cls.SCENES:
+            scene_categories = cls.get_categories_by_scene(scene)
+            if scene_categories:
+                query = query.filter(cls.category.in_(scene_categories))
+        
+        # Category filter (シーン内でさらに絞り込み)
         if category and category in cls.CATEGORIES:
             query = query.filter_by(category=category)
         

@@ -9,9 +9,49 @@
     <div class="search-results-layout">
         <!-- Main Content -->
         <div class="search-main">
+            <!-- Scene Filter (目的選択中の場合) -->
+            {% if selected_scene and scene_groups[selected_scene] %}
+            <div class="scene-filter-section">
+                <div class="scene-filter-header">
+                    <span class="scene-filter-icon">{{ scene_groups[selected_scene].icon }}</span>
+                    <span class="scene-filter-name">{{ scene_groups[selected_scene].name }}</span>
+                    <span class="scene-filter-desc">- {{ scene_groups[selected_scene].description }}</span>
+                    <a href="{{ url_for('public.search', q=keyword, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}" 
+                       class="scene-clear-btn">✕ 解除</a>
+                </div>
+                <div class="scene-category-tags">
+                    <a href="{{ url_for('public.search', scene=selected_scene, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}" 
+                       class="scene-category-tag {% if not selected_category %}active{% endif %}">すべて</a>
+                    {% for cat in scene_categories %}
+                    <a href="{{ url_for('public.search', scene=selected_scene, category=cat, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}" 
+                       class="scene-category-tag {% if selected_category == cat %}active{% endif %}">
+                        {{ category_labels[cat] }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <!-- Scene Quick Select (目的未選択の場合) -->
+            <div class="scene-quick-select mb-3">
+                <span class="scene-quick-label">目的で探す:</span>
+                {% for scene_key in scenes %}
+                {% set scene = scene_groups[scene_key] %}
+                <a href="{{ url_for('public.search', scene=scene_key, q=keyword, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}" 
+                   class="scene-quick-btn" style="--scene-color: {{ scene.color }}">
+                    {{ scene.icon }} {{ scene.name }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
             <!-- Search Form -->
             <div class="search-form-compact mb-4">
                 <form action="{{ url_for('public.search') }}" method="GET">
+                    <!-- Hidden scene parameter -->
+                    {% if selected_scene %}
+                    <input type="hidden" name="scene" value="{{ selected_scene }}">
+                    {% endif %}
+                    
                     <div class="keyword-search">
                         <div class="search-input-wrapper">
                             <span class="search-icon"></span>
@@ -36,6 +76,7 @@
                             {% endfor %}
                         </select>
                         
+                        {% if not selected_scene %}
                         <select name="category" class="filter-select" onchange="this.form.submit()">
                             <option value="">業態: すべて</option>
                             {% for cat in categories %}
@@ -44,6 +85,16 @@
                             </option>
                             {% endfor %}
                         </select>
+                        {% else %}
+                        <select name="category" class="filter-select" onchange="this.form.submit()">
+                            <option value="">業態: すべて</option>
+                            {% for cat in scene_categories %}
+                            <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>
+                                {{ category_labels[cat] }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
                         
                         <select name="price" class="filter-select" onchange="this.form.submit()">
                             <option value="">料金: すべて</option>
@@ -88,37 +139,43 @@
             </div>
             
             <!-- Active Filters -->
-            {% if selected_area or selected_category or selected_price or selected_vacancy or has_job %}
+            {% if selected_scene or selected_area or selected_category or selected_price or selected_vacancy or has_job %}
             <div class="active-filters mb-3">
                 <span class="active-filters-label">絞り込み:</span>
+                {% if selected_scene and scene_groups[selected_scene] %}
+                <span class="filter-tag filter-tag-scene" style="--scene-color: {{ scene_groups[selected_scene].color }}">
+                    {{ scene_groups[selected_scene].icon }} {{ scene_groups[selected_scene].name }}
+                    <a href="{{ url_for('public.search', q=keyword, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
+                </span>
+                {% endif %}
                 {% if selected_area %}
                 <span class="filter-tag">
                     {{ selected_area }}
-                    <a href="{{ url_for('public.search', q=keyword, category=selected_category, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
+                    <a href="{{ url_for('public.search', q=keyword, scene=selected_scene, category=selected_category, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
                 </span>
                 {% endif %}
                 {% if selected_category %}
                 <span class="filter-tag">
                     {{ category_labels[selected_category] }}
-                    <a href="{{ url_for('public.search', q=keyword, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
+                    <a href="{{ url_for('public.search', q=keyword, scene=selected_scene, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
                 </span>
                 {% endif %}
                 {% if selected_price %}
                 <span class="filter-tag">
                     {{ price_ranges[selected_price | int][2] }}
-                    <a href="{{ url_for('public.search', q=keyword, area=selected_area, category=selected_category, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
+                    <a href="{{ url_for('public.search', q=keyword, scene=selected_scene, area=selected_area, category=selected_category, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
                 </span>
                 {% endif %}
                 {% if selected_vacancy %}
                 <span class="filter-tag">
                     {{ vacancy_labels[selected_vacancy] }}席
-                    <a href="{{ url_for('public.search', q=keyword, area=selected_area, category=selected_category, price=selected_price, has_job='1' if has_job else '') }}">&times;</a>
+                    <a href="{{ url_for('public.search', q=keyword, scene=selected_scene, area=selected_area, category=selected_category, price=selected_price, has_job='1' if has_job else '') }}">&times;</a>
                 </span>
                 {% endif %}
                 {% if has_job %}
                 <span class="filter-tag">
                     求人あり
-                    <a href="{{ url_for('public.search', q=keyword, area=selected_area, category=selected_category, price=selected_price, vacancy=selected_vacancy) }}">&times;</a>
+                    <a href="{{ url_for('public.search', q=keyword, scene=selected_scene, area=selected_area, category=selected_category, price=selected_price, vacancy=selected_vacancy) }}">&times;</a>
                 </span>
                 {% endif %}
                 <a href="{{ url_for('public.search', q=keyword) }}" class="clear-filters">すべてクリア</a>

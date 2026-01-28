@@ -39,12 +39,21 @@
             </h1>
         </div>
         
-        <!-- Category Buttons -->
-        <div class="category-buttons category-buttons-inline">
-            <a href="{{ url_for('public.search', category='cabaret') }}" class="category-btn category-btn-pink">キャバクラ</a>
-            <a href="{{ url_for('public.search', category='girls_bar') }}" class="category-btn category-btn-purple">ガールズバー</a>
-            <a href="{{ url_for('public.search', category='lounge') }}" class="category-btn category-btn-blue">ラウンジ</a>
-            <a href="{{ url_for('public.search', category='other') }}" class="category-btn category-btn-gold">その他</a>
+        <!-- 目的別選択（シーン選択） -->
+        <div class="scene-selection">
+            <h2 class="scene-title">今夜はどんな気分？</h2>
+            <div class="scene-cards">
+                {% for scene_key in scenes %}
+                {% set scene = scene_groups[scene_key] %}
+                <a href="{{ url_for('public.search', scene=scene_key) }}" 
+                   class="scene-card" 
+                   style="--scene-color: {{ scene.color }}">
+                    <div class="scene-icon">{{ scene.icon }}</div>
+                    <div class="scene-name">{{ scene.name }}</div>
+                    <div class="scene-desc">{{ scene.description }}</div>
+                </a>
+                {% endfor %}
+            </div>
         </div>
         
         <!-- Feature Ribbons -->
