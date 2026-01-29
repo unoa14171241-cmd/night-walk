@@ -1,0 +1,106 @@
+{% extends "customer/base.html" %}
+
+{% block title %}口コミ投稿 - {{ shop.name }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">口コミを投稿</h4>
+                </div>
+                <div class="card-body">
+                    <!-- 店舗情報 -->
+                    <div class="shop-info mb-4 p-3 bg-dark rounded">
+                        <h5 class="mb-1">{{ shop.name }}</h5>
+                        <small class="text-muted">{{ shop.area }} / {{ shop.category_label }}</small>
+                    </div>
+                    
+                    <form method="POST" id="reviewForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <!-- 星評価 -->
+                        <div class="mb-4">
+                            <label class="form-label">評価 <span class="text-danger">*</span></label>
+                            <div class="star-rating-input">
+                                {% for i in range(5, 0, -1) %}
+                                <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}" 
+                                       {% if rating == i %}checked{% endif %} required>
+                                <label for="star{{ i }}" title="{{ i }}つ星">★</label>
+                                {% endfor %}
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                タップして評価を選択してください（1〜5つ星）
+                            </small>
+                        </div>
+                        
+                        <!-- 電話番号 -->
+                        <div class="mb-4">
+                            <label for="phone_number" class="form-label">
+                                電話番号（SMS認証用） <span class="text-danger">*</span>
+                            </label>
+                            <input type="tel" class="form-control" id="phone_number" name="phone_number"
+                                   value="{{ phone_number or '' }}" placeholder="090-1234-5678"
+                                   pattern="[0-9\-+]+" required>
+                            <small class="text-muted">
+                                認証コードを送信します。不正投稿防止のため、1つの電話番号から1店舗1回のみ投稿可能です。
+                            </small>
+                        </div>
+                        
+                        <!-- 注意事項 -->
+                        <div class="alert alert-secondary mb-4">
+                            <h6 class="alert-heading mb-2">📝 投稿について</h6>
+                            <ul class="mb-0 small">
+                                <li>星評価のみ（文字入力はありません）</li>
+                                <li>SMS認証が必要です（1端末1評価）</li>
+                                <li>投稿完了で <strong>500ポイント</strong> プレゼント！</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                認証コードを送信
+                            </button>
+                            <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}" class="btn btn-outline-secondary">
+                                キャンセル
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* 星評価入力 */
+.star-rating-input {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: 0.25rem;
+}
+
+.star-rating-input input {
+    display: none;
+}
+
+.star-rating-input label {
+    font-size: 2.5rem;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.star-rating-input label:hover,
+.star-rating-input label:hover ~ label,
+.star-rating-input input:checked ~ label {
+    color: #ffc107;
+}
+
+.star-rating-input input:checked ~ label {
+    text-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+}
+</style>
+{% endblock %}

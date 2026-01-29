@@ -1,0 +1,105 @@
+{% extends "customer/base.html" %}
+
+{% block title %}認証コード入力 - {{ shop.name }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-5">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">SMS認証</h4>
+                </div>
+                <div class="card-body">
+                    <!-- 店舗情報 -->
+                    <div class="shop-info mb-4 p-3 bg-dark rounded">
+                        <h5 class="mb-1">{{ shop.name }}</h5>
+                        <small class="text-muted">{{ shop.area }} / {{ shop.category_label }}</small>
+                    </div>
+                    
+                    <div class="text-center mb-4">
+                        <div class="sms-icon mb-3">📱</div>
+                        <p class="mb-0">SMSに送信された<br><strong>6桁の認証コード</strong>を入力してください</p>
+                    </div>
+                    
+                    <form method="POST" id="verifyForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-4">
+                            <input type="text" class="form-control form-control-lg text-center verification-code-input" 
+                                   name="verification_code" id="verification_code"
+                                   placeholder="000000" maxlength="6" pattern="[0-9]{6}"
+                                   inputmode="numeric" autocomplete="one-time-code" required>
+                            <small class="text-muted d-block text-center mt-2">
+                                有効期限: 10分間
+                            </small>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                認証して投稿完了
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="text-center">
+                        <p class="text-muted mb-2">認証コードが届かない場合</p>
+                        <form method="POST" action="{{ url_for('customer.resend_review_code', shop_id=shop.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                認証コードを再送信
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 注意事項 -->
+            <div class="alert alert-info mt-3">
+                <small>
+                    <strong>💡 ヒント:</strong>
+                    SMSが届かない場合は、電話番号が正しいか確認してください。
+                    迷惑メールフィルタの設定もご確認ください。
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.sms-icon {
+    font-size: 3rem;
+}
+
+.verification-code-input {
+    font-size: 2rem;
+    letter-spacing: 0.5rem;
+    font-family: monospace;
+    font-weight: bold;
+}
+
+.verification-code-input::placeholder {
+    color: var(--color-text-muted);
+    opacity: 0.5;
+}
+</style>
+
+<script>
+// 数字のみ入力可
+document.getElementById('verification_code').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '');
+    
+    // 6桁入力で自動送信
+    if (this.value.length === 6) {
+        // 少し遅延させてUX向上
+        setTimeout(() => {
+            if (confirm('認証コードを送信しますか？')) {
+                document.getElementById('verifyForm').submit();
+            }
+        }, 300);
+    }
+});
+</script>
+{% endblock %}

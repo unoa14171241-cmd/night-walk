@@ -199,6 +199,11 @@ def shop_detail(shop_id):
     shop_badges = AdService.get_shop_badges(shop_id)
     best_badge = AdService.get_best_badge('shop', shop_id)
     
+    # 口コミ評価データを取得
+    from ..services.review_service import ReviewService
+    review_data = ReviewService.get_shop_rating_summary(shop_id)
+    recent_reviews = ReviewService.get_recent_reviews(shop_id, limit=5)
+    
     return render_template('public/shop_detail.html',
                           shop=shop,
                           job=job if can_show_job else None,
@@ -209,6 +214,8 @@ def shop_detail(shop_id):
                           can_show_shifts=can_show_shifts,
                           shop_badges=shop_badges,
                           best_badge=best_badge,
+                          review_data=review_data,
+                          recent_reviews=recent_reviews,
                           vacancy_labels=VacancyStatus.STATUS_LABELS,
                           vacancy_colors=VacancyStatus.STATUS_COLORS)
 

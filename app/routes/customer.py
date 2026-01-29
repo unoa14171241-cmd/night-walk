@@ -396,3 +396,151 @@ def gift_history():
         page=page, per_page=20, error_out=False
     )
     return render_template('customer/gift_history.html', gifts=gifts)
+
+
+# ==================== 口コミ評価 ====================
+
+@customer_bp.route('/review/<int:shop_id>', methods=['GET', 'POST'])
+@limiter.limit("10 per hour")
+def submit_review(shop_id):
+    """店舗への口コミ投稿"""
+    from ..models.review import ShopReview
+    from ..services.review_service import ReviewService
+    
+    shop = Shop.query.get_or_404(shop_id)
+    
+    if request.method == 'POST':
+        rating = request.form.get('rating', type=int)
+        phone_number = request.form.get('phone_number', '').strip()
+        
+        # バリデーション
+        errors = []
+        if not rating or not (1 <= rating <= 5):
+            errors.append('評価を選択してください（1〜5）')
+        if not phone_number:
+            errors.append('電話番号を入力してください')
+        elif not phone_number.replace('-', '').replace('+', '').isdigit():
+            errors.append('有効な電話番号を入力してください')
+        
+        if errors:
+            for error in errors:
+                flash(error, 'danger')
+            return render_template('customer/review_form.html', 
+                                   shop=shop, rating=rating, phone_number=phone_number)
+        
+        # 電話番号を正規化（ハイフン除去、国番号追加）
+        normalized_phone = phone_number.replace('-', '').replace(' ', '')
+        if normalized_phone.startswith('0'):
+            normalized_phone = '+81' + normalized_phone[1:]
+        elif not normalized_phone.startswith('+'):
+            normalized_phone = '+81' + normalized_phone
+        
+        # 端末識別用フィンガープリント
+        device_fingerprint = request.headers.get('User-Agent', '') + request.remote_addr
+        import hashlib
+        device_fingerprint = hashlib.sha256(device_fingerprint.encode()).hexdigest()[:32]
+        
+        # 口コミ投稿
+        customer_id = current_user.id if current_user.is_authenticated and hasattr(current_user, 'is_customer') else None
+        
+        result = ReviewService.submit_review(
+            shop_id=shop_id,
+            rating=rating,
+            phone_number=normalized_phone,
+            customer_id=customer_id,
+            device_fingerprint=device_fingerprint,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        
+        if not result['success']:
+            flash(result['error'], 'danger')
+            return render_template('customer/review_form.html', 
+                                   shop=shop, rating=rating, phone_number=phone_number)
+        
+        # SMS認証コードを送信
+        verification = result['verification']
+        ReviewService.send_sms_verification(normalized_phone, verification.verification_code)
+        
+        # 認証画面へリダイレクト
+        session['pending_review_id'] = result['review'].id
+        flash('認証コードを送信しました。SMSをご確認ください。', 'info')
+        return redirect(url_for('customer.verify_review', shop_id=shop_id))
+    
+    return render_template('customer/review_form.html', shop=shop)
+
+
+@customer_bp.route('/review/<int:shop_id>/verify', methods=['GET', 'POST'])
+@limiter.limit("20 per hour")
+def verify_review(shop_id):
+    """口コミSMS認証"""
+    from ..services.review_service import ReviewService
+    
+    shop = Shop.query.get_or_404(shop_id)
+    review_id = session.get('pending_review_id')
+    
+    if not review_id:
+        flash('認証が必要な口コミがありません。', 'warning')
+        return redirect(url_for('customer.submit_review', shop_id=shop_id))
+    
+    if request.method == 'POST':
+        verification_code = request.form.get('verification_code', '').strip()
+        
+        if not verification_code:
+            flash('認証コードを入力してください。', 'danger')
+            return render_template('customer/review_verify.html', shop=shop)
+        
+        # 認証実行
+        customer_id = current_user.id if current_user.is_authenticated and hasattr(current_user, 'is_customer') else None
+        
+        result = ReviewService.verify_and_complete(
+            review_id=review_id,
+            verification_code=verification_code,
+            customer_id=customer_id
+        )
+        
+        if not result['success']:
+            flash(result['error'], 'danger')
+            return render_template('customer/review_verify.html', shop=shop)
+        
+        # 成功
+        session.pop('pending_review_id', None)
+        
+        if result['points_rewarded'] > 0:
+            flash(f'口コミを投稿しました！{result["points_rewarded"]}ポイントを獲得しました！', 'success')
+        else:
+            flash('口コミを投稿しました！', 'success')
+        
+        return redirect(url_for('public.shop_detail', shop_id=shop_id))
+    
+    return render_template('customer/review_verify.html', shop=shop)
+
+
+@customer_bp.route('/review/<int:shop_id>/resend', methods=['POST'])
+@limiter.limit("5 per hour")
+def resend_review_code(shop_id):
+    """認証コード再送信"""
+    from ..services.review_service import ReviewService
+    
+    review_id = session.get('pending_review_id')
+    
+    if not review_id:
+        flash('認証が必要な口コミがありません。', 'warning')
+        return redirect(url_for('customer.submit_review', shop_id=shop_id))
+    
+    result = ReviewService.resend_verification_code(
+        review_id=review_id,
+        ip_address=request.remote_addr
+    )
+    
+    if not result['success']:
+        flash(result['error'], 'danger')
+    else:
+        # SMS送信
+        ReviewService.send_sms_verification(
+            result['verification'].phone_number,
+            result['verification'].verification_code
+        )
+        flash('認証コードを再送信しました。', 'info')
+    
+    return redirect(url_for('customer.verify_review', shop_id=shop_id))

@@ -10,14 +10,16 @@ logger = logging.getLogger(__name__)
 
 def finalize_monthly_rankings(year=None, month=None, auto_entitlements=True):
     """
-    月次ランキングを確定
+    月次ランキングを確定（キャスト＋店舗）
     
     実行頻度: 毎月1日 0:00（前月分を確定）
     
     処理内容:
-    1. 前月のランキングスコアを確定
-    2. TOP10にバッジを付与
-    3. (オプション) 広告権利を自動生成
+    1. キャストランキング確定
+    2. 店舗ランキング確定（PV＋口コミ）
+    3. TOP10にバッジを付与
+    4. (オプション) 広告権利を自動生成
+    5. 店舗特典（翌月プラン割引）を生成
     
     Args:
         year: 対象年（指定しない場合は前月）
@@ -26,6 +28,7 @@ def finalize_monthly_rankings(year=None, month=None, auto_entitlements=True):
     """
     from ..extensions import db
     from ..services.ranking_service import RankingService
+    from ..services.shop_ranking_service import ShopRankingService
     
     # 年月が指定されない場合は前月
     if year is None or month is None:
@@ -41,23 +44,40 @@ def finalize_monthly_rankings(year=None, month=None, auto_entitlements=True):
     start_time = datetime.utcnow()
     
     try:
+        # キャストランキング確定
         if auto_entitlements:
-            result = RankingService.finalize_month_with_entitlements(year, month)
-            logger.info(f"Created {result['entitlements_created']} entitlements")
+            cast_result = RankingService.finalize_month_with_entitlements(year, month)
+            logger.info(f"[Cast] Created {cast_result['entitlements_created']} entitlements")
         else:
-            result = {'rankings': RankingService.finalize_month(year, month)}
+            cast_result = {'rankings': RankingService.finalize_month(year, month)}
         
-        # 結果をログ
-        for area, rankings in result['rankings'].items():
+        # 結果をログ（キャスト）
+        for area, rankings in cast_result['rankings'].items():
             if rankings:
                 top3 = rankings[:3]
                 top_names = [f"#{r['rank']} {r['cast'].name_display}" for r in top3 if r.get('cast')]
-                logger.info(f"  {area}: {', '.join(top_names)}")
+                logger.info(f"  [Cast] {area}: {', '.join(top_names)}")
+        
+        # 店舗ランキング確定
+        shop_result = ShopRankingService.finalize_month_with_entitlements(year, month)
+        logger.info(f"[Shop] Created {shop_result['entitlements_created']} entitlements")
+        logger.info(f"[Shop] Created {len(shop_result['discounts'])} plan discounts")
+        
+        # 結果をログ（店舗）
+        for area, rankings_by_type in shop_result['rankings'].items():
+            for rank_type, rankings in rankings_by_type.items():
+                if rankings:
+                    top3 = rankings[:3]
+                    top_names = [f"#{r['rank']} {r['shop'].name}" for r in top3 if r.get('shop')]
+                    logger.info(f"  [Shop/{rank_type}] {area}: {', '.join(top_names)}")
         
         elapsed = (datetime.utcnow() - start_time).total_seconds()
         logger.info(f"Monthly ranking finalization completed in {elapsed:.2f}s")
         
-        return result
+        return {
+            'cast': cast_result,
+            'shop': shop_result
+        }
         
     except Exception as e:
         logger.error(f"Error in ranking finalization: {e}", exc_info=True)

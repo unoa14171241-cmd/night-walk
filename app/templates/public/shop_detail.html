@@ -167,6 +167,72 @@
                 </div>
             </div>
             {% endif %}
+            
+            <!-- Reviews Section -->
+            <div class="info-section">
+                <div class="d-flex justify-between align-center mb-3">
+                    <h3 class="mb-0">口コミ評価</h3>
+                    <a href="{{ url_for('customer.submit_review', shop_id=shop.id) }}" class="btn btn-outline-primary btn-sm">
+                        口コミを投稿
+                    </a>
+                </div>
+                
+                <!-- Rating Summary -->
+                <div class="card mb-3">
+                    <div class="review-summary">
+                        <div class="review-average">
+                            <span class="review-score">{{ '%.1f'|format(review_data.average) if review_data.average > 0 else '-' }}</span>
+                            <div class="review-stars">
+                                {% for i in range(1, 6) %}
+                                <span class="star {% if i <= review_data.average|round %}filled{% endif %}">★</span>
+                                {% endfor %}
+                            </div>
+                            <span class="review-count">{{ review_data.count }}件の評価</span>
+                        </div>
+                        
+                        {% if review_data.count > 0 %}
+                        <div class="review-distribution">
+                            {% for i in range(5, 0, -1) %}
+                            <div class="rating-bar-row">
+                                <span class="rating-label">{{ i }}</span>
+                                <div class="rating-bar">
+                                    <div class="rating-bar-fill" style="width: {{ (review_data.distribution[i] / review_data.count * 100) if review_data.count > 0 else 0 }}%;"></div>
+                                </div>
+                                <span class="rating-count">{{ review_data.distribution[i] }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Recent Reviews -->
+                {% if recent_reviews %}
+                <div class="recent-reviews">
+                    {% for review in recent_reviews %}
+                    <div class="review-item">
+                        <div class="review-item-rating">
+                            {% for i in range(1, 6) %}
+                            <span class="star small {% if i <= review.rating %}filled{% endif %}">★</span>
+                            {% endfor %}
+                        </div>
+                        <span class="review-item-date">{{ review.created_at.strftime('%Y/%m/%d') }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-3">
+                    まだ口コミがありません。<br>
+                    <a href="{{ url_for('customer.submit_review', shop_id=shop.id) }}">最初の口コミを投稿する</a>
+                </p>
+                {% endif %}
+                
+                <!-- Review Reward Notice -->
+                <div class="review-reward-notice mt-3">
+                    <span class="reward-icon">🎁</span>
+                    <span>口コミ投稿で <strong>500ポイント</strong> プレゼント！</span>
+                </div>
+            </div>
         </div>
         
         <!-- Right Column: Booking CTA -->
@@ -340,6 +406,127 @@
     .cast-grid {
         grid-template-columns: repeat(3, 1fr);
     }
+}
+
+/* Reviews Section */
+.review-summary {
+    display: flex;
+    gap: var(--space-xl);
+    flex-wrap: wrap;
+}
+
+.review-average {
+    text-align: center;
+    min-width: 120px;
+}
+
+.review-score {
+    display: block;
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--color-primary-light);
+    line-height: 1;
+}
+
+.review-stars {
+    margin: var(--space-sm) 0;
+}
+
+.star {
+    color: var(--color-text-muted);
+    font-size: 1.25rem;
+}
+
+.star.filled {
+    color: #ffc107;
+}
+
+.star.small {
+    font-size: 0.875rem;
+}
+
+.review-count {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+.review-distribution {
+    flex: 1;
+    min-width: 200px;
+}
+
+.rating-bar-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xs);
+}
+
+.rating-label {
+    width: 20px;
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+.rating-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.rating-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-accent-gold));
+    border-radius: var(--radius-full);
+    transition: width 0.3s;
+}
+
+.rating-count {
+    width: 30px;
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.recent-reviews {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-md);
+}
+
+.review-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.review-item:last-child {
+    border-bottom: none;
+}
+
+.review-item-date {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.review-reward-notice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: linear-gradient(90deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.05));
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+}
+
+.reward-icon {
+    font-size: 1.25rem;
 }
 </style>
 
