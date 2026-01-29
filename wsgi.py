@@ -102,6 +102,22 @@ def setup_scheduler():
 if os.environ.get('FLASK_ENV') == 'production' or os.environ.get('ENABLE_SCHEDULER') == '1':
     scheduler = setup_scheduler()
 
+def auto_create_tables():
+    """起動時に存在しないテーブルを自動作成"""
+    with app.app_context():
+        try:
+            # 全モデルをインポートしてテーブルを作成
+            from app import models  # noqa: F401
+            db.create_all()
+            print("[INFO] Database tables checked/created successfully.")
+        except Exception as e:
+            print(f"[WARNING] Table creation error (may be normal): {e}")
+
+
+# アプリ起動時にテーブル自動作成
+auto_create_tables()
+
+
 def auto_seed():
     """デプロイ時にデータベースが空なら自動でシードデータを作成"""
     with app.app_context():
