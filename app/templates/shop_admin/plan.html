@@ -82,6 +82,124 @@
             </div>
         </div>
         
+        <!-- プラン比較表（無料プランの場合のみ表示） -->
+        {% if store_plan.plan_type == 'free' %}
+        <div class="card mb-4">
+            <h3 class="mb-4">📊 プラン比較</h3>
+            
+            <div class="plan-comparison">
+                <!-- 無料プラン -->
+                <div class="plan-column free">
+                    <div class="plan-column-header">
+                        <h4>無料プラン</h4>
+                        <div class="plan-column-price">
+                            <span class="amount">¥0</span>
+                            <span class="period">/月</span>
+                        </div>
+                    </div>
+                    <ul class="plan-column-features">
+                        <li class="enabled">✓ 店舗基本情報の掲載</li>
+                        <li class="enabled">✓ 店舗画像（詳細ページ）</li>
+                        <li class="enabled">✓ キャスト一覧管理</li>
+                        <li class="disabled">✗ 検索優先表示</li>
+                        <li class="disabled">✗ 優良店バッジ</li>
+                        <li class="disabled">✗ キャスト出勤表示</li>
+                        <li class="disabled">✗ 求人掲載</li>
+                    </ul>
+                    <div class="plan-column-action">
+                        <span class="current-plan">現在のプラン</span>
+                    </div>
+                </div>
+                
+                <!-- スタンダードプラン -->
+                <div class="plan-column standard recommended">
+                    <div class="recommended-badge">おすすめ</div>
+                    <div class="plan-column-header">
+                        <h4>スタンダード</h4>
+                        <div class="plan-column-price">
+                            <span class="amount">¥25,000</span>
+                            <span class="period">/月</span>
+                        </div>
+                    </div>
+                    <ul class="plan-column-features">
+                        <li class="enabled">✓ 店舗基本情報の掲載</li>
+                        <li class="enabled">✓ 店舗画像（詳細ページ）</li>
+                        <li class="enabled">✓ キャスト一覧管理</li>
+                        <li class="enabled highlight">✓ 検索優先表示</li>
+                        <li class="enabled highlight">✓ 優良店バッジ</li>
+                        <li class="enabled highlight">✓ キャスト出勤表示</li>
+                        <li class="enabled">✓ 求人掲載</li>
+                    </ul>
+                    <div class="plan-column-action">
+                        <form action="{{ url_for('shop_admin.subscribe_plan') }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="plan_type" value="standard">
+                            <button type="submit" class="btn btn-primary btn-block">
+                                このプランに申し込む
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- プレミアムプラン -->
+                <div class="plan-column premium">
+                    <div class="plan-column-header">
+                        <h4>プレミアム</h4>
+                        <div class="plan-column-price">
+                            <span class="amount">¥50,000</span>
+                            <span class="period">/月</span>
+                        </div>
+                    </div>
+                    <ul class="plan-column-features">
+                        <li class="enabled">✓ スタンダードの全機能</li>
+                        <li class="enabled highlight">✓ トップバナー掲載権</li>
+                        <li class="enabled highlight">✓ 検索で最優先表示</li>
+                        <li class="enabled">✓ 専任サポート</li>
+                    </ul>
+                    <div class="plan-column-action">
+                        <form action="{{ url_for('shop_admin.subscribe_plan') }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="plan_type" value="premium">
+                            <button type="submit" class="btn btn-outline btn-block">
+                                このプランに申し込む
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- 有料プランの場合：プラン変更・解約 -->
+        {% if store_plan.plan_type != 'free' %}
+        <div class="card mb-4">
+            <h3 class="mb-3">🔄 プラン変更</h3>
+            
+            {% if store_plan.plan_type == 'standard' %}
+            <p>プレミアムプランにアップグレードすると、トップバナー掲載権と検索での最優先表示が利用できます。</p>
+            <form action="{{ url_for('shop_admin.subscribe_plan') }}" method="POST" class="mb-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="plan_type" value="premium">
+                <button type="submit" class="btn btn-primary">
+                    プレミアムにアップグレード（+¥25,000/月）
+                </button>
+            </form>
+            {% endif %}
+            
+            <hr class="my-4">
+            
+            <h4 class="text-danger">解約</h4>
+            <p class="text-muted">プランを解約すると、次回更新日に無料プランに戻ります。</p>
+            <form action="{{ url_for('shop_admin.cancel_plan') }}" method="POST" 
+                  onsubmit="return confirm('本当にプランを解約しますか？');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline btn-danger">
+                    プランを解約する
+                </button>
+            </form>
+        </div>
+        {% endif %}
+        
         <!-- 現在のバッジ・特典 -->
         <div class="card mb-4">
             <h3 class="mb-3">🏆 現在のバッジ・特典</h3>
@@ -144,17 +262,6 @@
             <p class="text-muted">有効な広告権利はありません</p>
             {% endif %}
         </div>
-        
-        <!-- プラン変更の案内 -->
-        {% if store_plan.plan_type == 'free' %}
-        <div class="card mt-4 upgrade-prompt">
-            <h3>🚀 プランをアップグレードしませんか？</h3>
-            <p>有料プランにアップグレードすると、検索での優先表示や優良店バッジなど、<br>集客に役立つ機能が利用できます。</p>
-            <a href="mailto:support@night-walk.jp?subject=プランアップグレードについて" class="btn btn-primary">
-                お問い合わせ
-            </a>
-        </div>
-        {% endif %}
     </div>
 </div>
 
@@ -212,6 +319,101 @@
     color: var(--color-text-muted);
 }
 
+/* プラン比較表 */
+.plan-comparison {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .plan-comparison {
+        grid-template-columns: 1fr;
+    }
+}
+
+.plan-column {
+    background: var(--color-bg-elevated);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    position: relative;
+}
+
+.plan-column.recommended {
+    border-color: var(--color-primary);
+    transform: scale(1.02);
+}
+
+.recommended-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-primary);
+    color: #fff;
+    padding: 0.25rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.plan-column-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.plan-column-header h4 {
+    margin-bottom: 0.5rem;
+}
+
+.plan-column-price .amount {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.plan-column-price .period {
+    color: var(--color-text-muted);
+}
+
+.plan-column-features {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 1.5rem;
+}
+
+.plan-column-features li {
+    padding: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+.plan-column-features li.enabled {
+    color: var(--color-text);
+}
+
+.plan-column-features li.enabled.highlight {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.plan-column-features li.disabled {
+    color: var(--color-text-muted);
+    text-decoration: line-through;
+}
+
+.plan-column-action {
+    text-align: center;
+}
+
+.current-plan {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: var(--color-bg);
+    border-radius: var(--radius);
+    color: var(--color-text-muted);
+}
+
+/* バッジ表示 */
 .badge-display {
     display: inline-flex;
     align-items: center;
@@ -239,11 +441,13 @@
     font-weight: 600;
 }
 
-.upgrade-prompt {
-    background: linear-gradient(135deg, var(--color-primary-bg), transparent);
-    border: 1px solid var(--color-primary);
-    text-align: center;
-    padding: 2rem;
+.btn-outline.btn-danger {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+}
+.btn-outline.btn-danger:hover {
+    background: var(--color-danger);
+    color: #fff;
 }
 </style>
 {% endblock %}

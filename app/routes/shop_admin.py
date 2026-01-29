@@ -872,3 +872,213 @@ def plan():
                           plan_labels=StorePlan.PLAN_LABELS,
                           plan_prices=StorePlan.PLAN_PRICES,
                           plan_features=StorePlan.PLAN_FEATURES)
+
+
+@shop_admin_bp.route('/plan/subscribe', methods=['POST'])
+@login_required
+@owner_required
+def subscribe_plan():
+    """有料プランに申し込み（Stripe Checkout）"""
+    import stripe
+    from ..models.store_plan import StorePlan, StorePlanHistory
+    
+    shop = g.current_shop
+    plan_type = request.form.get('plan_type')
+    
+    if plan_type not in [StorePlan.PLAN_STANDARD, StorePlan.PLAN_PREMIUM]:
+        flash('無効なプランです。', 'danger')
+        return redirect(url_for('shop_admin.plan'))
+    
+    # Stripe設定確認
+    stripe_secret_key = current_app.config.get('STRIPE_SECRET_KEY')
+    if not stripe_secret_key:
+        flash('決済システムが設定されていません。管理者にお問い合わせください。', 'danger')
+        return redirect(url_for('shop_admin.plan'))
+    
+    stripe.api_key = stripe_secret_key
+    
+    # プラン情報
+    plan_prices = StorePlan.PLAN_PRICES
+    plan_labels = StorePlan.PLAN_LABELS
+    price = plan_prices.get(plan_type, 0)
+    plan_name = plan_labels.get(plan_type, plan_type)
+    
+    try:
+        # Stripe Checkout Session作成
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'jpy',
+                    'product_data': {
+                        'name': f'Night-Walk {plan_name}',
+                        'description': f'店舗: {shop.name}',
+                    },
+                    'unit_amount': price,
+                    'recurring': {
+                        'interval': 'month',
+                    },
+                },
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=url_for('shop_admin.plan_success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=url_for('shop_admin.plan', _external=True),
+            metadata={
+                'shop_id': str(shop.id),
+                'plan_type': plan_type,
+                'user_id': str(current_user.id),
+            },
+            customer_email=current_user.email,
+        )
+        
+        # 監査ログ
+        audit_log('plan_checkout_started', 'shop', shop.id,
+                  new_value={'plan_type': plan_type, 'session_id': checkout_session.id})
+        
+        return redirect(checkout_session.url)
+        
+    except stripe.error.StripeError as e:
+        current_app.logger.error(f"Stripe error: {e}")
+        flash('決済処理中にエラーが発生しました。しばらく経ってから再度お試しください。', 'danger')
+        return redirect(url_for('shop_admin.plan'))
+
+
+@shop_admin_bp.route('/plan/success')
+@login_required
+@owner_required
+def plan_success():
+    """プラン申し込み成功"""
+    import stripe
+    from ..models.store_plan import StorePlan, StorePlanHistory
+    
+    shop = g.current_shop
+    session_id = request.args.get('session_id')
+    
+    if not session_id:
+        flash('セッション情報がありません。', 'danger')
+        return redirect(url_for('shop_admin.plan'))
+    
+    stripe_secret_key = current_app.config.get('STRIPE_SECRET_KEY')
+    if not stripe_secret_key:
+        flash('決済システムエラー', 'danger')
+        return redirect(url_for('shop_admin.plan'))
+    
+    stripe.api_key = stripe_secret_key
+    
+    try:
+        # Checkout Sessionを取得
+        checkout_session = stripe.checkout.Session.retrieve(session_id)
+        
+        # メタデータから情報を取得
+        shop_id = int(checkout_session.metadata.get('shop_id', 0))
+        plan_type = checkout_session.metadata.get('plan_type')
+        
+        # 店舗IDの確認
+        if shop_id != shop.id:
+            flash('不正なアクセスです。', 'danger')
+            return redirect(url_for('shop_admin.plan'))
+        
+        # 支払い完了確認
+        if checkout_session.payment_status != 'paid':
+            flash('お支払いが完了していません。', 'warning')
+            return redirect(url_for('shop_admin.plan'))
+        
+        # プランを更新
+        store_plan = StorePlan.query.filter_by(shop_id=shop.id).first()
+        if not store_plan:
+            store_plan = StorePlan(shop_id=shop.id)
+            db.session.add(store_plan)
+        
+        old_plan = store_plan.plan_type
+        store_plan.plan_type = plan_type
+        store_plan.status = StorePlan.STATUS_ACTIVE
+        store_plan.stripe_subscription_id = checkout_session.subscription
+        store_plan.stripe_customer_id = checkout_session.customer
+        store_plan.starts_at = datetime.utcnow()
+        
+        # 履歴を記録
+        StorePlanHistory.log(
+            shop_id=shop.id,
+            action='upgraded',
+            plan_id=store_plan.id,
+            from_plan=old_plan,
+            to_plan=plan_type,
+            amount=StorePlan.PLAN_PRICES.get(plan_type, 0),
+            user_id=current_user.id,
+            note=f'Stripe Session: {session_id}'
+        )
+        
+        # 広告権利を同期
+        store_plan.sync_entitlements(current_user.id)
+        
+        db.session.commit()
+        
+        # 監査ログ
+        audit_log('plan_upgraded', 'shop', shop.id,
+                  old_value={'plan': old_plan},
+                  new_value={'plan': plan_type})
+        
+        flash(f'「{StorePlan.PLAN_LABELS.get(plan_type)}」プランへの申し込みが完了しました！', 'success')
+        
+    except stripe.error.StripeError as e:
+        current_app.logger.error(f"Stripe error on success: {e}")
+        flash('プラン情報の確認中にエラーが発生しました。', 'danger')
+    
+    return redirect(url_for('shop_admin.plan'))
+
+
+@shop_admin_bp.route('/plan/cancel', methods=['POST'])
+@login_required
+@owner_required
+def cancel_plan():
+    """プランを解約"""
+    import stripe
+    from ..models.store_plan import StorePlan, StorePlanHistory
+    
+    shop = g.current_shop
+    
+    store_plan = StorePlan.query.filter_by(shop_id=shop.id).first()
+    if not store_plan or store_plan.plan_type == StorePlan.PLAN_FREE:
+        flash('解約するプランがありません。', 'warning')
+        return redirect(url_for('shop_admin.plan'))
+    
+    # Stripeのサブスクリプションをキャンセル
+    if store_plan.stripe_subscription_id:
+        stripe_secret_key = current_app.config.get('STRIPE_SECRET_KEY')
+        if stripe_secret_key:
+            stripe.api_key = stripe_secret_key
+            try:
+                # 期間終了時にキャンセル（即時キャンセルではない）
+                stripe.Subscription.modify(
+                    store_plan.stripe_subscription_id,
+                    cancel_at_period_end=True
+                )
+            except stripe.error.StripeError as e:
+                current_app.logger.error(f"Stripe cancel error: {e}")
+    
+    old_plan = store_plan.plan_type
+    
+    # 履歴を記録
+    StorePlanHistory.log(
+        shop_id=shop.id,
+        action='canceled',
+        plan_id=store_plan.id,
+        from_plan=old_plan,
+        to_plan=StorePlan.PLAN_FREE,
+        user_id=current_user.id,
+        note='ユーザーによる解約'
+    )
+    
+    # プランをキャンセル状態に
+    store_plan.cancel(current_user.id, reason='ユーザーによる解約')
+    
+    db.session.commit()
+    
+    # 監査ログ
+    audit_log('plan_canceled', 'shop', shop.id,
+              old_value={'plan': old_plan},
+              new_value={'plan': 'canceled'})
+    
+    flash('プランの解約を受け付けました。現在の契約期間終了後、無料プランに移行します。', 'info')
+    return redirect(url_for('shop_admin.plan'))

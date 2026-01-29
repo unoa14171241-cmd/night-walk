@@ -35,6 +35,7 @@ class StorePlan(db.Model):
             'search_boost',      # 検索優先表示
             'premium_badge',     # 優良店バッジ
             'job_board',         # 求人掲載
+            'cast_display',      # キャスト出勤表示
         ],
         PLAN_PREMIUM: [
             'search_boost',      # 検索優先表示（優先度高）
@@ -43,6 +44,41 @@ class StorePlan(db.Model):
             'cast_display',      # キャスト出勤表示
             'top_banner',        # トップバナー掲載権
         ],
+    }
+    
+    # プラン説明（UI表示用）
+    PLAN_DESCRIPTIONS = {
+        PLAN_FREE: {
+            'name': '無料プラン',
+            'price_display': '¥0/月',
+            'features': [
+                '店舗基本情報の掲載',
+                '店舗画像（詳細ページ）',
+                'キャスト一覧・プロフィール管理',
+            ],
+            'description': 'エリア内店舗としての基本掲載。ユーザーの利便性を高めます。',
+        },
+        PLAN_STANDARD: {
+            'name': 'スタンダードプラン',
+            'price_display': '¥25,000/月',
+            'features': [
+                '検索結果で優先表示',
+                '優良店バッジの付与',
+                'キャスト出勤表示（リアルタイム）',
+                '求人掲載',
+            ],
+            'description': '低コストで確実な集客を実現。検索上位表示と優良店バッジで信頼性アップ。',
+        },
+        PLAN_PREMIUM: {
+            'name': 'プレミアムプラン',
+            'price_display': '¥50,000/月',
+            'features': [
+                'スタンダードの全機能',
+                'トップページバナー掲載権',
+                '検索結果で最優先表示',
+            ],
+            'description': '最大限の露出で集客力を最大化。トップバナーで圧倒的な存在感。',
+        },
     }
     
     # ステータス

@@ -118,8 +118,11 @@ def handle_subscription_updated(data, event_id, payload):
 
 def handle_subscription_deleted(data, event_id, payload):
     """Handle subscription deleted event."""
+    from ..models.store_plan import StorePlan
+    
     stripe_subscription_id = data.get('id')
     
+    # 従来のSubscriptionモデル
     subscription = Subscription.query.filter_by(
         stripe_subscription_id=stripe_subscription_id
     ).first()
@@ -127,23 +130,50 @@ def handle_subscription_deleted(data, event_id, payload):
     if subscription:
         subscription.status = 'canceled'
         subscription.shop.is_published = False
-        
         log_billing_event(subscription.shop_id, 'subscription.deleted', event_id, payload)
+    
+    # StorePlanモデル（新課金システム）
+    store_plan = StorePlan.query.filter_by(
+        stripe_subscription_id=stripe_subscription_id
+    ).first()
+    
+    if store_plan:
+        store_plan.plan_type = StorePlan.PLAN_FREE
+        store_plan.status = StorePlan.STATUS_ACTIVE
+        store_plan.stripe_subscription_id = None
+        # 広告権利を同期（無料プランの特典のみに）
+        store_plan.sync_entitlements()
+        
+        log_billing_event(store_plan.shop_id, 'store_plan.subscription.deleted', event_id, payload)
 
 
 def handle_invoice_paid(data, event_id, payload):
     """Handle invoice paid event."""
+    from ..models.store_plan import StorePlan
+    
     subscription_id = data.get('subscription')
     amount = data.get('amount_paid', 0)
     
+    # 従来のSubscriptionモデル
     subscription = Subscription.query.filter_by(
         stripe_subscription_id=subscription_id
     ).first()
     
     if subscription:
         subscription.status = 'active'
-        
         log_billing_event(subscription.shop_id, 'invoice.paid', event_id, payload, amount)
+    
+    # StorePlanモデル（新課金システム）
+    store_plan = StorePlan.query.filter_by(
+        stripe_subscription_id=subscription_id
+    ).first()
+    
+    if store_plan:
+        store_plan.status = StorePlan.STATUS_ACTIVE
+        # 広告権利を同期
+        store_plan.sync_entitlements()
+        
+        log_billing_event(store_plan.shop_id, 'store_plan.invoice.paid', event_id, payload, amount)
 
 
 def handle_invoice_payment_failed(data, event_id, payload):
