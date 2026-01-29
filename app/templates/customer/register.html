@@ -27,6 +27,15 @@
             </div>
             
             <div class="form-group">
+                <label for="phone_number">電話番号（SMS認証用）</label>
+                <input type="tel" id="phone_number" name="phone_number" class="form-control" 
+                       value="{{ phone_number | default('') }}" required
+                       placeholder="09012345678"
+                       pattern="[0-9\-]{10,14}">
+                <small class="form-help">本人確認のためSMS認証を行います</small>
+            </div>
+            
+            <div class="form-group">
                 <label for="password">パスワード</label>
                 <input type="password" id="password" name="password" class="form-control" 
                        required minlength="8"
@@ -48,7 +57,7 @@
             </div>
             
             <button type="submit" class="btn btn-primary btn-block btn-lg">
-                会員登録
+                SMS認証へ進む
             </button>
         </form>
         

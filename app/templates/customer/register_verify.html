@@ -1,0 +1,74 @@
+{% extends "customer/base.html" %}
+
+{% block title %}SMS認証 - 新規会員登録 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h1 class="auth-title">SMS認証</h1>
+        <p class="auth-subtitle">
+            電話番号 <strong>{{ phone_number[-4:] | default('****') }}</strong> 宛に<br>
+            6桁の認証コードを送信しました
+        </p>
+        
+        <form method="POST" class="auth-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="form-group">
+                <label for="code">認証コード</label>
+                <input type="text" id="code" name="code" class="form-control text-center" 
+                       required maxlength="6" pattern="[0-9]{6}"
+                       placeholder="123456" autofocus
+                       style="font-size: 1.5rem; letter-spacing: 0.5rem;">
+                <small class="form-help">SMSに届いた6桁のコードを入力してください</small>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block btn-lg">
+                認証して登録を完了
+            </button>
+        </form>
+        
+        <div class="auth-footer mt-4">
+            <p class="text-muted mb-2">コードが届かない場合</p>
+            <form action="{{ url_for('customer.register_resend') }}" method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-secondary btn-sm">
+                    認証コードを再送信
+                </button>
+            </form>
+            <p class="mt-3 text-muted" style="font-size: 0.85rem;">
+                認証コードの有効期限は10分です
+            </p>
+            <p class="mt-2">
+                <a href="{{ url_for('customer.register') }}">← 入力内容を修正する</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-subtitle strong {
+        color: var(--color-primary);
+    }
+    .text-center {
+        text-align: center;
+    }
+    .mt-4 {
+        margin-top: 1.5rem;
+    }
+    .mt-3 {
+        margin-top: 1rem;
+    }
+    .mt-2 {
+        margin-top: 0.5rem;
+    }
+    .mb-2 {
+        margin-bottom: 0.5rem;
+    }
+    .d-inline {
+        display: inline;
+    }
+</style>
+{% endblock %}

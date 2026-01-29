@@ -15,7 +15,11 @@ class Customer(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     nickname = db.Column(db.String(50), nullable=False)
-    phone = db.Column(db.String(20))
+    phone = db.Column(db.String(20))  # 旧フィールド（互換性維持）
+    
+    # SMS認証用電話番号
+    phone_number = db.Column(db.String(20), unique=True, index=True)
+    phone_verified = db.Column(db.Boolean, default=False)  # SMS認証済み
     
     is_active = db.Column(db.Boolean, default=True)
     is_verified = db.Column(db.Boolean, default=False)  # メール認証済み

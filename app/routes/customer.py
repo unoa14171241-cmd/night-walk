@@ -1,12 +1,14 @@
 # app/routes/customer.py
 """一般ユーザー（カスタマー）用ルート"""
 
+import re
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 import stripe
 from ..extensions import db, limiter
-from ..models import Customer, PointPackage, PointTransaction, Gift, Cast, GiftTransaction, Earning, Shop
+from ..models import Customer, PointPackage, PointTransaction, Gift, Cast, GiftTransaction, Earning, Shop, PhoneVerification
+from ..services.review_service import ReviewService
 from ..utils.logger import audit_log
 
 customer_bp = Blueprint('customer', __name__)
@@ -29,10 +31,37 @@ def customer_login_required(f):
 
 # ==================== 認証 ====================
 
+def normalize_phone_number(phone):
+    """電話番号を正規化（ハイフン削除、+81形式に変換）"""
+    if not phone:
+        return None
+    # 数字以外を削除
+    phone = re.sub(r'[^\d+]', '', phone)
+    # 先頭の0を+81に置換（日本の電話番号）
+    if phone.startswith('0'):
+        phone = '+81' + phone[1:]
+    # +がなければ付与
+    if not phone.startswith('+'):
+        phone = '+81' + phone
+    return phone
+
+
+def validate_phone_number(phone):
+    """電話番号のバリデーション"""
+    if not phone:
+        return False, '電話番号を入力してください。'
+    # 正規化
+    normalized = normalize_phone_number(phone)
+    # 日本の携帯電話番号パターン（+81で始まり、10桁または11桁）
+    if not re.match(r'^\+81[789]0\d{8}$', normalized):
+        return False, '有効な携帯電話番号を入力してください。（例: 09012345678）'
+    return True, normalized
+
+
 @customer_bp.route('/register', methods=['GET', 'POST'])
 @limiter.limit("10 per hour")
 def register():
-    """新規会員登録"""
+    """新規会員登録（Step 1: 情報入力 → SMS認証へ）"""
     if current_user.is_authenticated and hasattr(current_user, 'is_customer'):
         return redirect(url_for('customer.mypage'))
     
@@ -41,6 +70,7 @@ def register():
         password = request.form.get('password', '')
         password_confirm = request.form.get('password_confirm', '')
         nickname = request.form.get('nickname', '').strip()
+        phone_number = request.form.get('phone_number', '').strip()
         
         # バリデーション
         errors = []
@@ -57,39 +87,133 @@ def register():
         elif len(nickname) > 50:
             errors.append('ニックネームは50文字以内で入力してください。')
         
+        # 電話番号バリデーション
+        phone_valid, phone_result = validate_phone_number(phone_number)
+        if not phone_valid:
+            errors.append(phone_result)
+        else:
+            normalized_phone = phone_result
+        
         # メール重複チェック
         if Customer.query.filter_by(email=email).first():
             errors.append('このメールアドレスは既に登録されています。')
+        
+        # 電話番号重複チェック
+        if phone_valid and Customer.query.filter_by(phone_number=normalized_phone).first():
+            errors.append('この電話番号は既に登録されています。')
         
         if errors:
             for error in errors:
                 flash(error, 'danger')
             return render_template('customer/register.html', 
-                                   email=email, nickname=nickname)
+                                   email=email, nickname=nickname, phone_number=phone_number)
         
-        # ユーザー作成
-        customer = Customer(
-            email=email,
-            nickname=nickname,
-            point_balance=0
-        )
-        customer.set_password(password)
+        # セッションに登録情報を一時保存
+        session['register_email'] = email
+        session['register_password'] = password
+        session['register_nickname'] = nickname
+        session['register_phone'] = normalized_phone
         
-        db.session.add(customer)
-        db.session.commit()
-        
-        audit_log('customer_register', f'新規会員登録: {email}')
-        
-        # 自動ログイン
-        login_user(customer, remember=True)
-        flash('会員登録が完了しました！', 'success')
-        
-        next_page = request.args.get('next')
-        if next_page:
-            return redirect(next_page)
-        return redirect(url_for('customer.mypage'))
+        # SMS認証コード送信
+        success, msg = ReviewService.send_verification_sms(normalized_phone)
+        if success:
+            flash('認証コードを送信しました。SMSをご確認ください。', 'info')
+            return redirect(url_for('customer.register_verify'))
+        else:
+            flash(msg, 'danger')
+            return render_template('customer/register.html', 
+                                   email=email, nickname=nickname, phone_number=phone_number)
     
     return render_template('customer/register.html')
+
+
+@customer_bp.route('/register/verify', methods=['GET', 'POST'])
+@limiter.limit("20 per hour")
+def register_verify():
+    """新規会員登録（Step 2: SMS認証）"""
+    if current_user.is_authenticated and hasattr(current_user, 'is_customer'):
+        return redirect(url_for('customer.mypage'))
+    
+    # セッションに登録情報があるか確認
+    phone_number = session.get('register_phone')
+    if not phone_number:
+        flash('登録情報が見つかりません。最初からやり直してください。', 'warning')
+        return redirect(url_for('customer.register'))
+    
+    if request.method == 'POST':
+        code = request.form.get('code', '').strip()
+        
+        if not code:
+            flash('認証コードを入力してください。', 'danger')
+            return render_template('customer/register_verify.html', phone_number=phone_number)
+        
+        # 認証コードを検証
+        if ReviewService.verify_phone_number(phone_number, code):
+            # 認証成功 → ユーザー作成
+            email = session.pop('register_email', None)
+            password = session.pop('register_password', None)
+            nickname = session.pop('register_nickname', None)
+            phone = session.pop('register_phone', None)
+            
+            if not all([email, password, nickname, phone]):
+                flash('登録情報が不完全です。最初からやり直してください。', 'danger')
+                return redirect(url_for('customer.register'))
+            
+            # 再度重複チェック（セッション中に登録された可能性）
+            if Customer.query.filter_by(email=email).first():
+                flash('このメールアドレスは既に登録されています。', 'danger')
+                return redirect(url_for('customer.register'))
+            if Customer.query.filter_by(phone_number=phone).first():
+                flash('この電話番号は既に登録されています。', 'danger')
+                return redirect(url_for('customer.register'))
+            
+            # ユーザー作成
+            customer = Customer(
+                email=email,
+                nickname=nickname,
+                phone_number=phone,
+                phone_verified=True,
+                point_balance=0
+            )
+            customer.set_password(password)
+            
+            db.session.add(customer)
+            db.session.commit()
+            
+            audit_log('customer_register', f'新規会員登録（SMS認証済み）: {email}, phone: {phone}')
+            
+            # 自動ログイン
+            login_user(customer, remember=True)
+            flash('会員登録が完了しました！', 'success')
+            
+            next_page = request.args.get('next')
+            if next_page:
+                return redirect(next_page)
+            return redirect(url_for('customer.mypage'))
+        else:
+            flash('認証コードが正しくないか、有効期限が切れています。', 'danger')
+            return render_template('customer/register_verify.html', phone_number=phone_number)
+    
+    return render_template('customer/register_verify.html', phone_number=phone_number)
+
+
+@customer_bp.route('/register/resend', methods=['POST'])
+@limiter.limit("3 per hour")
+def register_resend():
+    """新規会員登録用SMS認証コード再送信"""
+    phone_number = session.get('register_phone')
+    
+    if not phone_number:
+        flash('登録情報が見つかりません。最初からやり直してください。', 'warning')
+        return redirect(url_for('customer.register'))
+    
+    success, msg = ReviewService.send_verification_sms(phone_number)
+    if success:
+        flash('認証コードを再送信しました。', 'info')
+    else:
+        flash(msg, 'danger')
+    
+    return redirect(url_for('customer.register_verify'))
 
 
 @customer_bp.route('/login', methods=['GET', 'POST'])
