@@ -25,6 +25,8 @@ from .shop_ranking import ShopPageView, ShopMonthlyRanking, TrendingShop, Trendi
 from .cast_shift import CastShift, ShiftTemplate
 # 口コミ評価システム
 from .review import ShopReview, PhoneVerification, ShopReviewScore
+# 店舗ポイントカード
+from .shop_point import ShopPointCard, CustomerShopPoint, ShopPointTransaction, ShopPointReward
 
 __all__ = [
     'User',
@@ -76,4 +78,9 @@ __all__ = [
     'ShopReview',
     'PhoneVerification',
     'ShopReviewScore',
+    # 店舗ポイントカード
+    'ShopPointCard',
+    'CustomerShopPoint',
+    'ShopPointTransaction',
+    'ShopPointReward',
 ]

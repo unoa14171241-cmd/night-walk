@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}ポイントカード管理 - {{ shop.name }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="shop-admin-layout">
+    <div class="shop-admin-content">
+        <div class="d-flex justify-between align-center mb-4">
+            <h1 class="mb-0">🎴 ポイントカード管理</h1>
+            <span class="text-muted">{{ shop.name }}</span>
+        </div>
+        
+        <!-- 現在のステータス -->
+        <div class="card mb-4">
+            <div class="d-flex justify-between align-center mb-3">
+                <h3 class="mb-0">カード設定</h3>
+                <span class="badge {{ 'badge-success' if card_config.is_active else 'badge-secondary' }}">
+                    {{ '有効' if card_config.is_active else '無効' }}
+                </span>
+            </div>
+            
+            <form action="{{ url_for('shop_admin.point_card_settings') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="card_name">カード名称</label>
+                        <input type="text" id="card_name" name="card_name" class="form-control"
+                               value="{{ card_config.card_name }}" maxlength="50">
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="card_color">カードカラー</label>
+                        <input type="color" id="card_color" name="card_color" class="form-control"
+                               value="{{ card_config.card_color }}" style="height: 42px;">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="visit_points">来店ポイント</label>
+                        <input type="number" id="visit_points" name="visit_points" class="form-control"
+                               value="{{ card_config.visit_points }}" min="1">
+                        <small class="form-help">1回の来店で付与するポイント</small>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="min_visit_interval_hours">最短来店間隔（時間）</label>
+                        <input type="number" id="min_visit_interval_hours" name="min_visit_interval_hours" 
+                               class="form-control" value="{{ card_config.min_visit_interval_hours }}" min="0">
+                        <small class="form-help">連続付与防止（0で無制限）</small>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="reward_threshold">特典交換ポイント</label>
+                        <input type="number" id="reward_threshold" name="reward_threshold" class="form-control"
+                               value="{{ card_config.reward_threshold }}" min="0">
+                        <small class="form-help">特典と交換に必要なポイント</small>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reward_description">特典内容</label>
+                    <input type="text" id="reward_description" name="reward_description" class="form-control"
+                           value="{{ card_config.reward_description or '' }}" maxlength="200"
+                           placeholder="例: ドリンク1杯無料">
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="is_active" {% if card_config.is_active %}checked{% endif %}>
+                        ポイントカード機能を有効にする
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">設定を保存</button>
+            </form>
+        </div>
+        
+        <!-- 来店ポイント付与 -->
+        <div class="card mb-4">
+            <h3 class="mb-3">✅ 来店ポイントを付与</h3>
+            <p class="text-muted mb-3">
+                お客様のメールアドレスを入力して、来店ポイントを付与します。
+            </p>
+            
+            <form action="{{ url_for('shop_admin.grant_visit_points') }}" method="POST" class="d-flex gap-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="email" name="customer_email" class="form-control" 
+                       placeholder="お客様のメールアドレス" required style="max-width: 300px;">
+                <button type="submit" class="btn btn-success">
+                    {{ card_config.visit_points }}pt付与
+                </button>
+            </form>
+        </div>
+        
+        <div class="row">
+            <!-- 最近の来店者 -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <h3 class="mb-3">🕐 最近の来店</h3>
+                    {% if recent_visitors %}
+                    <div class="visitor-list">
+                        {% for visitor in recent_visitors %}
+                        <div class="visitor-item">
+                            <div class="visitor-info">
+                                <span class="visitor-name">{{ visitor.customer.nickname or visitor.customer.email }}</span>
+                                <span class="visitor-points">{{ visitor.point_balance }}pt</span>
+                            </div>
+                            <div class="visitor-meta">
+                                {{ visitor.last_visit_at.strftime('%m/%d %H:%M') if visitor.last_visit_at else '-' }}
+                                ・{{ visitor.visit_count }}回目
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">まだ来店履歴がありません</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- ランキング -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <h3 class="mb-3">🏆 常連ランキング</h3>
+                    {% if top_customers %}
+                    <div class="ranking-list">
+                        {% for rank, customer in enumerate(top_customers, 1) %}
+                        <div class="ranking-item">
+                            <span class="rank {% if rank <= 3 %}top{{ rank }}{% endif %}">{{ rank }}</span>
+                            <span class="name">{{ customer.customer.nickname or customer.customer.email }}</span>
+                            <span class="score">{{ '{:,}'.format(customer.total_earned) }}pt</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">まだデータがありません</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.visitor-list, .ranking-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.visitor-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.visitor-item:last-child {
+    border-bottom: none;
+}
+
+.visitor-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+.visitor-name {
+    font-weight: 500;
+}
+
+.visitor-points {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.visitor-meta {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.ranking-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.ranking-item:last-child {
+    border-bottom: none;
+}
+
+.ranking-item .rank {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--color-bg);
+    font-weight: 600;
+    margin-right: 0.75rem;
+}
+
+.ranking-item .rank.top1 {
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #000;
+}
+
+.ranking-item .rank.top2 {
+    background: linear-gradient(135deg, #c0c0c0, #a0a0a0);
+    color: #000;
+}
+
+.ranking-item .rank.top3 {
+    background: linear-gradient(135deg, #cd7f32, #8b4513);
+    color: #fff;
+}
+
+.ranking-item .name {
+    flex: 1;
+}
+
+.ranking-item .score {
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -0.75rem;
+}
+
+.col-md-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+    padding: 0 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .col-md-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+</style>
+{% endblock %}

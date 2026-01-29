@@ -1,0 +1,202 @@
+{% extends "customer/base.html" %}
+
+{% block title %}ポイントカード - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="page-title">🎴 ポイントカード</h1>
+    
+    <p class="text-muted mb-4">
+        来店時にポイントが貯まります。貯めたポイントは各店舗で特典と交換できます。
+    </p>
+    
+    <!-- 有効な特典があれば表示 -->
+    {% if rewards %}
+    <div class="rewards-section mb-4">
+        <h3>🎁 交換済み特典</h3>
+        <div class="rewards-list">
+            {% for reward in rewards %}
+            <div class="reward-card">
+                <div class="reward-shop">{{ reward.shop.name }}</div>
+                <div class="reward-description">{{ reward.reward_description }}</div>
+                <div class="reward-expires">
+                    有効期限: {{ reward.expires_at.strftime('%Y/%m/%d') if reward.expires_at else '無期限' }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- ポイントカード一覧 -->
+    {% if cards %}
+    <div class="card-grid">
+        {% for card in cards %}
+        <a href="{{ url_for('customer.point_card_detail', shop_id=card.shop_id) }}" class="point-card-item">
+            <div class="point-card-header" style="background: {{ card.shop.point_card.card_color if card.shop.point_card else '#6366f1' }};">
+                <div class="shop-name">{{ card.shop.name }}</div>
+                <div class="visit-count">{{ card.visit_count }}回来店</div>
+            </div>
+            <div class="point-card-body">
+                <div class="point-balance">
+                    <span class="point-value">{{ '{:,}'.format(card.point_balance) }}</span>
+                    <span class="point-label">pt</span>
+                </div>
+                {% if card.shop.point_card and card.shop.point_card.reward_threshold > 0 %}
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: {{ card.progress_to_reward }}%;"></div>
+                </div>
+                <div class="progress-text">
+                    特典まであと {{ '{:,}'.format(card.shop.point_card.reward_threshold - card.point_balance) }}pt
+                </div>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🎴</div>
+        <p>まだポイントカードがありません</p>
+        <p class="text-muted">店舗で来店ポイントを獲得すると、<br>自動的にカードが作成されます。</p>
+        <a href="{{ url_for('public.index') }}" class="btn btn-primary">店舗を探す</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.page-title {
+    margin-bottom: 0.5rem;
+}
+
+.rewards-section {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(236, 72, 153, 0.1));
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+}
+
+.rewards-section h3 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+.rewards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.reward-card {
+    background: var(--color-bg);
+    border-radius: var(--radius);
+    padding: 0.75rem;
+}
+
+.reward-shop {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.reward-description {
+    color: #f59e0b;
+    font-weight: 500;
+}
+
+.reward-expires {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.point-card-item {
+    text-decoration: none;
+    color: inherit;
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.point-card-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+}
+
+.point-card-header {
+    padding: 1rem;
+    color: #fff;
+}
+
+.point-card-header .shop-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+}
+
+.point-card-header .visit-count {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.point-card-body {
+    padding: 1rem;
+}
+
+.point-balance {
+    text-align: center;
+    margin-bottom: 0.75rem;
+}
+
+.point-balance .point-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.point-balance .point-label {
+    font-size: 1rem;
+    color: var(--color-text-muted);
+}
+
+.progress-bar-container {
+    height: 8px;
+    background: var(--color-bg);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #ec4899);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.progress-text {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    text-align: center;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}

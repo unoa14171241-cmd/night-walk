@@ -544,3 +544,68 @@ def resend_review_code(shop_id):
         flash('認証コードを再送信しました。', 'info')
     
     return redirect(url_for('customer.verify_review', shop_id=shop_id))
+
+
+# ==================== 店舗ポイントカード ====================
+
+@customer_bp.route('/point-cards')
+@customer_login_required
+def point_cards():
+    """ポイントカード一覧"""
+    from ..services.shop_point_service import ShopPointService
+    
+    cards = ShopPointService.get_customer_cards(current_user.id)
+    rewards = ShopPointService.get_customer_rewards(current_user.id, valid_only=True)
+    
+    return render_template('customer/point_cards.html',
+                           cards=cards,
+                           rewards=rewards)
+
+
+@customer_bp.route('/point-cards/<int:shop_id>')
+@customer_login_required
+def point_card_detail(shop_id):
+    """店舗ポイントカード詳細"""
+    from ..services.shop_point_service import ShopPointService
+    from ..models.shop_point import ShopPointCard
+    
+    shop = Shop.query.get_or_404(shop_id)
+    
+    # ポイントカード設定
+    card_config = ShopPointCard.query.filter_by(shop_id=shop_id).first()
+    if not card_config or not card_config.is_active:
+        flash('この店舗ではポイントカードが利用できません。', 'warning')
+        return redirect(url_for('customer.point_cards'))
+    
+    # 顧客のポイント
+    customer_point = ShopPointService.get_customer_card(current_user.id, shop_id)
+    
+    # 取引履歴
+    transactions = ShopPointService.get_transaction_history(current_user.id, shop_id, limit=20)
+    
+    # 特典
+    rewards = ShopPointService.get_customer_rewards(current_user.id, shop_id, valid_only=True)
+    
+    return render_template('customer/point_card_detail.html',
+                           shop=shop,
+                           card_config=card_config,
+                           customer_point=customer_point,
+                           transactions=transactions,
+                           rewards=rewards)
+
+
+@customer_bp.route('/point-cards/<int:shop_id>/exchange', methods=['POST'])
+@customer_login_required
+@limiter.limit("10 per hour")
+def exchange_reward(shop_id):
+    """特典を交換"""
+    from ..services.shop_point_service import ShopPointService
+    
+    success, message, reward = ShopPointService.use_reward(current_user.id, shop_id)
+    
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'danger')
+    
+    return redirect(url_for('customer.point_card_detail', shop_id=shop_id))

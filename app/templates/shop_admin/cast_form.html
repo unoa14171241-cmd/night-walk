@@ -70,6 +70,58 @@
                 </div>
                 
                 {% if cast %}
+                <!-- ギフト進捗メーター設定 -->
+                <div class="card mt-4 mb-4" style="background: var(--color-bg-elevated);">
+                    <h4 class="mb-3">🎯 ギフト目標設定</h4>
+                    <p class="text-muted mb-3">
+                        今月のギフト目標を設定すると、プロフィールに進捗メーターが表示されます。<br>
+                        「あと少しで目標達成！」と見たお客様が応援してくれるきっかけになります。
+                    </p>
+                    
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="monthly_gift_goal">今月のギフト目標（ポイント）</label>
+                            <input type="number" id="monthly_gift_goal" name="monthly_gift_goal" 
+                                   class="form-control" min="0" step="1000"
+                                   value="{{ cast.monthly_gift_goal or 0 }}"
+                                   placeholder="例: 10000">
+                            <small class="form-help">0の場合は目標なし</small>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>現在の進捗</label>
+                            <div class="progress-display">
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill" style="width: {{ cast.gift_progress_percent }}%;"></div>
+                                </div>
+                                <div class="progress-text">
+                                    <span>{{ '{:,}'.format(cast.monthly_gift_received) }}pt</span>
+                                    <span>/ {{ '{:,}'.format(cast.monthly_gift_goal or 0) }}pt</span>
+                                    <span class="progress-percent">({{ cast.gift_progress_percent }}%)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="monthly_gift_goal_message">目標メッセージ（お客様向け）</label>
+                        <input type="text" id="monthly_gift_goal_message" name="monthly_gift_goal_message" 
+                               class="form-control" maxlength="200"
+                               value="{{ cast.monthly_gift_goal_message or '' }}"
+                               placeholder="例: 目標達成で特別配信します！">
+                        <small class="form-help">目標と一緒に表示されるメッセージ</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="show_gift_progress" 
+                                   {% if cast.show_gift_progress %}checked{% endif %}>
+                            進捗メーターをプロフィールに公開する
+                        </label>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if cast %}
                 <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" name="is_active" 
@@ -95,4 +147,33 @@
         </div>
     </div>
 </div>
+
+<style>
+.progress-display {
+    margin-top: 0.5rem;
+}
+.progress-bar-bg {
+    height: 20px;
+    background: var(--color-bg);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), #f59e0b);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+.progress-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+.progress-percent {
+    font-weight: 600;
+    color: var(--color-primary);
+}
+</style>
 {% endblock %}

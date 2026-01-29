@@ -31,6 +31,11 @@ class Cast(db.Model):
     total_points_received = db.Column(db.Integer, default=0)  # 受け取った総ポイント
     total_earnings = db.Column(db.Integer, default=0)  # 総収益（円）
     
+    # ギフト目標（進捗メーター用）
+    monthly_gift_goal = db.Column(db.Integer, default=0)  # 今月のギフト目標（ポイント）
+    monthly_gift_goal_message = db.Column(db.String(200))  # 目標メッセージ（例: 「目標達成で○○します！」）
+    show_gift_progress = db.Column(db.Boolean, default=False)  # 進捗メーターを公開するか
+    
     sort_order = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -120,6 +125,58 @@ class Cast(db.Model):
             is_finalized=True
         ).first()
         return ranking.rank if ranking else None
+    
+    # ==================== ギフト進捗メーター ====================
+    
+    @property
+    def monthly_gift_received(self):
+        """今月受け取ったギフトポイント合計"""
+        from datetime import date
+        from sqlalchemy import func
+        
+        today = date.today()
+        first_day = date(today.year, today.month, 1)
+        
+        result = db.session.query(
+            func.sum(GiftTransaction.points_used)
+        ).filter(
+            GiftTransaction.cast_id == self.id,
+            GiftTransaction.status == GiftTransaction.STATUS_COMPLETED,
+            func.date(GiftTransaction.created_at) >= first_day
+        ).scalar()
+        
+        return result or 0
+    
+    @property
+    def gift_progress_percent(self):
+        """ギフト目標達成率（%）"""
+        if not self.monthly_gift_goal or self.monthly_gift_goal <= 0:
+            return 0
+        
+        received = self.monthly_gift_received
+        percent = (received / self.monthly_gift_goal) * 100
+        return min(100, round(percent, 1))  # 100%を上限
+    
+    @property
+    def gift_progress_remaining(self):
+        """目標達成までの残りポイント"""
+        if not self.monthly_gift_goal or self.monthly_gift_goal <= 0:
+            return 0
+        
+        remaining = self.monthly_gift_goal - self.monthly_gift_received
+        return max(0, remaining)
+    
+    @property
+    def is_gift_goal_achieved(self):
+        """目標達成したか"""
+        return self.gift_progress_percent >= 100
+    
+    def set_monthly_goal(self, goal_points, message=None, show_progress=True):
+        """月次ギフト目標を設定"""
+        self.monthly_gift_goal = goal_points
+        self.monthly_gift_goal_message = message
+        self.show_gift_progress = show_progress
+        self.updated_at = datetime.utcnow()
     
     def __repr__(self):
         return f'<Cast {self.name_display}>'

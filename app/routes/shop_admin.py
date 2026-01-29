@@ -515,6 +515,16 @@ def edit_cast(cast_id):
         cast.is_active = request.form.get('is_active') == 'on'
         cast.is_featured = request.form.get('is_featured') == 'on'
         
+        # ギフト目標設定
+        try:
+            monthly_gift_goal = int(request.form.get('monthly_gift_goal', 0) or 0)
+            cast.monthly_gift_goal = max(0, monthly_gift_goal)
+        except (ValueError, TypeError):
+            cast.monthly_gift_goal = 0
+        
+        cast.monthly_gift_goal_message = request.form.get('monthly_gift_goal_message', '').strip() or None
+        cast.show_gift_progress = request.form.get('show_gift_progress') == 'on'
+        
         # Handle image upload
         if 'image' in request.files:
             file = request.files['image']
@@ -872,6 +882,117 @@ def plan():
                           plan_labels=StorePlan.PLAN_LABELS,
                           plan_prices=StorePlan.PLAN_PRICES,
                           plan_features=StorePlan.PLAN_FEATURES)
+
+
+# ============================================
+# 店舗ポイントカード管理
+# ============================================
+
+@shop_admin_bp.route('/point-card')
+@login_required
+@owner_required
+def point_card():
+    """ポイントカード設定ページ"""
+    from ..models.shop_point import ShopPointCard, CustomerShopPoint
+    
+    shop = g.current_shop
+    
+    # ポイントカード設定を取得（なければ作成）
+    card_config = ShopPointCard.get_or_create(shop.id)
+    db.session.commit()
+    
+    # 最近の来店者
+    recent_visitors = CustomerShopPoint.query.filter_by(
+        shop_id=shop.id
+    ).order_by(CustomerShopPoint.last_visit_at.desc()).limit(20).all()
+    
+    # ランキング
+    top_customers = CustomerShopPoint.query.filter_by(
+        shop_id=shop.id
+    ).order_by(CustomerShopPoint.total_earned.desc()).limit(10).all()
+    
+    return render_template('shop_admin/point_card.html',
+                          shop=shop,
+                          card_config=card_config,
+                          recent_visitors=recent_visitors,
+                          top_customers=top_customers)
+
+
+@shop_admin_bp.route('/point-card/settings', methods=['POST'])
+@login_required
+@owner_required
+def point_card_settings():
+    """ポイントカード設定を更新"""
+    from ..models.shop_point import ShopPointCard
+    
+    shop = g.current_shop
+    
+    card_config = ShopPointCard.get_or_create(shop.id)
+    
+    card_config.is_active = request.form.get('is_active') == 'on'
+    card_config.card_name = request.form.get('card_name', 'ポイントカード').strip() or 'ポイントカード'
+    
+    try:
+        card_config.visit_points = max(1, int(request.form.get('visit_points', 100)))
+    except (ValueError, TypeError):
+        card_config.visit_points = 100
+    
+    try:
+        card_config.min_visit_interval_hours = max(0, int(request.form.get('min_visit_interval_hours', 4)))
+    except (ValueError, TypeError):
+        card_config.min_visit_interval_hours = 4
+    
+    try:
+        card_config.reward_threshold = max(0, int(request.form.get('reward_threshold', 1000)))
+    except (ValueError, TypeError):
+        card_config.reward_threshold = 1000
+    
+    card_config.reward_description = request.form.get('reward_description', '').strip() or None
+    card_config.card_color = request.form.get('card_color', '#6366f1').strip() or '#6366f1'
+    
+    db.session.commit()
+    
+    flash('ポイントカード設定を更新しました。', 'success')
+    return redirect(url_for('shop_admin.point_card'))
+
+
+@shop_admin_bp.route('/point-card/grant', methods=['POST'])
+@login_required
+@shop_access_required
+def grant_visit_points():
+    """来店ポイントを付与"""
+    from ..services.shop_point_service import ShopPointService
+    from ..models import Customer
+    
+    shop = g.current_shop
+    
+    # 顧客を検索（メールで）
+    email = request.form.get('customer_email', '').strip().lower()
+    
+    if not email:
+        flash('メールアドレスを入力してください。', 'danger')
+        return redirect(url_for('shop_admin.point_card'))
+    
+    customer = Customer.query.filter_by(email=email).first()
+    
+    if not customer:
+        flash('お客様が見つかりません。', 'danger')
+        return redirect(url_for('shop_admin.point_card'))
+    
+    # ポイント付与
+    success, message, points = ShopPointService.grant_visit_points(
+        customer_id=customer.id,
+        shop_id=shop.id,
+        verified_by=current_user.id,
+        method='manual'
+    )
+    
+    if success:
+        flash(f'{customer.nickname or customer.email}さんに{message}', 'success')
+    else:
+        flash(message, 'warning')
+    
+    return redirect(url_for('shop_admin.point_card'))
 
 
 @shop_admin_bp.route('/plan/subscribe', methods=['POST'])

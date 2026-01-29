@@ -34,6 +34,41 @@
                 </div>
             </div>
             
+            <!-- ギフト進捗メーター -->
+            {% if cast.show_gift_progress and cast.monthly_gift_goal > 0 %}
+            <div class="gift-progress-section">
+                <div class="gift-progress-header">
+                    <span class="gift-progress-title">🎯 今月の目標</span>
+                    {% if cast.is_gift_goal_achieved %}
+                    <span class="badge badge-success">達成！</span>
+                    {% endif %}
+                </div>
+                
+                <div class="gift-progress-bar-container">
+                    <div class="gift-progress-bar" style="width: {{ cast.gift_progress_percent }}%;">
+                        <span class="gift-progress-text">{{ cast.gift_progress_percent }}%</span>
+                    </div>
+                </div>
+                
+                <div class="gift-progress-stats">
+                    <span class="current">{{ '{:,}'.format(cast.monthly_gift_received) }}pt</span>
+                    <span class="goal">/ {{ '{:,}'.format(cast.monthly_gift_goal) }}pt</span>
+                </div>
+                
+                {% if cast.gift_progress_remaining > 0 %}
+                <div class="gift-progress-remaining">
+                    あと <strong>{{ '{:,}'.format(cast.gift_progress_remaining) }}pt</strong> で目標達成！
+                </div>
+                {% endif %}
+                
+                {% if cast.monthly_gift_goal_message %}
+                <div class="gift-progress-message">
+                    💬 {{ cast.monthly_gift_goal_message }}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            
             {% if cast.twitter_url or cast.instagram_url %}
             <div class="cast-sns">
                 {% if cast.twitter_url %}
@@ -143,4 +178,92 @@ document.getElementById('giftModal').addEventListener('click', function(e) {
     }
 });
 </script>
+
+<style>
+/* ギフト進捗メーター */
+.gift-progress-section {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(236, 72, 153, 0.1));
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.gift-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.gift-progress-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.gift-progress-bar-container {
+    height: 24px;
+    background: var(--color-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+}
+
+.gift-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #ec4899);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 8px;
+    transition: width 0.5s ease;
+    min-width: 40px;
+}
+
+.gift-progress-text {
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.gift-progress-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.gift-progress-stats .current {
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.gift-progress-stats .goal {
+    color: var(--color-text-muted);
+}
+
+.gift-progress-remaining {
+    text-align: center;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(245, 158, 11, 0.15);
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+}
+
+.gift-progress-remaining strong {
+    color: #f59e0b;
+}
+
+.gift-progress-message {
+    margin-top: 0.75rem;
+    padding: 0.5rem;
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+</style>
 {% endblock %}
