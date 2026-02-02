@@ -114,8 +114,46 @@ def auto_create_tables():
             print(f"[WARNING] Table creation error (may be normal): {e}")
 
 
+def auto_migrate_columns():
+    """起動時に不足しているカラムを自動追加"""
+    with app.app_context():
+        try:
+            from sqlalchemy import text, inspect
+            
+            inspector = inspect(db.engine)
+            
+            # customersテーブルのカラムをチェック
+            if 'customers' in inspector.get_table_names():
+                columns = [col['name'] for col in inspector.get_columns('customers')]
+                
+                # phone_numberカラムが存在しない場合は追加
+                if 'phone_number' not in columns:
+                    print("[INFO] Adding 'phone_number' column to customers table...")
+                    db.session.execute(text(
+                        "ALTER TABLE customers ADD COLUMN phone_number VARCHAR(20)"
+                    ))
+                    db.session.commit()
+                    print("[SUCCESS] 'phone_number' column added to customers table!")
+                
+                # phone_verifiedカラムが存在しない場合は追加
+                if 'phone_verified' not in columns:
+                    print("[INFO] Adding 'phone_verified' column to customers table...")
+                    db.session.execute(text(
+                        "ALTER TABLE customers ADD COLUMN phone_verified BOOLEAN DEFAULT FALSE"
+                    ))
+                    db.session.commit()
+                    print("[SUCCESS] 'phone_verified' column added to customers table!")
+                    
+        except Exception as e:
+            print(f"[WARNING] Column migration error: {e}")
+            db.session.rollback()
+
+
 # アプリ起動時にテーブル自動作成
 auto_create_tables()
+
+# 不足カラムの自動マイグレーション
+auto_migrate_columns()
 
 
 def auto_seed():
