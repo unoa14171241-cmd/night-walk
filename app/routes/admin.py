@@ -14,7 +14,7 @@ from ..models.user import User, ShopMember
 from ..models.billing import Subscription
 from ..models.audit import AuditLog
 from ..models.content import Announcement, Advertisement
-from ..models.commission import CommissionRate, Commission, MonthlyBilling, get_default_commission
+from ..models.commission import CommissionRate, Commission, MonthlyBilling, get_default_commission, DEFAULT_COMMISSION_BY_CATEGORY
 from ..models.gift import Cast
 from ..models.customer import Customer
 from ..utils.decorators import admin_required
@@ -827,7 +827,9 @@ def commission_rates():
     
     return render_template('admin/commission_rates.html',
                           rates=rates,
-                          shops_without_rate=shops_without_rate)
+                          shops_without_rate=shops_without_rate,
+                          get_default_commission=get_default_commission,
+                          default_commissions=DEFAULT_COMMISSION_BY_CATEGORY)
 
 
 @admin_bp.route('/commission-rates/new', methods=['GET', 'POST'])

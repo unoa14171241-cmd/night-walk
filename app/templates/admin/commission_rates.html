@@ -71,18 +71,63 @@
         {% if shops_without_rate %}
         <div class="card">
             <h3 class="mb-3">未設定店舗</h3>
-            <p class="text-muted mb-3">以下の店舗にはまだ手数料設定がありません。デフォルト: ¥1,000/件</p>
+            <p class="text-muted mb-3">以下の店舗にはまだ手数料設定がありません。カテゴリに応じたデフォルト手数料が適用されます。</p>
             
             <div class="shop-chips">
                 {% for shop in shops_without_rate %}
                 <a href="{{ url_for('admin.edit_commission_rate', shop_id=shop.id) }}" class="shop-chip">
                     {{ shop.name }}
+                    <span class="default-rate">¥{{ "{:,}".format(get_default_commission(shop.category)) }}</span>
                     <span class="chip-icon">→</span>
                 </a>
                 {% endfor %}
             </div>
         </div>
         {% endif %}
+        
+        <!-- Default Commission by Category -->
+        <div class="card mt-4">
+            <h3 class="mb-3">カテゴリ別デフォルト手数料</h3>
+            <p class="text-muted mb-3">個別設定がない店舗には、カテゴリに応じた以下の手数料が適用されます。</p>
+            <div class="default-rates-grid">
+                <div class="rate-item">
+                    <span class="category-name">スナック</span>
+                    <span class="category-rate">¥700/件</span>
+                </div>
+                <div class="rate-item">
+                    <span class="category-name">コンカフェ</span>
+                    <span class="category-rate">¥700/件</span>
+                </div>
+                <div class="rate-item">
+                    <span class="category-name">バー</span>
+                    <span class="category-rate">¥700/件</span>
+                </div>
+                <div class="rate-item">
+                    <span class="category-name">ラウンジ</span>
+                    <span class="category-rate">¥1,000/件</span>
+                </div>
+                <div class="rate-item">
+                    <span class="category-name">クラブ</span>
+                    <span class="category-rate">¥1,000/件</span>
+                </div>
+                <div class="rate-item">
+                    <span class="category-name">キャバクラ</span>
+                    <span class="category-rate">¥1,800/件</span>
+                </div>
+                <div class="rate-item">
+                    <span class="category-name">風俗</span>
+                    <span class="category-rate">¥2,000/件</span>
+                </div>
+                <div class="rate-item">
+                    <span class="category-name">デリヘル</span>
+                    <span class="category-rate">¥2,000/件</span>
+                </div>
+                <div class="rate-item">
+                    <span class="category-name">その他</span>
+                    <span class="category-rate">¥1,000/件</span>
+                </div>
+            </div>
+        </div>
         
         <!-- Help -->
         <div class="card mt-4">
@@ -132,6 +177,39 @@
 
 .shop-chip:hover .chip-icon {
     opacity: 1;
+}
+
+.default-rate {
+    font-size: 0.75rem;
+    color: var(--color-primary);
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.default-rates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--space-sm);
+}
+
+.rate-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+}
+
+.category-name {
+    color: var(--color-text-muted);
+}
+
+.category-rate {
+    color: var(--color-primary);
+    font-weight: 600;
 }
 </style>
 {% endblock %}
