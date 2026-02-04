@@ -1757,10 +1757,14 @@ def toggle_customer(customer_id):
     return redirect(url_for('admin.customer_detail', customer_id=customer_id))
 
 
-@admin_bp.route('/customers/<int:customer_id>/adjust-points', methods=['POST'])
+@admin_bp.route('/customers/<int:customer_id>/adjust-points', methods=['GET', 'POST'])
 @admin_required
 def adjust_customer_points(customer_id):
     """一般ユーザのポイント調整"""
+    # GETリクエストの場合は詳細ページにリダイレクト
+    if request.method == 'GET':
+        return redirect(url_for('admin.customer_detail', customer_id=customer_id))
+    
     customer = Customer.query.get_or_404(customer_id)
     
     amount = request.form.get('amount', 0, type=int)
