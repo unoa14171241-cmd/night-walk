@@ -222,7 +222,7 @@ def edit_shop(shop_id):
         db.session.commit()
         
         # 監査ログ
-        audit_log(AuditLog.ACTION_SHOP_UPDATE, 'shop', shop.id,
+        audit_log(AuditLog.ACTION_SHOP_EDIT, 'shop', shop.id,
                  old_value=old_values,
                  new_value={'name': name, 'area': area, 'category': category})
         
