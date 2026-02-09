@@ -27,6 +27,8 @@ from .cast_shift import CastShift, ShiftTemplate
 from .review import ShopReview, PhoneVerification, ShopReviewScore
 # 店舗ポイントカード
 from .shop_point import ShopPointCard, CustomerShopPoint, ShopPointTransaction, ShopPointReward
+# システム管理（デモ・障害対応）
+from .system import SystemStatus, ContentReport, SystemLog, DemoAccount
 
 __all__ = [
     'User',
@@ -83,4 +85,9 @@ __all__ = [
     'CustomerShopPoint',
     'ShopPointTransaction',
     'ShopPointReward',
+    # システム管理
+    'SystemStatus',
+    'ContentReport',
+    'SystemLog',
+    'DemoAccount',
 ]
