@@ -143,6 +143,31 @@ def auto_migrate_columns():
                     ))
                     db.session.commit()
                     print("[SUCCESS] 'phone_verified' column added to customers table!")
+            
+            # shopsテーブルのカラムをチェック（審査フロー・振込サイクル・キャンペーン）
+            if 'shops' in inspector.get_table_names():
+                columns = [col['name'] for col in inspector.get_columns('shops')]
+                
+                shop_columns = [
+                    ("review_status", "VARCHAR(20) DEFAULT 'approved'"),
+                    ("reviewed_at", "TIMESTAMP"),
+                    ("reviewed_by", "INTEGER"),
+                    ("review_notes", "TEXT"),
+                    ("payout_cycle", "VARCHAR(20) DEFAULT 'month_end'"),
+                    ("payout_day", "INTEGER DEFAULT 5"),
+                    ("campaign_free_months", "INTEGER DEFAULT 0"),
+                    ("campaign_start_date", "DATE"),
+                    ("campaign_notes", "TEXT"),
+                ]
+                
+                for col_name, col_type in shop_columns:
+                    if col_name not in columns:
+                        print(f"[INFO] Adding '{col_name}' column to shops table...")
+                        db.session.execute(text(
+                            f"ALTER TABLE shops ADD COLUMN {col_name} {col_type}"
+                        ))
+                        db.session.commit()
+                        print(f"[SUCCESS] '{col_name}' column added to shops table!")
                     
         except Exception as e:
             print(f"[WARNING] Column migration error: {e}")

@@ -1,7 +1,7 @@
 """
 Night-Walk MVP - Public Routes (公開ページ)
 """
-from flask import Blueprint, render_template, request, current_app, session
+from flask import Blueprint, render_template, request, current_app, session, make_response
 from flask_login import current_user
 from ..models.shop import Shop, VacancyStatus
 from ..models.content import Announcement, Advertisement
@@ -10,6 +10,20 @@ from ..services.ad_service import AdService
 from ..services.trending_service import TrendingService
 
 public_bp = Blueprint('public', __name__)
+
+
+@public_bp.after_request
+def add_cache_control(response):
+    """
+    店舗情報の即時反映のためキャッシュ制御を追加。
+    動的コンテンツはキャッシュしない設定。
+    """
+    # HTMLページはキャッシュしない（即時反映のため）
+    if response.content_type and 'text/html' in response.content_type:
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
 
 
 @public_bp.route('/')

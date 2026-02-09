@@ -46,7 +46,29 @@
             </div>
             <div class="stat-label">支払い状態</div>
         </div>
+        
+        <div class="stat-card">
+            <div class="stat-value" style="font-size: 1rem;">
+                {{ shop.get_next_payout_date().strftime('%m/%d') }}
+            </div>
+            <div class="stat-label">次回振込予定</div>
+        </div>
     </div>
+    
+    <!-- キャンペーン情報（適用中の場合のみ表示） -->
+    {% if shop.is_in_free_period %}
+    <div class="card mb-4" style="border-left: 4px solid var(--color-success); background: rgba(16, 185, 129, 0.05);">
+        <div class="d-flex align-center gap-2">
+            <span style="font-size: 1.5rem;">🎉</span>
+            <div>
+                <strong>無料期間適用中</strong>
+                <p class="text-muted mb-0" style="font-size: 0.875rem;">
+                    {{ shop.free_period_end_date.strftime('%Y年%m月%d日') }}まで手数料無料
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     
     <!-- Quick Actions -->
     <div class="card mb-4">

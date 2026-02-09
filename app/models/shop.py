@@ -107,6 +107,21 @@ class Shop(db.Model):
         (10000, None, '10,000円〜'),
     ]
     
+    # 審査ステータス
+    STATUS_PENDING = 'pending'      # 仮登録（審査待ち）
+    STATUS_APPROVED = 'approved'    # 承認済み
+    STATUS_REJECTED = 'rejected'    # 却下
+    
+    STATUS_LABELS = {
+        STATUS_PENDING: '審査待ち',
+        STATUS_APPROVED: '承認済み',
+        STATUS_REJECTED: '却下',
+    }
+    
+    # 振込サイクル
+    PAYOUT_CYCLE_MONTH_END = 'month_end'  # 月末締め
+    PAYOUT_CYCLES = [PAYOUT_CYCLE_MONTH_END]
+    
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     area = db.Column(db.String(50), nullable=False, index=True)
@@ -125,6 +140,21 @@ class Shop(db.Model):
     is_featured = db.Column(db.Boolean, nullable=False, default=False)  # おすすめフラグ
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 審査フロー関連
+    review_status = db.Column(db.String(20), nullable=False, default=STATUS_PENDING, index=True)
+    reviewed_at = db.Column(db.DateTime)        # 審査完了日時
+    reviewed_by = db.Column(db.Integer, db.ForeignKey('users.id'))  # 審査担当者
+    review_notes = db.Column(db.Text)           # 審査メモ
+    
+    # 振込サイクル設定
+    payout_cycle = db.Column(db.String(20), default=PAYOUT_CYCLE_MONTH_END)  # 締め日タイプ
+    payout_day = db.Column(db.Integer, default=5)  # 翌月○営業日払い
+    
+    # キャンペーン設定
+    campaign_free_months = db.Column(db.Integer, default=0)  # 無料期間（月数）
+    campaign_start_date = db.Column(db.Date)     # キャンペーン開始日
+    campaign_notes = db.Column(db.Text)          # 特別条件（任意テキスト）
     
     # Relationships
     members = db.relationship('ShopMember', back_populates='shop', lazy='dynamic', cascade='all, delete-orphan')
@@ -192,6 +222,115 @@ class Shop(db.Model):
     def category_label(self):
         """Get category display label."""
         return self.CATEGORY_LABELS.get(self.category, '')
+    
+    @property
+    def review_status_label(self):
+        """Get review status display label."""
+        return self.STATUS_LABELS.get(self.review_status, self.review_status)
+    
+    @property
+    def is_approved(self):
+        """Check if shop is approved."""
+        return self.review_status == self.STATUS_APPROVED
+    
+    @property
+    def is_pending_review(self):
+        """Check if shop is pending review."""
+        return self.review_status == self.STATUS_PENDING
+    
+    @property
+    def can_login(self):
+        """Check if shop owners/staff can login (approved and active)."""
+        return self.is_approved and self.is_active
+    
+    def approve(self, reviewer_id=None, notes=None):
+        """Approve the shop and enable login."""
+        self.review_status = self.STATUS_APPROVED
+        self.reviewed_at = datetime.utcnow()
+        self.reviewed_by = reviewer_id
+        self.review_notes = notes
+        self.is_published = True  # 自動公開
+    
+    def reject(self, reviewer_id=None, notes=None):
+        """Reject the shop."""
+        self.review_status = self.STATUS_REJECTED
+        self.reviewed_at = datetime.utcnow()
+        self.reviewed_by = reviewer_id
+        self.review_notes = notes
+        self.is_published = False
+    
+    def get_next_payout_date(self, reference_date=None):
+        """
+        次回振込日を計算する。
+        Args:
+            reference_date: 基準日（デフォルト: 今日）
+        Returns:
+            date: 次回振込予定日
+        """
+        from datetime import date, timedelta
+        import calendar
+        
+        if reference_date is None:
+            reference_date = date.today()
+        
+        # 月末締め→翌月○営業日払い
+        # まず翌月1日を取得
+        if reference_date.month == 12:
+            next_month = date(reference_date.year + 1, 1, 1)
+        else:
+            next_month = date(reference_date.year, reference_date.month + 1, 1)
+        
+        # ○営業日後を計算（土日を除く）
+        business_days = 0
+        payout_date = next_month
+        while business_days < (self.payout_day or 5):
+            if payout_date.weekday() < 5:  # 月〜金
+                business_days += 1
+            if business_days < (self.payout_day or 5):
+                payout_date += timedelta(days=1)
+        
+        return payout_date
+    
+    @property
+    def is_in_free_period(self):
+        """Check if shop is in free campaign period."""
+        from datetime import date
+        if not self.campaign_free_months or self.campaign_free_months <= 0:
+            return False
+        if not self.campaign_start_date:
+            return False
+        
+        today = date.today()
+        # キャンペーン終了月を計算
+        end_year = self.campaign_start_date.year
+        end_month = self.campaign_start_date.month + self.campaign_free_months
+        while end_month > 12:
+            end_month -= 12
+            end_year += 1
+        
+        from calendar import monthrange
+        last_day = monthrange(end_year, end_month)[1]
+        end_date = date(end_year, end_month, last_day)
+        
+        return today <= end_date
+    
+    @property
+    def free_period_end_date(self):
+        """Get free period end date."""
+        from datetime import date
+        from calendar import monthrange
+        
+        if not self.campaign_free_months or not self.campaign_start_date:
+            return None
+        
+        end_year = self.campaign_start_date.year
+        end_month = self.campaign_start_date.month + self.campaign_free_months
+        while end_month > 12:
+            end_month -= 12
+            end_year += 1
+        
+        last_day = monthrange(end_year, end_month)[1]
+        return date(end_year, end_month, last_day)
     
     @property
     def tags_list(self):

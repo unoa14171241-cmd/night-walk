@@ -37,7 +37,24 @@
             <h3 class="mb-3">店舗情報</h3>
             <table class="table" style="margin: 0;">
                 <tr>
-                    <th style="width: 150px;">状態</th>
+                    <th style="width: 150px;">審査状態</th>
+                    <td>
+                        {% if shop.review_status == 'pending' %}
+                        <span class="badge badge-warning">審査待ち</span>
+                        {% elif shop.review_status == 'approved' %}
+                        <span class="badge badge-success">承認済み</span>
+                        {% elif shop.review_status == 'rejected' %}
+                        <span class="badge badge-danger">却下</span>
+                        {% endif %}
+                        {% if shop.reviewed_at %}
+                        <span class="text-muted" style="font-size: 0.85em; margin-left: 8px;">
+                            {{ shop.reviewed_at.strftime('%Y/%m/%d %H:%M') }}
+                        </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>公開状態</th>
                     <td>
                         {% if shop.is_active %}
                             {% if shop.is_published %}
@@ -161,6 +178,127 @@
             <p class="text-muted">サブスクリプション未設定</p>
             {% endif %}
         </div>
+        
+        <!-- 審査アクション（審査待ちの場合のみ表示） -->
+        {% if shop.review_status == 'pending' %}
+        <div class="card mt-4 review-action-card">
+            <h3 class="mb-3">🔍 審査アクション</h3>
+            <p class="text-muted mb-3">この店舗は審査待ちです。承認すると管理画面へのログインが可能になります。</p>
+            
+            <div class="d-flex gap-2" style="flex-wrap: wrap;">
+                <form method="POST" action="{{ url_for('admin.approve_shop', shop_id=shop.id) }}" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success" onclick="return confirm('この店舗を承認しますか？管理画面へのログインが可能になります。')">
+                        ✅ 承認する
+                    </button>
+                </form>
+                
+                <button type="button" class="btn btn-danger" onclick="document.getElementById('rejectModal').style.display='flex'">
+                    ❌ 却下する
+                </button>
+            </div>
+        </div>
+        
+        <!-- 却下モーダル -->
+        <div id="rejectModal" class="modal-overlay" style="display: none;">
+            <div class="modal-content">
+                <h3>店舗却下</h3>
+                <form method="POST" action="{{ url_for('admin.reject_shop', shop_id=shop.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-group">
+                        <label class="form-label">却下理由（必須）</label>
+                        <textarea name="notes" class="form-control" rows="3" required placeholder="却下の理由を入力してください"></textarea>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-danger">却下する</button>
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('rejectModal').style.display='none'">キャンセル</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- キャンペーン・振込設定 -->
+        <div class="card mt-4">
+            <h3 class="mb-3">💰 キャンペーン・振込設定</h3>
+            <table class="table" style="margin-bottom: var(--space-md);">
+                <tr>
+                    <th style="width: 150px;">無料期間</th>
+                    <td>
+                        {% if shop.campaign_free_months and shop.campaign_free_months > 0 %}
+                        {{ shop.campaign_free_months }}ヶ月
+                        {% if shop.is_in_free_period %}
+                        <span class="badge badge-success">適用中</span>
+                        （〜{{ shop.free_period_end_date.strftime('%Y/%m/%d') }}まで）
+                        {% else %}
+                        <span class="badge" style="background: var(--color-bg-elevated);">終了</span>
+                        {% endif %}
+                        {% else %}
+                        <span class="text-muted">なし</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>特別条件</th>
+                    <td>{{ shop.campaign_notes or '−' }}</td>
+                </tr>
+                <tr>
+                    <th>振込サイクル</th>
+                    <td>月末締め / 翌月{{ shop.payout_day or 5 }}営業日払い</td>
+                </tr>
+                <tr>
+                    <th>次回振込予定</th>
+                    <td>{{ shop.get_next_payout_date().strftime('%Y/%m/%d') }}</td>
+                </tr>
+            </table>
+            <a href="{{ url_for('admin.shop_campaign', shop_id=shop.id) }}" class="btn btn-secondary btn-sm">
+                設定変更
+            </a>
+        </div>
     </div>
 </div>
+
+<style>
+.review-action-card {
+    border: 2px solid var(--color-warning);
+    background: rgba(255, 193, 7, 0.05);
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--color-bg-elevated);
+    padding: var(--space-xl);
+    border-radius: var(--radius-lg);
+    max-width: 500px;
+    width: 90%;
+}
+
+.modal-content h3 {
+    margin-bottom: var(--space-lg);
+}
+
+.gap-2 {
+    gap: var(--space-sm);
+}
+
+.mt-3 {
+    margin-top: var(--space-md);
+}
+
+.mt-4 {
+    margin-top: var(--space-lg);
+}
+</style>
 {% endblock %}

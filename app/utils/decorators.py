@@ -68,6 +68,11 @@ def shop_access_required(f):
             flash('店舗が選択されていません。', 'warning')
             return redirect(url_for('shop_admin.select_shop'))
         
+        # 審査ステータスチェック
+        if not shop.is_approved:
+            flash('この店舗はまだ審査中です。承認されるまでお待ちください。', 'warning')
+            return redirect(url_for('shop_admin.select_shop'))
+        
         if not current_user.can_access_shop(shop.id):
             flash('この店舗へのアクセス権限がありません。', 'danger')
             abort(403)

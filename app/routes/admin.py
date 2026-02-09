@@ -270,6 +270,92 @@ def toggle_shop(shop_id):
     return redirect(url_for('admin.shop_detail', shop_id=shop_id))
 
 
+@admin_bp.route('/shops/<int:shop_id>/approve', methods=['POST'])
+@admin_required
+def approve_shop(shop_id):
+    """審査承認 - ワンクリックで承認・管理画面開放"""
+    shop = Shop.query.get_or_404(shop_id)
+    notes = request.form.get('notes', '').strip()
+    
+    old_status = shop.review_status
+    shop.approve(reviewer_id=current_user.id, notes=notes)
+    db.session.commit()
+    
+    audit_log('shop.approve', 'shop', shop.id,
+             old_value={'review_status': old_status},
+             new_value={'review_status': shop.review_status})
+    
+    flash(f'店舗「{shop.name}」を承認しました。管理画面へのログインが可能になりました。', 'success')
+    return redirect(url_for('admin.shop_detail', shop_id=shop_id))
+
+
+@admin_bp.route('/shops/<int:shop_id>/reject', methods=['POST'])
+@admin_required
+def reject_shop(shop_id):
+    """審査却下"""
+    shop = Shop.query.get_or_404(shop_id)
+    notes = request.form.get('notes', '').strip()
+    
+    if not notes:
+        flash('却下理由を入力してください。', 'danger')
+        return redirect(url_for('admin.shop_detail', shop_id=shop_id))
+    
+    old_status = shop.review_status
+    shop.reject(reviewer_id=current_user.id, notes=notes)
+    db.session.commit()
+    
+    audit_log('shop.reject', 'shop', shop.id,
+             old_value={'review_status': old_status},
+             new_value={'review_status': shop.review_status, 'notes': notes})
+    
+    flash(f'店舗「{shop.name}」を却下しました。', 'warning')
+    return redirect(url_for('admin.shop_detail', shop_id=shop_id))
+
+
+@admin_bp.route('/shops/<int:shop_id>/campaign', methods=['GET', 'POST'])
+@admin_required
+def shop_campaign(shop_id):
+    """店舗キャンペーン設定"""
+    shop = Shop.query.get_or_404(shop_id)
+    
+    if request.method == 'POST':
+        from datetime import date
+        
+        free_months = request.form.get('free_months', 0, type=int)
+        start_date_str = request.form.get('start_date', '')
+        notes = request.form.get('notes', '').strip()
+        payout_day = request.form.get('payout_day', 5, type=int)
+        
+        shop.campaign_free_months = free_months
+        if start_date_str:
+            try:
+                shop.campaign_start_date = date.fromisoformat(start_date_str)
+            except ValueError:
+                shop.campaign_start_date = None
+        else:
+            shop.campaign_start_date = None
+        shop.campaign_notes = notes
+        shop.payout_day = payout_day
+        
+        db.session.commit()
+        
+        audit_log('shop.campaign_update', 'shop', shop.id,
+                 new_value={'free_months': free_months, 'payout_day': payout_day})
+        
+        flash('キャンペーン設定を保存しました。', 'success')
+        return redirect(url_for('admin.shop_detail', shop_id=shop_id))
+    
+    return render_template('admin/shop_campaign.html', shop=shop)
+
+
+@admin_bp.route('/shops/pending')
+@admin_required
+def pending_shops():
+    """審査待ち店舗一覧"""
+    shops = Shop.query.filter_by(review_status=Shop.STATUS_PENDING).order_by(Shop.created_at.desc()).all()
+    return render_template('admin/pending_shops.html', shops=shops)
+
+
 @admin_bp.route('/shops/<int:shop_id>/add-member', methods=['POST'])
 @admin_required
 def add_shop_member(shop_id):

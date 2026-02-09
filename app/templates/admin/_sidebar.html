@@ -11,8 +11,13 @@
             </a>
         </li>
         <li>
-            <a href="{{ url_for('admin.shops') }}" class="{% if 'admin.shop' in request.endpoint %}active{% endif %}">
+            <a href="{{ url_for('admin.shops') }}" class="{% if request.endpoint == 'admin.shops' or request.endpoint == 'admin.shop_detail' or request.endpoint == 'admin.edit_shop' %}active{% endif %}">
                 店舗管理
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('admin.pending_shops') }}" class="{% if request.endpoint == 'admin.pending_shops' %}active{% endif %}">
+                🔍 審査待ち店舗
             </a>
         </li>
         <li>
