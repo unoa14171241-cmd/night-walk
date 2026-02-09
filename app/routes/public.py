@@ -445,3 +445,9 @@ def ranking_top1(area):
                           badge=badge,
                           year=year,
                           month=month)
+
+
+@public_bp.route('/apply')
+def shop_apply():
+    """店舗掲載申し込みページ"""
+    return render_template('public/shop_apply.html')

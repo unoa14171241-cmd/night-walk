@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}QRコード発行 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+    
+    <div class="admin-content">
+        <h1 class="mb-4">📱 QRコード発行</h1>
+        
+        <div class="grid-qr">
+            <!-- 設定パネル -->
+            <div class="card">
+                <h3 class="mb-3">URL設定</h3>
+                
+                <form method="GET" action="{{ url_for('admin.qrcode_generator') }}">
+                    <div class="form-group">
+                        <label class="form-label" for="url">対象URL</label>
+                        <input type="url" 
+                               id="url" 
+                               name="url" 
+                               class="form-control" 
+                               value="{{ target_url }}"
+                               placeholder="https://..."
+                               required>
+                        <small class="text-muted">QRコードに埋め込むURLを入力してください</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">プリセット</label>
+                        <div class="preset-buttons">
+                            <button type="button" class="btn btn-sm btn-secondary preset-btn" 
+                                    data-url="{{ default_url }}">
+                                店舗掲載申し込み
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary preset-btn" 
+                                    data-url="{{ request.host_url.rstrip('/') }}">
+                                トップページ
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary preset-btn" 
+                                    data-url="{{ request.host_url.rstrip('/') }}/customer/register">
+                                ユーザー登録
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        QRコードを生成
+                    </button>
+                </form>
+            </div>
+            
+            <!-- プレビューパネル -->
+            <div class="card">
+                <h3 class="mb-3">プレビュー</h3>
+                
+                {% if qr_base64 %}
+                <div class="qr-preview">
+                    <img src="data:image/png;base64,{{ qr_base64 }}" alt="QRコード" class="qr-image">
+                </div>
+                
+                <div class="url-display">
+                    <code>{{ target_url }}</code>
+                </div>
+                
+                <hr style="border-color: var(--color-border); margin: var(--space-lg) 0;">
+                
+                <h4 class="mb-3">ダウンロード</h4>
+                
+                <div class="download-options">
+                    <div class="download-group">
+                        <h5>PNG形式</h5>
+                        <p class="text-muted small">Web・デジタル用途向け</p>
+                        <a href="{{ url_for('admin.qrcode_download', format='png', url=target_url) }}" 
+                           class="btn btn-secondary btn-sm">
+                            📥 標準解像度
+                        </a>
+                        <a href="{{ url_for('admin.qrcode_download', format='png', url=target_url, high_res='true') }}" 
+                           class="btn btn-primary btn-sm">
+                            📥 高解像度（名刺印刷用）
+                        </a>
+                    </div>
+                    
+                    <div class="download-group">
+                        <h5>SVG形式</h5>
+                        <p class="text-muted small">ベクター形式・どんなサイズでも綺麗</p>
+                        <a href="{{ url_for('admin.qrcode_download', format='svg', url=target_url) }}" 
+                           class="btn btn-secondary btn-sm">
+                            📥 SVGダウンロード
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="qr-placeholder">
+                    <div class="placeholder-icon">📱</div>
+                    <p>URLを入力してQRコードを生成してください</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 使い方ガイド -->
+        <div class="card mt-4">
+            <h3 class="mb-3">使い方</h3>
+            <div class="usage-guide">
+                <div class="guide-item">
+                    <div class="guide-number">1</div>
+                    <div class="guide-content">
+                        <strong>URLを入力</strong>
+                        <p>QRコードに埋め込みたいURLを入力、またはプリセットから選択します。</p>
+                    </div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-number">2</div>
+                    <div class="guide-content">
+                        <strong>QRコードを生成</strong>
+                        <p>「QRコードを生成」ボタンをクリックしてプレビューを確認します。</p>
+                    </div>
+                </div>
+                <div class="guide-item">
+                    <div class="guide-number">3</div>
+                    <div class="guide-content">
+                        <strong>ダウンロード</strong>
+                        <p>用途に合わせてPNG（高解像度）またはSVG形式でダウンロードします。</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="format-info mt-4">
+                <h4>フォーマットの選び方</h4>
+                <table class="table" style="margin-top: var(--space-md);">
+                    <tr>
+                        <td><strong>PNG（標準）</strong></td>
+                        <td>Web表示、メール添付、SNS投稿など</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PNG（高解像度）</strong></td>
+                        <td>名刺印刷、チラシ、ポスターなど印刷物向け</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SVG</strong></td>
+                        <td>拡大縮小しても劣化しない。デザイナーへの入稿に最適</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.grid-qr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+}
+
+@media (max-width: 968px) {
+    .grid-qr {
+        grid-template-columns: 1fr;
+    }
+}
+
+.preset-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+}
+
+.qr-preview {
+    display: flex;
+    justify-content: center;
+    padding: var(--space-lg);
+    background: white;
+    border-radius: var(--radius);
+    margin-bottom: var(--space-md);
+}
+
+.qr-image {
+    max-width: 200px;
+    height: auto;
+}
+
+.url-display {
+    text-align: center;
+    padding: var(--space-sm);
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius);
+    word-break: break-all;
+}
+
+.url-display code {
+    font-size: 0.75rem;
+    color: var(--color-primary);
+}
+
+.download-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.download-group h5 {
+    margin-bottom: var(--space-xs);
+    font-size: 0.875rem;
+}
+
+.download-group .small {
+    font-size: 0.75rem;
+    margin-bottom: var(--space-sm);
+}
+
+.download-group .btn {
+    margin-right: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.qr-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-xl);
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius);
+    color: var(--color-text-muted);
+    min-height: 250px;
+}
+
+.placeholder-icon {
+    font-size: 3rem;
+    margin-bottom: var(--space-md);
+    opacity: 0.5;
+}
+
+.usage-guide {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.guide-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-md);
+}
+
+.guide-number {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary);
+    color: white;
+    border-radius: 50%;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.guide-content p {
+    margin: var(--space-xs) 0 0;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
+.format-info h4 {
+    font-size: 1rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // プリセットボタンのクリックイベント
+    document.querySelectorAll('.preset-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var url = this.getAttribute('data-url');
+            document.getElementById('url').value = url;
+        });
+    });
+});
+</script>
+{% endblock %}

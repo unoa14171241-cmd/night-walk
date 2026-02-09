@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% block title %}店舗掲載のご案内 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="apply-page">
+    <div class="container">
+        <!-- ヒーローセクション -->
+        <section class="apply-hero">
+            <h1>Night-Walkに<br class="sp-only">店舗を掲載しませんか？</h1>
+            <p class="hero-subtitle">岡山・倉敷エリアのナイトレジャー情報サイト</p>
+        </section>
+        
+        <!-- メリットセクション -->
+        <section class="benefits-section">
+            <h2>掲載のメリット</h2>
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <div class="benefit-icon">📱</div>
+                    <h3>スマホで簡単更新</h3>
+                    <p>空席状況をリアルタイムで更新。お客様に今の状況を伝えられます。</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">🔍</div>
+                    <h3>検索からの集客</h3>
+                    <p>エリア・業態・空席状況で検索可能。新規のお客様との出会いを創出。</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">🏆</div>
+                    <h3>ランキング掲載</h3>
+                    <p>人気ランキングに掲載されることで、さらなる集客効果が期待できます。</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">💰</div>
+                    <h3>成果報酬型</h3>
+                    <p>送客1件ごとの手数料制。固定費なしで始められます。</p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 料金セクション -->
+        <section class="pricing-section">
+            <h2>料金体系</h2>
+            <div class="pricing-card">
+                <div class="pricing-header">
+                    <span class="pricing-label">送客手数料</span>
+                    <div class="pricing-amount">
+                        <span class="amount">700</span><span class="unit">円〜</span>
+                    </div>
+                    <p class="pricing-note">1件（1名）あたり / 業態により異なります</p>
+                </div>
+                <ul class="pricing-features">
+                    <li>✓ 初期費用・月額費用なし</li>
+                    <li>✓ 店舗ページ作成・管理画面利用無料</li>
+                    <li>✓ 空席更新・求人掲載も追加費用なし</li>
+                    <li>✓ 送客が発生した場合のみ手数料</li>
+                </ul>
+            </div>
+        </section>
+        
+        <!-- お問い合わせセクション -->
+        <section class="contact-section">
+            <h2>掲載のお申し込み・お問い合わせ</h2>
+            <p class="contact-desc">
+                掲載をご希望の方、詳しい説明をご希望の方は<br>
+                下記よりお気軽にお問い合わせください。
+            </p>
+            
+            <div class="contact-methods">
+                <div class="contact-method">
+                    <div class="contact-icon">📧</div>
+                    <h3>メールでのお問い合わせ</h3>
+                    <a href="mailto:info@night-walk.jp" class="contact-link">info@night-walk.jp</a>
+                </div>
+                <div class="contact-method">
+                    <div class="contact-icon">📞</div>
+                    <h3>お電話でのお問い合わせ</h3>
+                    <a href="tel:086-000-0000" class="contact-link">086-000-0000</a>
+                    <p class="contact-note">受付時間: 10:00〜18:00（土日祝除く）</p>
+                </div>
+            </div>
+            
+            <div class="cta-buttons">
+                <a href="mailto:info@night-walk.jp?subject=Night-Walk掲載申し込み" class="btn btn-primary btn-lg">
+                    📧 メールで申し込む
+                </a>
+            </div>
+        </section>
+        
+        <!-- フッターナビ -->
+        <div class="apply-footer">
+            <a href="{{ url_for('public.index') }}" class="back-link">
+                ← トップページに戻る
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.apply-page {
+    min-height: 100vh;
+    padding: var(--space-xl) 0;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 var(--space-md);
+}
+
+/* ヒーロー */
+.apply-hero {
+    text-align: center;
+    padding: var(--space-xl) 0;
+    margin-bottom: var(--space-xl);
+}
+
+.apply-hero h1 {
+    font-size: 2rem;
+    margin-bottom: var(--space-md);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-subtitle {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+}
+
+.sp-only {
+    display: none;
+}
+
+@media (max-width: 600px) {
+    .sp-only {
+        display: block;
+    }
+    .apply-hero h1 {
+        font-size: 1.5rem;
+    }
+}
+
+/* セクション共通 */
+section {
+    margin-bottom: var(--space-xl);
+}
+
+section h2 {
+    text-align: center;
+    font-size: 1.5rem;
+    margin-bottom: var(--space-lg);
+}
+
+/* メリット */
+.benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+}
+
+@media (max-width: 600px) {
+    .benefits-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.benefit-card {
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    text-align: center;
+}
+
+.benefit-icon {
+    font-size: 2rem;
+    margin-bottom: var(--space-sm);
+}
+
+.benefit-card h3 {
+    font-size: 1rem;
+    margin-bottom: var(--space-sm);
+}
+
+.benefit-card p {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+/* 料金 */
+.pricing-card {
+    background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,100,100,0.1));
+    border: 2px solid var(--color-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    text-align: center;
+}
+
+.pricing-header {
+    margin-bottom: var(--space-lg);
+}
+
+.pricing-label {
+    display: inline-block;
+    background: var(--color-primary);
+    color: var(--color-bg);
+    padding: var(--space-xs) var(--space-md);
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-weight: bold;
+    margin-bottom: var(--space-md);
+}
+
+.pricing-amount {
+    margin: var(--space-md) 0;
+}
+
+.pricing-amount .amount {
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--color-primary);
+}
+
+.pricing-amount .unit {
+    font-size: 1.5rem;
+    color: var(--color-text);
+}
+
+.pricing-note {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+.pricing-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.pricing-features li {
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.9rem;
+}
+
+.pricing-features li:last-child {
+    border-bottom: none;
+}
+
+/* お問い合わせ */
+.contact-section {
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    text-align: center;
+}
+
+.contact-desc {
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-lg);
+}
+
+.contact-methods {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-lg);
+    margin-bottom: var(--space-lg);
+}
+
+@media (max-width: 600px) {
+    .contact-methods {
+        grid-template-columns: 1fr;
+    }
+}
+
+.contact-method {
+    padding: var(--space-md);
+}
+
+.contact-icon {
+    font-size: 2rem;
+    margin-bottom: var(--space-sm);
+}
+
+.contact-method h3 {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-sm);
+}
+
+.contact-link {
+    font-size: 1.25rem;
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.contact-link:hover {
+    text-decoration: underline;
+}
+
+.contact-note {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-top: var(--space-xs);
+}
+
+.cta-buttons {
+    margin-top: var(--space-lg);
+}
+
+.btn-lg {
+    padding: var(--space-md) var(--space-xl);
+    font-size: 1rem;
+}
+
+/* フッター */
+.apply-footer {
+    text-align: center;
+    padding-top: var(--space-xl);
+}
+
+.back-link {
+    color: var(--color-text-muted);
+    text-decoration: none;
+}
+
+.back-link:hover {
+    color: var(--color-primary);
+}
+</style>
+{% endblock %}

@@ -1885,3 +1885,76 @@ def reset_user_password(user_id):
     flash(f'{user.name}さんのパスワードをリセットしました', 'success')
     flash(f'🔑 新しいパスワード: {new_password}', 'info')
     return redirect(url_for('admin.user_detail', user_id=user_id))
+
+
+# ============================================
+# QRコード発行機能
+# ============================================
+
+@admin_bp.route('/qrcode')
+@admin_required
+def qrcode_generator():
+    """QRコード発行画面"""
+    from ..services.qrcode_service import generate_qrcode_base64
+    
+    # デフォルトURL（店舗掲載申し込みページ）
+    base_url = request.host_url.rstrip('/')
+    default_url = f"{base_url}/apply"
+    
+    # URLパラメータがあれば使用
+    target_url = request.args.get('url', default_url)
+    
+    # QRコード生成（プレビュー用）
+    qr_base64 = None
+    if target_url:
+        try:
+            qr_base64 = generate_qrcode_base64(target_url, size=8, border=2)
+        except Exception as e:
+            current_app.logger.error(f"QRコード生成エラー: {e}")
+            flash('QRコードの生成に失敗しました', 'danger')
+    
+    return render_template('admin/qrcode_generator.html',
+                          target_url=target_url,
+                          default_url=default_url,
+                          qr_base64=qr_base64)
+
+
+@admin_bp.route('/qrcode/download/<format>')
+@admin_required
+def qrcode_download(format):
+    """QRコードダウンロード"""
+    from flask import Response
+    from ..services.qrcode_service import generate_qrcode_png, generate_qrcode_svg
+    
+    target_url = request.args.get('url', '')
+    high_res = request.args.get('high_res', 'false') == 'true'
+    
+    if not target_url:
+        flash('URLが指定されていません', 'danger')
+        return redirect(url_for('admin.qrcode_generator'))
+    
+    try:
+        if format == 'png':
+            # PNG形式（高解像度対応）
+            data = generate_qrcode_png(target_url, high_res=high_res)
+            filename = 'night-walk-qrcode.png' if not high_res else 'night-walk-qrcode-highres.png'
+            return Response(
+                data,
+                mimetype='image/png',
+                headers={'Content-Disposition': f'attachment; filename={filename}'}
+            )
+        elif format == 'svg':
+            # SVG形式（ベクター）
+            data = generate_qrcode_svg(target_url)
+            return Response(
+                data,
+                mimetype='image/svg+xml',
+                headers={'Content-Disposition': 'attachment; filename=night-walk-qrcode.svg'}
+            )
+        else:
+            flash('不正なフォーマットです', 'danger')
+            return redirect(url_for('admin.qrcode_generator'))
+    except Exception as e:
+        current_app.logger.error(f"QRコードダウンロードエラー: {e}")
+        flash('QRコードのダウンロードに失敗しました', 'danger')
+        return redirect(url_for('admin.qrcode_generator'))
