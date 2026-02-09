@@ -108,6 +108,8 @@ def auto_create_tables():
         try:
             # 全モデルをインポートしてテーブルを作成
             from app import models  # noqa: F401
+            # システム管理モデルを明示的にインポート
+            from app.models.system import SystemStatus, ContentReport, SystemLog, DemoAccount  # noqa: F401
             db.create_all()
             print("[INFO] Database tables checked/created successfully.")
         except Exception as e:

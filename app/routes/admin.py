@@ -2056,7 +2056,12 @@ def qrcode_download(format):
 @admin_required
 def demo_accounts():
     """デモアカウント一覧"""
-    demos = DemoAccount.get_active_demos()
+    try:
+        demos = DemoAccount.get_active_demos()
+    except Exception as e:
+        current_app.logger.error(f"デモアカウント取得エラー: {e}")
+        demos = []
+        flash('デモアカウントの読み込みに失敗しました。テーブルが初期化中の可能性があります。', 'warning')
     return render_template('admin/demo_accounts.html', demos=demos)
 
 
@@ -2190,13 +2195,19 @@ def delete_demo(demo_id):
 def content_reports():
     """不適切コンテンツ報告一覧"""
     status_filter = request.args.get('status', 'pending')
+    reports = []
+    pending_count = 0
     
-    query = ContentReport.query
-    if status_filter and status_filter != 'all':
-        query = query.filter_by(status=status_filter)
-    
-    reports = query.order_by(ContentReport.created_at.desc()).limit(100).all()
-    pending_count = ContentReport.get_pending_count()
+    try:
+        query = ContentReport.query
+        if status_filter and status_filter != 'all':
+            query = query.filter_by(status=status_filter)
+        
+        reports = query.order_by(ContentReport.created_at.desc()).limit(100).all()
+        pending_count = ContentReport.get_pending_count()
+    except Exception as e:
+        current_app.logger.error(f"コンテンツ報告取得エラー: {e}")
+        flash('コンテンツ報告の読み込みに失敗しました。', 'warning')
     
     return render_template('admin/content_reports.html',
                           reports=reports,
@@ -2326,15 +2337,31 @@ def admin_delete_image(image_id):
 @admin_required
 def system_status():
     """システムステータス管理"""
-    current_status = SystemStatus.get_current_status()
-    
-    # 過去のインシデント
-    incidents = SystemStatus.query.filter(
-        SystemStatus.status != SystemStatus.STATUS_NORMAL
-    ).order_by(SystemStatus.created_at.desc()).limit(20).all()
-    
-    # 最近のエラーログ
-    recent_errors = SystemLog.get_recent_errors(limit=20)
+    try:
+        current_status = SystemStatus.get_current_status()
+        
+        # 過去のインシデント
+        incidents = SystemStatus.query.filter(
+            SystemStatus.status != SystemStatus.STATUS_NORMAL
+        ).order_by(SystemStatus.created_at.desc()).limit(20).all()
+        
+        # 最近のエラーログ
+        recent_errors = SystemLog.get_recent_errors(limit=20)
+    except Exception as e:
+        current_app.logger.error(f"システムステータス取得エラー: {e}")
+        # デフォルト値を設定
+        current_status = type('obj', (object,), {
+            'status': 'normal',
+            'status_label': '正常稼働',
+            'status_color': 'success',
+            'title': 'システムステータス',
+            'message': None,
+            'started_at': None,
+            'is_resolved': True
+        })()
+        incidents = []
+        recent_errors = []
+        flash('システムステータスの読み込みに失敗しました。テーブル初期化中の可能性があります。', 'warning')
     
     return render_template('admin/system_status.html',
                           current_status=current_status,
@@ -2398,14 +2425,19 @@ def system_logs():
     """システムログ一覧"""
     level = request.args.get('level', '')
     category = request.args.get('category', '')
+    logs = []
     
-    query = SystemLog.query
-    if level:
-        query = query.filter_by(level=level)
-    if category:
-        query = query.filter_by(category=category)
-    
-    logs = query.order_by(SystemLog.created_at.desc()).limit(200).all()
+    try:
+        query = SystemLog.query
+        if level:
+            query = query.filter_by(level=level)
+        if category:
+            query = query.filter_by(category=category)
+        
+        logs = query.order_by(SystemLog.created_at.desc()).limit(200).all()
+    except Exception as e:
+        current_app.logger.error(f"システムログ取得エラー: {e}")
+        flash('システムログの読み込みに失敗しました。', 'warning')
     
     return render_template('admin/system_logs.html',
                           logs=logs,
