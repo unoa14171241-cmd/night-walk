@@ -1,0 +1,96 @@
+{% extends "admin/base.html" %}
+
+{% block title %}デモアカウント管理 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="page-header">
+        <div>
+            <h1>🎭 デモアカウント管理</h1>
+            <p class="text-muted">営業用デモ環境の管理</p>
+        </div>
+        <a href="{{ url_for('admin.create_demo') }}" class="btn btn-primary">+ 新規デモ作成</a>
+    </div>
+    
+    {% if demos %}
+    <div class="card">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>デモ名</th>
+                    <th>店舗</th>
+                    <th>ログイン情報</th>
+                    <th>最終初期化</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for demo in demos %}
+                <tr>
+                    <td>
+                        <strong>{{ demo.name }}</strong>
+                        {% if demo.description %}
+                        <br><small class="text-muted">{{ demo.description }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if demo.shop %}
+                        <a href="{{ url_for('admin.shop_detail', shop_id=demo.shop.id) }}">{{ demo.shop.name }}</a>
+                        {% else %}
+                        <span class="text-muted">（なし）</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="font-family: monospace; font-size: 0.8rem;">
+                            <div><strong>Email:</strong> {{ demo.demo_email }}</div>
+                            <div><strong>Pass:</strong> {{ demo.demo_password }}</div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if demo.last_reset_at %}
+                        {{ demo.last_reset_at.strftime('%Y/%m/%d %H:%M') }}
+                        {% else %}
+                        <span class="text-muted">未初期化</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <form action="{{ url_for('admin.reset_demo', demo_id=demo.id) }}" method="POST" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-warning" 
+                                        onclick="return confirm('このデモを初期化しますか？店舗データがリセットされます。')">
+                                    🔄 初期化
+                                </button>
+                            </form>
+                            <form action="{{ url_for('admin.delete_demo', demo_id=demo.id) }}" method="POST" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-danger" 
+                                        onclick="return confirm('このデモアカウントを完全に削除しますか？')">
+                                    🗑️ 削除
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card text-center" style="padding: 3rem;">
+        <p class="text-muted mb-3">デモアカウントがありません</p>
+        <a href="{{ url_for('admin.create_demo') }}" class="btn btn-primary">最初のデモを作成</a>
+    </div>
+    {% endif %}
+    
+    <div class="card mt-4">
+        <h3 class="mb-3">💡 デモアカウントについて</h3>
+        <ul class="text-muted" style="line-height: 1.8;">
+            <li>営業時に実際の画面を見せるためのデモ環境です</li>
+            <li>本番データとは完全に分離されています</li>
+            <li>「初期化」ボタンでいつでもリセットできます</li>
+            <li>店舗管理画面（<code>/shop</code>）にログインしてお試しください</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

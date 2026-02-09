@@ -61,6 +61,16 @@ def create_app(config_name='default'):
     # Register error handlers
     register_error_handlers(app)
     
+    # Context processor for global template variables
+    @app.context_processor
+    def inject_system_status():
+        """Inject system status into all templates."""
+        try:
+            from .models.system import SystemStatus
+            return {'system_status': SystemStatus.get_current_status()}
+        except Exception:
+            return {'system_status': None}
+    
     # Create database tables
     with app.app_context():
         db.create_all()

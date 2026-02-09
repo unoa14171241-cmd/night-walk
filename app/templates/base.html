@@ -54,6 +54,25 @@
     </nav>
     {% endblock %}
     
+    <!-- System Status Banner -->
+    {% if system_status and system_status.status != 'normal' and system_status.notify_users %}
+    <div class="system-status-banner system-status-{{ system_status.status }}" style="
+        background: {% if system_status.status == 'outage' %}#dc2626{% elif system_status.status == 'degraded' %}#d97706{% else %}#2563eb{% endif %};
+        color: white;
+        padding: 0.75rem 1rem;
+        text-align: center;
+        font-size: 0.875rem;
+    ">
+        <strong>
+            {% if system_status.status == 'outage' %}🔴 障害発生中{% elif system_status.status == 'degraded' %}⚠️ 一部障害{% else %}🔧 メンテナンス中{% endif %}
+        </strong>
+        {{ system_status.title }}
+        {% if system_status.message %}
+        <span style="opacity: 0.9;">- {{ system_status.message }}</span>
+        {% endif %}
+    </div>
+    {% endif %}
+    
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}

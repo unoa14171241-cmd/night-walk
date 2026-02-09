@@ -140,6 +140,30 @@
                 📱 QRコード発行
             </a>
         </li>
+        <li>
+            <a href="{{ url_for('admin.demo_accounts') }}" class="{% if 'demo' in request.endpoint %}active{% endif %}">
+                🎭 デモアカウント
+            </a>
+        </li>
+    </ul>
+    
+    <hr style="border-color: var(--color-border); margin: var(--space-lg) 0;">
+    
+    <h4 class="text-muted mb-3" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;">
+        リスク管理
+    </h4>
+    
+    <ul class="sidebar-nav">
+        <li>
+            <a href="{{ url_for('admin.content_reports') }}" class="{% if 'content_report' in request.endpoint %}active{% endif %}">
+                🚨 不適切コンテンツ
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('admin.system_status') }}" class="{% if 'system' in request.endpoint %}active{% endif %}">
+                🔧 システムステータス
+            </a>
+        </li>
     </ul>
     
     <hr style="border-color: var(--color-border); margin: var(--space-lg) 0;">

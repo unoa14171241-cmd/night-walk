@@ -17,6 +17,8 @@ from ..models.content import Announcement, Advertisement
 from ..models.commission import CommissionRate, Commission, MonthlyBilling, get_default_commission, DEFAULT_COMMISSION_BY_CATEGORY
 from ..models.gift import Cast
 from ..models.customer import Customer
+from ..models.system import SystemStatus, ContentReport, SystemLog, DemoAccount
+from ..models.shop import ShopImage
 from ..utils.decorators import admin_required
 from ..utils.logger import audit_log
 
@@ -2044,3 +2046,368 @@ def qrcode_download(format):
         current_app.logger.error(f"QRコードダウンロードエラー: {e}")
         flash('QRコードのダウンロードに失敗しました', 'danger')
         return redirect(url_for('admin.qrcode_generator'))
+
+
+# ============================================
+# 4-1. デモアカウント管理
+# ============================================
+
+@admin_bp.route('/demo')
+@admin_required
+def demo_accounts():
+    """デモアカウント一覧"""
+    demos = DemoAccount.get_active_demos()
+    return render_template('admin/demo_accounts.html', demos=demos)
+
+
+@admin_bp.route('/demo/create', methods=['GET', 'POST'])
+@admin_required
+def create_demo():
+    """デモアカウント作成"""
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        description = request.form.get('description', '').strip()
+        
+        if not name:
+            flash('デモ名を入力してください', 'danger')
+            return render_template('admin/demo_form.html', demo=None)
+        
+        # デモ用の店舗を作成
+        demo_shop = Shop(
+            name=f"【デモ】サンプル店舗",
+            area='岡山',
+            category='girls_bar',
+            description='これはデモ用の店舗です。自由に操作してお試しください。',
+            phone='000-0000-0000',
+            business_hours='20:00-02:00',
+            price_range='3,000円〜',
+            is_demo=True,
+            is_published=True,
+            is_active=True,
+            review_status=Shop.STATUS_APPROVED
+        )
+        db.session.add(demo_shop)
+        db.session.flush()
+        
+        # デモ用ユーザーを作成
+        demo_email = f"demo_{secrets.token_hex(4)}@night-walk.demo"
+        demo_password = secrets.token_hex(6)
+        
+        demo_user = User(
+            email=demo_email,
+            name=f"デモユーザー（{name}）",
+            role=User.ROLE_OWNER
+        )
+        demo_user.set_password(demo_password)
+        db.session.add(demo_user)
+        db.session.flush()
+        
+        # 店舗メンバーシップ
+        membership = ShopMember(
+            shop_id=demo_shop.id,
+            user_id=demo_user.id,
+            role=ShopMember.ROLE_OWNER
+        )
+        db.session.add(membership)
+        
+        # デモアカウントレコード
+        demo = DemoAccount(
+            name=name,
+            description=description,
+            shop_id=demo_shop.id,
+            user_id=demo_user.id,
+            demo_email=demo_email,
+            demo_password=demo_password,
+            created_by=current_user.id
+        )
+        db.session.add(demo)
+        db.session.commit()
+        
+        audit_log('demo.create', 'demo_account', demo.id, 
+                  new_value={'name': name, 'shop_id': demo_shop.id})
+        
+        flash(f'デモアカウント「{name}」を作成しました', 'success')
+        return redirect(url_for('admin.demo_accounts'))
+    
+    return render_template('admin/demo_form.html', demo=None)
+
+
+@admin_bp.route('/demo/<int:demo_id>/reset', methods=['POST'])
+@admin_required
+def reset_demo(demo_id):
+    """デモアカウントを初期化"""
+    demo = DemoAccount.query.get_or_404(demo_id)
+    
+    if demo.shop:
+        # 店舗データをリセット
+        shop = demo.shop
+        shop.name = "【デモ】サンプル店舗"
+        shop.description = 'これはデモ用の店舗です。自由に操作してお試しください。'
+        
+        # キャストを削除
+        Cast.query.filter_by(shop_id=shop.id).delete()
+        
+        # 画像を削除
+        ShopImage.query.filter_by(shop_id=shop.id).delete()
+    
+    demo.last_reset_at = datetime.utcnow()
+    db.session.commit()
+    
+    audit_log('demo.reset', 'demo_account', demo.id)
+    flash(f'デモアカウント「{demo.name}」を初期化しました', 'success')
+    return redirect(url_for('admin.demo_accounts'))
+
+
+@admin_bp.route('/demo/<int:demo_id>/delete', methods=['POST'])
+@admin_required
+def delete_demo(demo_id):
+    """デモアカウントを削除"""
+    demo = DemoAccount.query.get_or_404(demo_id)
+    demo_name = demo.name
+    
+    # 関連データを削除
+    if demo.shop:
+        db.session.delete(demo.shop)
+    if demo.user_id:
+        user = User.query.get(demo.user_id)
+        if user:
+            db.session.delete(user)
+    
+    db.session.delete(demo)
+    db.session.commit()
+    
+    audit_log('demo.delete', 'demo_account', demo_id)
+    flash(f'デモアカウント「{demo_name}」を削除しました', 'success')
+    return redirect(url_for('admin.demo_accounts'))
+
+
+# ============================================
+# 4-2. 不適切投稿対策
+# ============================================
+
+@admin_bp.route('/content-reports')
+@admin_required
+def content_reports():
+    """不適切コンテンツ報告一覧"""
+    status_filter = request.args.get('status', 'pending')
+    
+    query = ContentReport.query
+    if status_filter and status_filter != 'all':
+        query = query.filter_by(status=status_filter)
+    
+    reports = query.order_by(ContentReport.created_at.desc()).limit(100).all()
+    pending_count = ContentReport.get_pending_count()
+    
+    return render_template('admin/content_reports.html',
+                          reports=reports,
+                          status_filter=status_filter,
+                          pending_count=pending_count)
+
+
+@admin_bp.route('/content-reports/<int:report_id>/handle', methods=['POST'])
+@admin_required
+def handle_content_report(report_id):
+    """コンテンツ報告を処理"""
+    report = ContentReport.query.get_or_404(report_id)
+    action = request.form.get('action')
+    notes = request.form.get('notes', '').strip()
+    
+    if action == 'hide':
+        # コンテンツを非表示
+        if report.content_type == 'shop_image':
+            image = ShopImage.query.get(report.content_id)
+            if image:
+                image.hide(current_user.id, notes)
+        report.status = ContentReport.STATUS_HIDDEN
+        flash('コンテンツを非表示にしました', 'success')
+        
+    elif action == 'delete':
+        # コンテンツを削除
+        if report.content_type == 'shop_image':
+            image = ShopImage.query.get(report.content_id)
+            if image:
+                # ファイルを削除
+                try:
+                    filepath = os.path.join(current_app.root_path, 'static', 'uploads', 'shops', image.filename)
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
+                except:
+                    pass
+                db.session.delete(image)
+        report.status = ContentReport.STATUS_DELETED
+        flash('コンテンツを削除しました', 'success')
+        
+    elif action == 'dismiss':
+        # 問題なしとして却下
+        report.status = ContentReport.STATUS_DISMISSED
+        flash('報告を却下しました', 'info')
+    
+    report.handled_by = current_user.id
+    report.handled_at = datetime.utcnow()
+    report.handle_notes = notes
+    db.session.commit()
+    
+    audit_log('content.handle', 'content_report', report.id,
+              new_value={'action': action, 'notes': notes})
+    
+    return redirect(url_for('admin.content_reports'))
+
+
+@admin_bp.route('/images/<int:image_id>/hide', methods=['POST'])
+@admin_required
+def hide_image(image_id):
+    """画像をワンクリックで非表示"""
+    image = ShopImage.query.get_or_404(image_id)
+    reason = request.form.get('reason', '管理者による非表示')
+    
+    image.hide(current_user.id, reason)
+    db.session.commit()
+    
+    audit_log('image.hide', 'shop_image', image.id,
+              new_value={'shop_id': image.shop_id, 'reason': reason})
+    
+    flash('画像を非表示にしました', 'success')
+    
+    # リダイレクト先
+    next_url = request.form.get('next') or url_for('admin.shop_detail', shop_id=image.shop_id)
+    return redirect(next_url)
+
+
+@admin_bp.route('/images/<int:image_id>/unhide', methods=['POST'])
+@admin_required
+def unhide_image(image_id):
+    """画像の非表示を解除"""
+    image = ShopImage.query.get_or_404(image_id)
+    
+    image.unhide()
+    db.session.commit()
+    
+    audit_log('image.unhide', 'shop_image', image.id,
+              new_value={'shop_id': image.shop_id})
+    
+    flash('画像の非表示を解除しました', 'success')
+    
+    next_url = request.form.get('next') or url_for('admin.shop_detail', shop_id=image.shop_id)
+    return redirect(next_url)
+
+
+@admin_bp.route('/images/<int:image_id>/delete', methods=['POST'])
+@admin_required  
+def admin_delete_image(image_id):
+    """画像をワンクリックで削除"""
+    image = ShopImage.query.get_or_404(image_id)
+    shop_id = image.shop_id
+    
+    # ファイルを削除
+    try:
+        filepath = os.path.join(current_app.root_path, 'static', 'uploads', 'shops', image.filename)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+    except Exception as e:
+        current_app.logger.error(f"画像ファイル削除エラー: {e}")
+    
+    db.session.delete(image)
+    db.session.commit()
+    
+    audit_log('image.delete', 'shop_image', image_id,
+              new_value={'shop_id': shop_id})
+    
+    flash('画像を削除しました', 'success')
+    
+    next_url = request.form.get('next') or url_for('admin.shop_detail', shop_id=shop_id)
+    return redirect(next_url)
+
+
+# ============================================
+# 4-3. 障害対応・システムステータス
+# ============================================
+
+@admin_bp.route('/system/status')
+@admin_required
+def system_status():
+    """システムステータス管理"""
+    current_status = SystemStatus.get_current_status()
+    
+    # 過去のインシデント
+    incidents = SystemStatus.query.filter(
+        SystemStatus.status != SystemStatus.STATUS_NORMAL
+    ).order_by(SystemStatus.created_at.desc()).limit(20).all()
+    
+    # 最近のエラーログ
+    recent_errors = SystemLog.get_recent_errors(limit=20)
+    
+    return render_template('admin/system_status.html',
+                          current_status=current_status,
+                          incidents=incidents,
+                          recent_errors=recent_errors)
+
+
+@admin_bp.route('/system/incident', methods=['POST'])
+@admin_required
+def create_incident():
+    """インシデント（障害情報）を作成"""
+    status = request.form.get('status', SystemStatus.STATUS_DEGRADED)
+    title = request.form.get('title', '').strip()
+    message = request.form.get('message', '').strip()
+    affected_services = request.form.get('affected_services', '').strip()
+    notify = request.form.get('notify_users') == 'on'
+    
+    if not title:
+        flash('タイトルを入力してください', 'danger')
+        return redirect(url_for('admin.system_status'))
+    
+    # 既存のアクティブステータスを非アクティブに
+    SystemStatus.query.filter_by(is_active=True).update({'is_active': False})
+    
+    incident = SystemStatus.create_incident(
+        status=status,
+        title=title,
+        message=message,
+        affected_services=affected_services,
+        user_id=current_user.id
+    )
+    incident.notify_users = notify
+    db.session.commit()
+    
+    audit_log('system.incident_create', 'system_status', incident.id,
+              new_value={'status': status, 'title': title})
+    
+    flash(f'インシデント「{title}」を登録しました', 'warning')
+    return redirect(url_for('admin.system_status'))
+
+
+@admin_bp.route('/system/incident/<int:incident_id>/resolve', methods=['POST'])
+@admin_required
+def resolve_incident(incident_id):
+    """インシデントを解決済みにする"""
+    incident = SystemStatus.query.get_or_404(incident_id)
+    
+    incident.resolved_at = datetime.utcnow()
+    incident.is_active = False
+    db.session.commit()
+    
+    audit_log('system.incident_resolve', 'system_status', incident.id)
+    
+    flash(f'インシデント「{incident.title}」を解決済みにしました', 'success')
+    return redirect(url_for('admin.system_status'))
+
+
+@admin_bp.route('/system/logs')
+@admin_required
+def system_logs():
+    """システムログ一覧"""
+    level = request.args.get('level', '')
+    category = request.args.get('category', '')
+    
+    query = SystemLog.query
+    if level:
+        query = query.filter_by(level=level)
+    if category:
+        query = query.filter_by(category=category)
+    
+    logs = query.order_by(SystemLog.created_at.desc()).limit(200).all()
+    
+    return render_template('admin/system_logs.html',
+                          logs=logs,
+                          level_filter=level,
+                          category_filter=category)

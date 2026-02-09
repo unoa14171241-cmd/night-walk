@@ -197,6 +197,45 @@ def auto_migrate_columns():
                         except Exception as col_e:
                             print(f"[WARNING] Failed to add '{col_name}': {col_e}")
                             db.session.rollback()
+            
+            # shop_imagesテーブルのカラムをチェック（不適切コンテンツ対策）
+            if 'shop_images' in inspector.get_table_names():
+                columns = [col['name'] for col in inspector.get_columns('shop_images')]
+                
+                image_columns = [
+                    ("is_hidden", "BOOLEAN DEFAULT FALSE"),
+                    ("hidden_at", "TIMESTAMP"),
+                    ("hidden_by", "INTEGER"),
+                    ("hidden_reason", "VARCHAR(200)"),
+                ]
+                
+                for col_name, col_type in image_columns:
+                    if col_name not in columns:
+                        print(f"[INFO] Adding '{col_name}' column to shop_images table...")
+                        try:
+                            db.session.execute(text(
+                                f"ALTER TABLE shop_images ADD COLUMN {col_name} {col_type}"
+                            ))
+                            db.session.commit()
+                            print(f"[SUCCESS] '{col_name}' column added to shop_images table!")
+                        except Exception as col_e:
+                            print(f"[WARNING] Failed to add '{col_name}': {col_e}")
+                            db.session.rollback()
+            
+            # shopsテーブルにis_demoカラムを追加
+            if 'shops' in inspector.get_table_names():
+                columns = [col['name'] for col in inspector.get_columns('shops')]
+                if 'is_demo' not in columns:
+                    print("[INFO] Adding 'is_demo' column to shops table...")
+                    try:
+                        db.session.execute(text(
+                            "ALTER TABLE shops ADD COLUMN is_demo BOOLEAN DEFAULT FALSE"
+                        ))
+                        db.session.commit()
+                        print("[SUCCESS] 'is_demo' column added to shops table!")
+                    except Exception as col_e:
+                        print(f"[WARNING] Failed to add 'is_demo': {col_e}")
+                        db.session.rollback()
                     
         except Exception as e:
             print(f"[WARNING] Column migration error: {e}")

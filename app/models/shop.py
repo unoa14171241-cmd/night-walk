@@ -138,6 +138,7 @@ class Shop(db.Model):
     is_published = db.Column(db.Boolean, nullable=False, default=False, index=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True, index=True)
     is_featured = db.Column(db.Boolean, nullable=False, default=False)  # おすすめフラグ
+    is_demo = db.Column(db.Boolean, nullable=False, default=False)  # デモアカウント用店舗
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -507,6 +508,12 @@ class ShopImage(db.Model):
     sort_order = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     
+    # 不適切コンテンツ対策
+    is_hidden = db.Column(db.Boolean, default=False)  # 管理者による非表示
+    hidden_at = db.Column(db.DateTime)
+    hidden_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    hidden_reason = db.Column(db.String(200))
+    
     # Relationships
     shop = db.relationship('Shop', back_populates='images')
     
@@ -514,6 +521,25 @@ class ShopImage(db.Model):
     def url(self):
         """Get image URL for display."""
         return f'/static/uploads/shops/{self.filename}'
+    
+    @property
+    def is_visible(self):
+        """表示可能かどうか"""
+        return not self.is_hidden
+    
+    def hide(self, user_id, reason=None):
+        """画像を非表示にする"""
+        self.is_hidden = True
+        self.hidden_at = datetime.utcnow()
+        self.hidden_by = user_id
+        self.hidden_reason = reason
+    
+    def unhide(self):
+        """非表示を解除"""
+        self.is_hidden = False
+        self.hidden_at = None
+        self.hidden_by = None
+        self.hidden_reason = None
     
     def __repr__(self):
         return f'<ShopImage shop={self.shop_id} file={self.filename}>'
