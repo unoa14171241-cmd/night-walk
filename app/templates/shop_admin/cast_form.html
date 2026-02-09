@@ -122,11 +122,69 @@
                 {% endif %}
                 
                 {% if cast %}
+                <!-- キャストログイン設定 -->
+                <div class="card mt-4 mb-4" style="background: var(--color-bg-elevated);">
+                    <h4 class="mb-3">📱 キャストログイン設定</h4>
+                    <p class="text-muted mb-3">
+                        キャスト本人がスマホから出勤状況やコメントを更新できるようになります。
+                    </p>
+                    
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>ログインコード</label>
+                            {% if cast.login_code %}
+                            <div class="d-flex gap-2 align-center">
+                                <input type="text" class="form-control" value="{{ cast.login_code }}" readonly 
+                                       style="font-family: monospace; font-size: 1.25rem; letter-spacing: 2px;">
+                                <button type="button" class="btn btn-sm btn-outline" onclick="copyCode('{{ cast.login_code }}')">コピー</button>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">（未発行）</p>
+                            {% endif %}
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>ログインURL</label>
+                            <input type="text" class="form-control" value="{{ url_for('cast.login', _external=True) }}" readonly 
+                                   style="font-size: 0.8rem;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="enable_cast_login" 
+                                   {% if cast.has_login_enabled %}checked{% endif %}>
+                            キャストログインを有効にする
+                        </label>
+                    </div>
+                    
+                    <div class="form-group" id="pin-section" {% if not cast.has_login_enabled %}style="display: none;"{% endif %}>
+                        <label for="cast_pin">新しいPIN（4桁数字）</label>
+                        <input type="text" id="cast_pin" name="cast_pin" class="form-control" 
+                               pattern="[0-9]{4}" maxlength="4" inputmode="numeric"
+                               placeholder="変更する場合のみ入力" style="max-width: 150px;">
+                        <small class="form-help">キャストに伝えるPINを設定します</small>
+                    </div>
+                    
+                    {% if cast.last_login_at %}
+                    <p class="text-muted" style="font-size: 0.8rem;">
+                        最終ログイン: {{ cast.last_login_at.strftime('%Y/%m/%d %H:%M') }}
+                    </p>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="is_visible" 
+                               {% if cast.is_visible %}checked{% endif %}>
+                        プロフィールページを公開する
+                    </label>
+                </div>
+                
                 <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" name="is_active" 
                                {% if cast.is_active %}checked{% endif %}>
-                        公開する
+                        有効（一覧に表示）
                     </label>
                 </div>
                 
@@ -176,4 +234,24 @@
     color: var(--color-primary);
 }
 </style>
+
+<script>
+// キャストログイン設定のUI連動
+document.addEventListener('DOMContentLoaded', function() {
+    const checkbox = document.querySelector('input[name="enable_cast_login"]');
+    const pinSection = document.getElementById('pin-section');
+    
+    if (checkbox && pinSection) {
+        checkbox.addEventListener('change', function() {
+            pinSection.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+});
+
+function copyCode(code) {
+    navigator.clipboard.writeText(code).then(function() {
+        alert('ログインコードをコピーしました: ' + code);
+    });
+}
+</script>
 {% endblock %}

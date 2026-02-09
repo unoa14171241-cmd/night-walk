@@ -18,6 +18,8 @@ from ..models.earning import Earning
 from ..utils.decorators import shop_access_required, owner_required
 from ..utils.logger import audit_log
 from ..utils.helpers import get_client_ip
+from ..services.qrcode_service import generate_qrcode_base64, generate_qrcode_svg
+from ..services.image_service import resize_and_optimize_image
 
 shop_admin_bp = Blueprint('shop_admin', __name__)
 
@@ -271,6 +273,33 @@ def billing():
                           billing_events=billing_events)
 
 
+# ============================================
+# Shop QR Code
+# ============================================
+
+@shop_admin_bp.route('/qrcode')
+@login_required
+@shop_access_required
+def shop_qrcode():
+    """店舗専用QRコード発行ページ"""
+    shop = g.current_shop
+    
+    # 店舗詳細ページのURL
+    shop_url = url_for('public.shop_detail', shop_id=shop.id, _external=True)
+    
+    # QRコード生成（高解像度）
+    qr_png_base64 = generate_qrcode_base64(shop_url, scale=15)
+    qr_png_high_res = generate_qrcode_base64(shop_url, scale=25)  # 印刷用高解像度
+    qr_svg = generate_qrcode_svg(shop_url)
+    
+    return render_template('shop_admin/qrcode.html',
+                          shop=shop,
+                          shop_url=shop_url,
+                          qr_png_base64=qr_png_base64,
+                          qr_png_high_res=qr_png_high_res,
+                          qr_svg=qr_svg)
+
+
 @shop_admin_bp.route('/select-shop/<int:shop_id>')
 @login_required
 def select_shop(shop_id):
@@ -304,7 +333,7 @@ def images():
 @login_required
 @owner_required
 def upload_image():
-    """Upload shop image."""
+    """Upload shop image with auto-resize."""
     from ..utils.helpers import validate_image_file
     
     shop = g.current_shop
@@ -321,7 +350,27 @@ def upload_image():
         flash(error_message, 'danger')
         return redirect(url_for('shop_admin.images'))
     
-    filename = save_shop_image(file, shop.id)
+    # 画像を自動リサイズ
+    try:
+        optimized_data, fmt = resize_and_optimize_image(file)
+        if optimized_data:
+            # 新しいファイル名を生成
+            ext = 'jpg' if fmt == 'JPEG' else file.filename.rsplit('.', 1)[1].lower()
+            filename = f"{shop.id}_{uuid.uuid4().hex[:8]}.{ext}"
+            
+            # 保存
+            upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'shops')
+            os.makedirs(upload_dir, exist_ok=True)
+            filepath = os.path.join(upload_dir, filename)
+            
+            with open(filepath, 'wb') as f:
+                f.write(optimized_data)
+        else:
+            # フォールバック
+            filename = save_shop_image(file, shop.id)
+    except Exception as e:
+        print(f"[ERROR] Image resize failed: {e}")
+        filename = save_shop_image(file, shop.id)
     
     if not filename:
         flash('画像のアップロードに失敗しました。', 'danger')
@@ -343,7 +392,7 @@ def upload_image():
     db.session.add(image)
     db.session.commit()
     
-    flash('画像をアップロードしました。', 'success')
+    flash('画像をアップロードしました（自動最適化済み）。', 'success')
     return redirect(url_for('shop_admin.images'))
 
 
@@ -513,7 +562,30 @@ def edit_cast(cast_id):
         cast.instagram_url = request.form.get('instagram_url', '').strip() or None
         cast.is_accepting_gifts = request.form.get('is_accepting_gifts') == 'on'
         cast.is_active = request.form.get('is_active') == 'on'
+        cast.is_visible = request.form.get('is_visible') == 'on'
         cast.is_featured = request.form.get('is_featured') == 'on'
+        
+        # キャストログイン設定
+        enable_cast_login = request.form.get('enable_cast_login') == 'on'
+        cast_pin = request.form.get('cast_pin', '').strip()
+        
+        if enable_cast_login:
+            # ログインコードが未発行なら発行
+            if not cast.login_code:
+                cast.generate_login_code()
+            
+            # PINが入力されていれば更新
+            if cast_pin:
+                if len(cast_pin) == 4 and cast_pin.isdigit():
+                    cast.set_pin(cast_pin)
+                else:
+                    flash('PINは4桁の数字で入力してください。', 'warning')
+            elif not cast.pin_hash:
+                # 初回でPIN未設定の場合はエラー
+                flash('キャストログインを有効にするにはPINを設定してください。', 'warning')
+        else:
+            # ログインを無効化（コードは残すがPINを削除）
+            cast.pin_hash = None
         
         # ギフト目標設定
         try:
@@ -525,21 +597,49 @@ def edit_cast(cast_id):
         cast.monthly_gift_goal_message = request.form.get('monthly_gift_goal_message', '').strip() or None
         cast.show_gift_progress = request.form.get('show_gift_progress') == 'on'
         
-        # Handle image upload
+        # Handle image upload with auto-resize
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename:
-                filename = save_cast_image(file, shop.id)
-                if filename:
-                    # Delete old image
-                    if cast.image_filename:
-                        try:
-                            old_path = os.path.join(current_app.root_path, 'static', 'uploads', 'casts', cast.image_filename)
-                            if os.path.exists(old_path):
-                                os.remove(old_path)
-                        except:
-                            pass
-                    cast.image_filename = filename
+                # 画像を自動リサイズ
+                try:
+                    optimized_data, fmt = resize_and_optimize_image(file)
+                    if optimized_data:
+                        # 新しいファイル名を生成
+                        ext = 'jpg' if fmt == 'JPEG' else file.filename.rsplit('.', 1)[1].lower()
+                        new_filename = f"{shop.id}_{uuid.uuid4().hex[:8]}.{ext}"
+                        
+                        # 保存
+                        upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'casts')
+                        os.makedirs(upload_dir, exist_ok=True)
+                        filepath = os.path.join(upload_dir, new_filename)
+                        
+                        with open(filepath, 'wb') as f:
+                            f.write(optimized_data)
+                        
+                        # 古い画像を削除
+                        if cast.image_filename:
+                            try:
+                                old_path = os.path.join(upload_dir, cast.image_filename)
+                                if os.path.exists(old_path):
+                                    os.remove(old_path)
+                            except:
+                                pass
+                        
+                        cast.image_filename = new_filename
+                except Exception as e:
+                    print(f"[ERROR] Image resize failed: {e}")
+                    # フォールバック: 元の方法で保存
+                    filename = save_cast_image(file, shop.id)
+                    if filename:
+                        if cast.image_filename:
+                            try:
+                                old_path = os.path.join(current_app.root_path, 'static', 'uploads', 'casts', cast.image_filename)
+                                if os.path.exists(old_path):
+                                    os.remove(old_path)
+                            except:
+                                pass
+                        cast.image_filename = filename
         
         db.session.commit()
         

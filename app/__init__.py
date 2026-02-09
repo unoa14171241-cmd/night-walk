@@ -47,6 +47,7 @@ def create_app(config_name='default'):
     from .routes.api import api_bp
     from .routes.webhook import webhook_bp
     from .routes.customer import customer_bp
+    from .routes.cast import cast_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -55,6 +56,7 @@ def create_app(config_name='default'):
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(webhook_bp, url_prefix='/webhook')
     app.register_blueprint(customer_bp, url_prefix='/customer')
+    app.register_blueprint(cast_bp, url_prefix='/cast')
     
     # Register error handlers
     register_error_handlers(app)

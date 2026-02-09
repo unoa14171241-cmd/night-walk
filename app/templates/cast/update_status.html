@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}出勤状況更新 - {{ cast.name_display }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 500px; padding: var(--space-lg);">
+    
+    <div class="d-flex justify-between align-center mb-4">
+        <h1 style="font-size: 1.25rem;">📅 出勤状況を更新</h1>
+        <a href="{{ url_for('cast.dashboard') }}" class="btn btn-secondary btn-sm">← 戻る</a>
+    </div>
+    
+    <div class="card">
+        <form method="POST" action="{{ url_for('cast.update_status') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- 出勤状況 -->
+            <div class="mb-4">
+                <label class="form-label">出勤状況</label>
+                <div class="d-flex gap-2" style="flex-wrap: wrap;">
+                    <label style="flex: 1; min-width: 100px;">
+                        <input type="radio" name="work_status" value="working" 
+                               {% if cast.work_status == 'working' %}checked{% endif %}
+                               style="display: none;">
+                        <div class="status-option working">
+                            🟢 出勤中
+                        </div>
+                    </label>
+                    <label style="flex: 1; min-width: 100px;">
+                        <input type="radio" name="work_status" value="scheduled" 
+                               {% if cast.work_status == 'scheduled' %}checked{% endif %}
+                               style="display: none;">
+                        <div class="status-option scheduled">
+                            🟡 出勤予定
+                        </div>
+                    </label>
+                    <label style="flex: 1; min-width: 100px;">
+                        <input type="radio" name="work_status" value="off" 
+                               {% if cast.work_status == 'off' %}checked{% endif %}
+                               style="display: none;">
+                        <div class="status-option off">
+                            ⚫ 休み
+                        </div>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- 出勤時間 -->
+            <div class="mb-4">
+                <label class="form-label">出勤時間（任意）</label>
+                <div class="d-flex gap-2 align-center">
+                    <input type="time" name="work_start_time" class="form-control" 
+                           value="{{ cast.work_start_time or '' }}" style="flex: 1;">
+                    <span>〜</span>
+                    <input type="time" name="work_end_time" class="form-control" 
+                           value="{{ cast.work_end_time or '' }}" style="flex: 1;">
+                </div>
+            </div>
+            
+            <!-- 出勤メモ -->
+            <div class="mb-4">
+                <label class="form-label">出勤メモ（任意・100文字）</label>
+                <input type="text" name="work_memo" class="form-control" 
+                       value="{{ cast.work_memo or '' }}"
+                       maxlength="100" placeholder="例: 20時から出勤予定">
+            </div>
+            
+            <hr style="margin: var(--space-lg) 0;">
+            
+            <!-- 本日のコメント -->
+            <div class="mb-4">
+                <label class="form-label">💬 本日のコメント（お客様へのメッセージ）</label>
+                <textarea name="comment" class="form-control" rows="3" 
+                          maxlength="200" placeholder="例: 今日も元気に出勤してます！会いに来てね♪">{{ cast.comment or '' }}</textarea>
+                <small class="text-muted">200文字まで・プロフィールページに表示されます</small>
+            </div>
+            
+            <button type="submit" class="btn btn-primary w-100">
+                更新する
+            </button>
+        </form>
+    </div>
+    
+</div>
+
+<style>
+.status-option {
+    padding: var(--space-md);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.status-option:hover {
+    border-color: var(--color-primary);
+}
+
+input[type="radio"]:checked + .status-option.working {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: var(--color-success);
+}
+
+input[type="radio"]:checked + .status-option.scheduled {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: var(--color-warning);
+}
+
+input[type="radio"]:checked + .status-option.off {
+    background: var(--color-bg-secondary);
+    border-color: var(--color-text-secondary);
+}
+</style>
+{% endblock %}

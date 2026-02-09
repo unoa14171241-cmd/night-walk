@@ -3,7 +3,9 @@
 
 from datetime import datetime
 from flask import url_for
+from werkzeug.security import generate_password_hash, check_password_hash
 from ..extensions import db
+import secrets
 
 
 class Cast(db.Model):
@@ -16,13 +18,30 @@ class Cast(db.Model):
     name = db.Column(db.String(50), nullable=False)
     display_name = db.Column(db.String(50))  # 源氏名・表示名
     profile = db.Column(db.Text)  # 自己紹介
+    comment = db.Column(db.String(200))  # 本日のコメント（キャスト更新可能）
     image_filename = db.Column(db.String(255))
+    
+    # 出勤状況
+    WORK_STATUS_OFF = 'off'           # 休み
+    WORK_STATUS_WORKING = 'working'   # 出勤中
+    WORK_STATUS_SCHEDULED = 'scheduled'  # 出勤予定
+    
+    work_status = db.Column(db.String(20), default=WORK_STATUS_OFF)
+    work_start_time = db.Column(db.String(5))  # 出勤開始時間 (HH:MM)
+    work_end_time = db.Column(db.String(5))    # 出勤終了時間 (HH:MM)
+    work_memo = db.Column(db.String(100))       # 出勤メモ
+    
+    # キャストログイン用
+    login_code = db.Column(db.String(8), unique=True, index=True)  # 8桁ログインコード
+    pin_hash = db.Column(db.String(255))  # 4桁PIN（ハッシュ化）
+    last_login_at = db.Column(db.DateTime)
     
     # SNS
     twitter_url = db.Column(db.String(255))
     instagram_url = db.Column(db.String(255))
     
     is_active = db.Column(db.Boolean, default=True)
+    is_visible = db.Column(db.Boolean, default=True)  # プロフィールページを公開するか
     is_accepting_gifts = db.Column(db.Boolean, default=True)  # ギフト受付中
     is_featured = db.Column(db.Boolean, default=False)  # 注目キャスト
     
@@ -177,6 +196,70 @@ class Cast(db.Model):
         self.monthly_gift_goal_message = message
         self.show_gift_progress = show_progress
         self.updated_at = datetime.utcnow()
+    
+    # ==================== キャストログイン機能 ====================
+    
+    def generate_login_code(self):
+        """8桁のログインコードを生成"""
+        while True:
+            code = ''.join(secrets.choice('0123456789') for _ in range(8))
+            # 重複チェック
+            existing = Cast.query.filter_by(login_code=code).first()
+            if not existing:
+                self.login_code = code
+                return code
+    
+    def set_pin(self, pin):
+        """4桁PINを設定（ハッシュ化して保存）"""
+        if len(pin) != 4 or not pin.isdigit():
+            raise ValueError("PINは4桁の数字である必要があります")
+        self.pin_hash = generate_password_hash(pin)
+    
+    def check_pin(self, pin):
+        """PINを検証"""
+        if not self.pin_hash:
+            return False
+        return check_password_hash(self.pin_hash, pin)
+    
+    def record_login(self):
+        """ログイン日時を記録"""
+        self.last_login_at = datetime.utcnow()
+    
+    @property
+    def has_login_enabled(self):
+        """ログインが有効か"""
+        return bool(self.login_code and self.pin_hash)
+    
+    @property
+    def work_status_label(self):
+        """出勤状況ラベル"""
+        labels = {
+            self.WORK_STATUS_OFF: '休み',
+            self.WORK_STATUS_WORKING: '出勤中',
+            self.WORK_STATUS_SCHEDULED: '出勤予定'
+        }
+        return labels.get(self.work_status, '不明')
+    
+    @property
+    def work_status_color(self):
+        """出勤状況の色"""
+        colors = {
+            self.WORK_STATUS_OFF: 'secondary',
+            self.WORK_STATUS_WORKING: 'success',
+            self.WORK_STATUS_SCHEDULED: 'warning'
+        }
+        return colors.get(self.work_status, 'secondary')
+    
+    @property
+    def work_time_display(self):
+        """出勤時間の表示"""
+        if self.work_status == self.WORK_STATUS_OFF:
+            return None
+        if self.work_start_time and self.work_end_time:
+            return f"{self.work_start_time}〜{self.work_end_time}"
+        elif self.work_start_time:
+            return f"{self.work_start_time}〜"
+        return None
     
     def __repr__(self):
         return f'<Cast {self.name_display}>'

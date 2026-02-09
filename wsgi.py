@@ -168,6 +168,35 @@ def auto_migrate_columns():
                         ))
                         db.session.commit()
                         print(f"[SUCCESS] '{col_name}' column added to shops table!")
+            
+            # castsテーブルのカラムをチェック（キャストログイン・出勤状況）
+            if 'casts' in inspector.get_table_names():
+                columns = [col['name'] for col in inspector.get_columns('casts')]
+                
+                cast_columns = [
+                    ("comment", "VARCHAR(200)"),
+                    ("work_status", "VARCHAR(20) DEFAULT 'off'"),
+                    ("work_start_time", "VARCHAR(5)"),
+                    ("work_end_time", "VARCHAR(5)"),
+                    ("work_memo", "VARCHAR(100)"),
+                    ("login_code", "VARCHAR(8)"),
+                    ("pin_hash", "VARCHAR(255)"),
+                    ("last_login_at", "TIMESTAMP"),
+                    ("is_visible", "BOOLEAN DEFAULT TRUE"),
+                ]
+                
+                for col_name, col_type in cast_columns:
+                    if col_name not in columns:
+                        print(f"[INFO] Adding '{col_name}' column to casts table...")
+                        try:
+                            db.session.execute(text(
+                                f"ALTER TABLE casts ADD COLUMN {col_name} {col_type}"
+                            ))
+                            db.session.commit()
+                            print(f"[SUCCESS] '{col_name}' column added to casts table!")
+                        except Exception as col_e:
+                            print(f"[WARNING] Failed to add '{col_name}': {col_e}")
+                            db.session.rollback()
                     
         except Exception as e:
             print(f"[WARNING] Column migration error: {e}")

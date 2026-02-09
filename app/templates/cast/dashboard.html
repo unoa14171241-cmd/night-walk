@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}マイページ - {{ cast.name_display }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 500px; padding: var(--space-lg);">
+    
+    <!-- ヘッダー -->
+    <div class="card mb-4 text-center">
+        {% if cast.image_url %}
+        <img src="{{ cast.image_url }}" 
+             alt="{{ cast.name_display }}"
+             style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin: 0 auto var(--space-md); border: 3px solid var(--color-primary);">
+        {% endif %}
+        
+        <h1 style="font-size: 1.25rem; margin-bottom: var(--space-xs);">{{ cast.name_display }}</h1>
+        <p class="text-muted mb-0">{{ cast.shop.name }}</p>
+    </div>
+    
+    <!-- 現在の出勤状況 -->
+    <div class="card mb-4">
+        <h3 class="mb-3">📅 現在の出勤状況</h3>
+        
+        <div class="d-flex align-center gap-2 mb-3">
+            <span class="badge badge-{{ cast.work_status_color }}" style="font-size: 1rem; padding: var(--space-sm) var(--space-md);">
+                {% if cast.work_status == 'working' %}🟢{% elif cast.work_status == 'scheduled' %}🟡{% else %}⚫{% endif %}
+                {{ cast.work_status_label }}
+            </span>
+            {% if cast.work_time_display %}
+            <span>{{ cast.work_time_display }}</span>
+            {% endif %}
+        </div>
+        
+        {% if cast.work_memo %}
+        <p class="text-muted mb-3" style="font-size: 0.875rem;">
+            📝 {{ cast.work_memo }}
+        </p>
+        {% endif %}
+        
+        {% if cast.comment %}
+        <div style="padding: var(--space-sm); background: var(--color-bg-secondary); border-radius: 8px; margin-bottom: var(--space-md);">
+            <strong>💬 本日のコメント:</strong>
+            <p class="mb-0">{{ cast.comment }}</p>
+        </div>
+        {% endif %}
+        
+        <a href="{{ url_for('cast.update_status') }}" class="btn btn-primary w-100">
+            出勤状況を更新
+        </a>
+    </div>
+    
+    <!-- クイックアクション -->
+    <div class="card mb-4">
+        <h3 class="mb-3">⚡ クイックアクション</h3>
+        
+        <div class="d-flex gap-2" style="flex-wrap: wrap;">
+            <form action="{{ url_for('cast.update_status') }}" method="POST" style="flex: 1;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="work_status" value="working">
+                <button type="submit" class="btn btn-success w-100">🟢 出勤する</button>
+            </form>
+            
+            <form action="{{ url_for('cast.update_status') }}" method="POST" style="flex: 1;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="work_status" value="off">
+                <button type="submit" class="btn btn-secondary w-100">⚫ 退勤する</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 統計 -->
+    <div class="card mb-4">
+        <h3 class="mb-3">📊 今月の実績</h3>
+        
+        <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="stat-card" style="text-align: center;">
+                <div class="stat-value">{{ cast.monthly_gift_received }}</div>
+                <div class="stat-label">受け取りPT</div>
+            </div>
+            <div class="stat-card" style="text-align: center;">
+                <div class="stat-value">{{ cast.total_gifts_received }}</div>
+                <div class="stat-label">累計ギフト数</div>
+            </div>
+        </div>
+        
+        {% if cast.show_gift_progress and cast.monthly_gift_goal > 0 %}
+        <div style="margin-top: var(--space-md);">
+            <div class="d-flex justify-between align-center mb-1">
+                <span style="font-size: 0.875rem;">今月の目標達成率</span>
+                <span style="font-weight: 600;">{{ cast.gift_progress_percent }}%</span>
+            </div>
+            <div style="height: 8px; background: var(--color-bg-secondary); border-radius: 4px; overflow: hidden;">
+                <div style="height: 100%; width: {{ cast.gift_progress_percent }}%; background: var(--color-primary); transition: width 0.3s;"></div>
+            </div>
+            {% if cast.monthly_gift_goal_message %}
+            <p class="text-muted mt-2" style="font-size: 0.8rem;">{{ cast.monthly_gift_goal_message }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- リンク -->
+    <div class="d-flex gap-2 mb-4">
+        <a href="{{ url_for('public.cast_detail', cast_id=cast.id) }}" class="btn btn-outline" style="flex: 1;" target="_blank">
+            自分のページを見る ↗
+        </a>
+        <a href="{{ url_for('cast.profile') }}" class="btn btn-outline" style="flex: 1;">
+            プロフィール確認
+        </a>
+    </div>
+    
+    <!-- ログアウト -->
+    <div class="text-center">
+        <a href="{{ url_for('cast.logout') }}" class="text-muted">ログアウト</a>
+    </div>
+    
+</div>
+{% endblock %}

@@ -46,6 +46,26 @@
             ・ {{ shop.area }}
         </p>
         
+        <!-- 出勤状況 -->
+        {% if cast.work_status != 'off' %}
+        <div style="margin-top: var(--space-md); padding: var(--space-sm) var(--space-md); border-radius: 8px; 
+                    background: {% if cast.work_status == 'working' %}rgba(16, 185, 129, 0.15){% else %}rgba(245, 158, 11, 0.15){% endif %};">
+            <span class="badge badge-{{ cast.work_status_color }}" style="font-size: 0.9rem;">
+                {% if cast.work_status == 'working' %}🟢{% else %}🟡{% endif %} {{ cast.work_status_label }}
+            </span>
+            {% if cast.work_time_display %}
+            <span class="text-muted" style="margin-left: 8px;">{{ cast.work_time_display }}</span>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- 本日のコメント -->
+        {% if cast.comment %}
+        <div style="margin-top: var(--space-sm); padding: var(--space-sm); background: var(--color-bg-secondary); border-radius: 8px; font-size: 0.9rem;">
+            💬 {{ cast.comment }}
+        </div>
+        {% endif %}
+        
         <!-- 現在のランキング -->
         {% if cast.current_rank %}
         <p style="margin-top: var(--space-sm);">
