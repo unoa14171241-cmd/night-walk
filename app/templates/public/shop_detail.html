@@ -1,6 +1,48 @@
 {% extends "customer/base.html" %}
 
-{% block title %}{{ shop.name }} - Night-Walk{% endblock %}
+{% block title %}{{ shop.name }} | {{ shop.area }}の{{ shop.category_label }} - Night-Walk{% endblock %}
+
+{% block meta_description %}{{ shop.name }}は{{ shop.area }}にある{{ shop.category_label }}です。{% if shop.business_hours %}営業時間: {{ shop.business_hours }}{% endif %}{% if shop.price_range %} 料金: {{ shop.price_range }}{% endif %} 空席状況をリアルタイムで確認できます。{% endblock %}
+
+{% block og_type %}place{% endblock %}
+
+{% block og_image %}{% if images and images[0] %}{{ images[0].url }}{% else %}{{ url_for('static', filename='images/ogp-default.png', _external=True) }}{% endif %}{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "{{ shop.name }}",
+  "description": "{{ shop.description | default(shop.area + 'にある' + shop.category_label) | replace('"', '\\"') | truncate(200) }}",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "{{ shop.area }}",
+    "addressRegion": "岡山県",
+    "addressCountry": "JP"
+  }
+  {% if shop.phone %},
+  "telephone": "{{ shop.phone }}"
+  {% endif %}
+  {% if shop.business_hours %},
+  "openingHours": "{{ shop.business_hours }}"
+  {% endif %}
+  {% if images and images[0] %},
+  "image": "{{ images[0].url }}"
+  {% endif %},
+  "url": "{{ request.url }}"
+  {% if review_score and review_score.review_count > 0 %},
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{{ review_score.average_rating | round(1) }}",
+    "reviewCount": "{{ review_score.review_count }}",
+    "bestRating": "5",
+    "worstRating": "1"
+  }
+  {% endif %}
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -20,7 +62,7 @@
             {% for image in images %}
             <div class="gallery-thumb {% if loop.first %}active{% endif %}" 
                  onclick="setMainImage('{{ image.url }}', this)">
-                <img src="{{ image.url }}" alt="">
+                <img src="{{ image.url }}" alt="" loading="lazy">
             </div>
             {% endfor %}
         </div>
@@ -134,7 +176,7 @@
                     {% for cast in casts %}
                     <a href="{{ url_for('customer.cast_detail', cast_id=cast.id) }}" class="cast-preview-card">
                         <div class="cast-preview-image">
-                            <img src="{{ cast.image_url }}" alt="{{ cast.name_display }}">
+                            <img src="{{ cast.image_url }}" alt="{{ cast.name_display }}" loading="lazy">
                         </div>
                         <div class="cast-preview-info">
                             <span class="cast-preview-name">{{ cast.name_display }}</span>

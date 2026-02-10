@@ -578,3 +578,117 @@ def shop_apply():
 def shop_apply_complete():
     """店舗申込完了ページ"""
     return render_template('public/shop_apply_complete.html')
+
+
+# ==================== SEO ====================
+
+@public_bp.route('/sitemap.xml')
+def sitemap():
+    """動的sitemap.xml生成"""
+    from flask import Response, url_for
+    from datetime import datetime
+    import os
+    
+    base_url = os.environ.get('BASE_URL', request.url_root.rstrip('/'))
+    
+    # XML開始
+    xml_content = ['<?xml version="1.0" encoding="UTF-8"?>']
+    xml_content.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+    
+    # 静的ページ
+    static_pages = [
+        ('public.index', 'daily', '1.0'),
+        ('public.search', 'daily', '0.9'),
+        ('public.ranking_index', 'daily', '0.8'),
+        ('public.trending', 'daily', '0.7'),
+        ('public.shop_apply', 'monthly', '0.5'),
+    ]
+    
+    for endpoint, changefreq, priority in static_pages:
+        try:
+            url = url_for(endpoint, _external=True)
+            xml_content.append(f'''  <url>
+    <loc>{url}</loc>
+    <changefreq>{changefreq}</changefreq>
+    <priority>{priority}</priority>
+  </url>''')
+        except Exception:
+            pass
+    
+    # エリア別ランキングページ
+    for area in Shop.AREAS:
+        try:
+            url = url_for('public.ranking_area', area=area, _external=True)
+            xml_content.append(f'''  <url>
+    <loc>{url}</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>''')
+        except Exception:
+            pass
+    
+    # 公開中の店舗ページ
+    published_shops = Shop.query.filter_by(
+        is_active=True, 
+        is_published=True,
+        is_demo=False
+    ).all()
+    
+    for shop in published_shops:
+        try:
+            url = url_for('public.shop_detail', shop_id=shop.id, _external=True)
+            lastmod = shop.updated_at.strftime('%Y-%m-%d') if shop.updated_at else ''
+            xml_content.append(f'''  <url>
+    <loc>{url}</loc>
+    <lastmod>{lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>''')
+        except Exception:
+            pass
+    
+    # 公開中のキャストページ
+    from ..models.gift import Cast
+    published_casts = Cast.query.filter_by(is_active=True, is_visible=True).all()
+    
+    for cast in published_casts:
+        # デモ店舗のキャストは除外
+        if cast.shop and cast.shop.is_demo:
+            continue
+        try:
+            url = url_for('public.cast_detail', cast_id=cast.id, _external=True)
+            xml_content.append(f'''  <url>
+    <loc>{url}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>''')
+        except Exception:
+            pass
+    
+    xml_content.append('</urlset>')
+    
+    return Response('\n'.join(xml_content), mimetype='application/xml')
+
+
+@public_bp.route('/robots.txt')
+def robots():
+    """robots.txt"""
+    from flask import Response
+    import os
+    
+    base_url = os.environ.get('BASE_URL', request.url_root.rstrip('/'))
+    
+    content = f"""User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /shop/
+Disallow: /auth/
+Disallow: /customer/
+Disallow: /cast/
+Disallow: /api/
+Disallow: /webhook/
+
+Sitemap: {base_url}/sitemap.xml
+"""
+    
+    return Response(content, mimetype='text/plain')

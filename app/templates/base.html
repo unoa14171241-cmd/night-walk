@@ -5,6 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Night-Walk{% endblock %}</title>
     
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="{% block meta_description %}岡山・倉敷のナイトレジャー情報サイト。スナック、キャバクラ、ガールズバーなどの空席状況をリアルタイムで確認・予約できます。{% endblock %}">
+    {% block meta_robots %}{% if seo_noindex %}<meta name="robots" content="noindex, nofollow">{% else %}<meta name="robots" content="index, follow">{% endif %}{% endblock %}
+    {% block canonical %}{% if request %}
+    <link rel="canonical" href="{{ request.url_root[:-1] }}{{ request.path }}">{% endif %}{% endblock %}
+    
+    <!-- OGP (Open Graph Protocol) -->
+    <meta property="og:site_name" content="Night-Walk">
+    <meta property="og:locale" content="ja_JP">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{{ self.meta_description() }}{% endblock %}">
+    <meta property="og:url" content="{% block og_url %}{{ request.url if request else '' }}{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/ogp-default.png', _external=True) }}{% endblock %}">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="{% block twitter_card %}summary_large_image{% endblock %}">
+    <meta name="twitter:title" content="{{ self.og_title() }}">
+    <meta name="twitter:description" content="{{ self.og_description() }}">
+    <meta name="twitter:image" content="{{ self.og_image() }}">
+    
+    <!-- Structured Data (JSON-LD) -->
+    {% block structured_data %}{% endblock %}
+    
     <!-- PWA Support -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
     <meta name="theme-color" content="#0B0B18">

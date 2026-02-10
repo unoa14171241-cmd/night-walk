@@ -2,6 +2,8 @@
 
 {% block title %}急上昇{{ '店舗' if target_type == 'shop' else 'キャスト' }} - Night-Walk{% endblock %}
 
+{% block meta_description %}{% if selected_area %}{{ selected_area }}エリアで{% endif %}直近1時間で注目度が急上昇中の{{ '店舗' if target_type == 'shop' else 'キャスト' }}をチェック！{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="page-header">

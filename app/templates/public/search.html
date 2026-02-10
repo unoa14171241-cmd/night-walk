@@ -4,6 +4,8 @@
 {% if keyword %}「{{ keyword }}」の検索結果{% else %}店舗検索{% endif %} - Night-Walk
 {% endblock %}
 
+{% block meta_description %}{% if keyword %}「{{ keyword }}」に関連する{% endif %}{% if selected_area %}{{ selected_area }}エリアの{% endif %}スナック・キャバクラ・ガールズバーを検索。空席状況をリアルタイムで確認できます。{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="search-results-layout">

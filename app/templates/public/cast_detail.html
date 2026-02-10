@@ -1,6 +1,33 @@
 {% extends "base.html" %}
 
-{% block title %}{{ cast.name_display }} - {{ shop.name }} - Night-Walk{% endblock %}
+{% block title %}{{ cast.name_display }} | {{ shop.name }} ({{ shop.area }}) - Night-Walk{% endblock %}
+
+{% block meta_description %}{{ cast.name_display }}は{{ shop.area }}の{{ shop.name }}に在籍するキャストです。{% if cast.comment %}{{ cast.comment | truncate(80) }}{% endif %}{% endblock %}
+
+{% block og_image %}{% if cast.image_url %}{{ cast.image_url }}{% else %}{{ url_for('static', filename='images/ogp-default.png', _external=True) }}{% endif %}{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "{{ cast.name_display }}",
+  "jobTitle": "キャスト",
+  "worksFor": {
+    "@type": "LocalBusiness",
+    "name": "{{ shop.name }}",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "{{ shop.area }}",
+      "addressRegion": "岡山県"
+    }
+  }
+  {% if cast.image_url %},
+  "image": "{{ cast.image_url }}"
+  {% endif %}
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <div class="container" style="max-width: 600px; padding: var(--space-lg);">

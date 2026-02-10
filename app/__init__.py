@@ -71,6 +71,31 @@ def create_app(config_name='default'):
         except Exception:
             return {'system_status': None}
     
+    @app.context_processor
+    def inject_seo_context():
+        """Inject SEO-related variables into all templates."""
+        from flask import request
+        
+        # noindexにするエンドポイントのプレフィックス
+        noindex_prefixes = ['admin.', 'shop_admin.', 'auth.', 'customer.', 'cast.', 'api.', 'webhook.']
+        
+        # 現在のエンドポイントをチェック
+        is_noindex = False
+        if request.endpoint:
+            for prefix in noindex_prefixes:
+                if request.endpoint.startswith(prefix):
+                    is_noindex = True
+                    break
+        
+        # BASE_URLを環境変数から取得（sitemap等で使用）
+        import os
+        base_url = os.environ.get('BASE_URL', request.url_root.rstrip('/') if request else 'https://night-walk-ogrg.onrender.com')
+        
+        return {
+            'seo_noindex': is_noindex,
+            'seo_base_url': base_url
+        }
+    
     # Create database tables
     with app.app_context():
         db.create_all()
