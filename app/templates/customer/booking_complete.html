@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}予約完了 - {{ shop.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body text-center py-5">
+                    {% if booking.status == 'confirmed' or booking.status == 'pending' %}
+                    <div class="mb-4">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                    </div>
+                    <h2 class="mb-3">予約が完了しました</h2>
+                    <p class="text-muted mb-4">
+                        ご予約ありがとうございます。<br>
+                        お時間までにお越しください。
+                    </p>
+                    {% elif booking.status == 'cancelled' or booking.status == 'no_show' %}
+                    <div class="mb-4">
+                        <i class="bi bi-x-circle-fill text-danger" style="font-size: 4rem;"></i>
+                    </div>
+                    <h2 class="mb-3">予約がキャンセルされました</h2>
+                    <p class="text-muted mb-4">
+                        {% if booking.cancel_reason %}
+                        理由: {{ booking.cancel_reason }}
+                        {% endif %}
+                    </p>
+                    {% elif booking.status == 'completed' %}
+                    <div class="mb-4">
+                        <i class="bi bi-star-fill text-warning" style="font-size: 4rem;"></i>
+                    </div>
+                    <h2 class="mb-3">ご来店ありがとうございました</h2>
+                    {% endif %}
+                </div>
+                
+                <!-- 予約詳細 -->
+                <div class="card-body border-top">
+                    <h5 class="mb-3">予約詳細</h5>
+                    <table class="table table-sm">
+                        <tr>
+                            <th style="width: 40%;">店舗</th>
+                            <td>{{ shop.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>指名キャスト</th>
+                            <td>
+                                {% if cast %}
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ cast.image_url }}" 
+                                         alt="{{ cast.name_display }}"
+                                         class="rounded-circle me-2"
+                                         style="width: 30px; height: 30px; object-fit: cover;">
+                                    {{ cast.name_display }}
+                                </div>
+                                {% else %}
+                                −
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>予約時刻</th>
+                            <td>
+                                {% if booking.scheduled_at %}
+                                <strong class="text-primary">
+                                    {{ booking.scheduled_at.strftime('%Y年%m月%d日 %H:%M') }}
+                                </strong>
+                                {% else %}
+                                −
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>人数</th>
+                            <td>{{ booking.party_size or 1 }}名</td>
+                        </tr>
+                        <tr>
+                            <th>予約者名</th>
+                            <td>{{ booking.customer_name or '−' }}</td>
+                        </tr>
+                        <tr>
+                            <th>電話番号</th>
+                            <td>{{ booking.customer_phone[:3] if booking.customer_phone else '−' }}***</td>
+                        </tr>
+                        <tr>
+                            <th>ステータス</th>
+                            <td>
+                                <span class="badge 
+                                    {% if booking.status in ['confirmed', 'pending'] %}bg-success
+                                    {% elif booking.status == 'completed' %}bg-info
+                                    {% elif booking.status == 'cancelled' %}bg-secondary
+                                    {% elif booking.status == 'no_show' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ booking.status_label }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% if booking.notes %}
+                        <tr>
+                            <th>備考</th>
+                            <td>{{ booking.notes }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+                
+                <!-- 注意事項 -->
+                {% if booking.status in ['confirmed', 'pending'] %}
+                <div class="card-body border-top">
+                    <div class="alert alert-warning mb-0">
+                        <h6 class="alert-heading"><i class="bi bi-exclamation-triangle me-1"></i> ご注意</h6>
+                        <ul class="mb-0 small">
+                            <li>予約時刻から<strong>10分以上の遅刻</strong>で自動キャンセルとなります</li>
+                            <li>キャンセルの場合は下記よりお手続きください</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- キャンセルフォーム -->
+                <div class="card-body border-top">
+                    <details>
+                        <summary class="text-muted cursor-pointer">予約をキャンセルする</summary>
+                        <form method="POST" action="{{ url_for('customer.cancel_booking', booking_id=booking.id) }}" class="mt-3">
+                            <div class="mb-3">
+                                <label class="form-label small">確認用：予約時の電話番号</label>
+                                <input type="tel" name="phone" class="form-control" 
+                                       placeholder="09012345678" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small">キャンセル理由（任意）</label>
+                                <input type="text" name="reason" class="form-control" 
+                                       placeholder="キャンセル理由">
+                            </div>
+                            <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                    onclick="return confirm('本当にキャンセルしますか？')">
+                                <i class="bi bi-x-lg me-1"></i>予約をキャンセル
+                            </button>
+                        </form>
+                    </details>
+                </div>
+                {% endif %}
+                
+                <!-- アクションボタン -->
+                <div class="card-footer text-center py-3">
+                    <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-shop me-1"></i>店舗ページへ
+                    </a>
+                    <a href="{{ url_for('public.index') }}" class="btn btn-primary">
+                        <i class="bi bi-house me-1"></i>ホームへ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+details summary {
+    cursor: pointer;
+}
+details summary:hover {
+    text-decoration: underline;
+}
+</style>
+{% endblock %}

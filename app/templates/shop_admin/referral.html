@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}紹介制度 - {{ shop.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="mb-4">
+        <i class="bi bi-gift me-2"></i>紹介制度
+    </h2>
+    
+    <!-- 説明 -->
+    <div class="alert alert-info mb-4">
+        <h5 class="alert-heading"><i class="bi bi-info-circle me-1"></i> 紹介で無料延長！</h5>
+        <p class="mb-2">
+            他の店舗を紹介すると、<strong>1紹介につき1ヶ月</strong>、最大<strong>{{ max_free_months }}ヶ月</strong>のプラン無料延長が受けられます。
+        </p>
+        <hr>
+        <ul class="mb-0 small">
+            <li>紹介コードを発行し、知り合いの店舗に共有してください</li>
+            <li>紹介先が有料プランに加入すると、特典が付与されます</li>
+            <li>紹介コードの有効期限は発行から30日間です</li>
+        </ul>
+    </div>
+    
+    <div class="row g-4">
+        <!-- 統計カード -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body text-center">
+                    <h3 class="display-6">{{ stats.codes_used }}</h3>
+                    <p class="mb-0">紹介成功数</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body text-center">
+                    <h3 class="display-6">{{ stats.total_free_months }}ヶ月</h3>
+                    <p class="mb-0">獲得済み無料延長</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body text-center">
+                    <h3 class="display-6">{{ stats.remaining_free_months }}ヶ月</h3>
+                    <p class="mb-0">残り取得可能</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h3 class="display-6">{{ active_codes|length }}</h3>
+                    <p class="mb-0">有効な紹介コード</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4 mt-2">
+        <!-- 紹介コード発行 -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-qr-code me-1"></i> 紹介コードを発行</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        新しい紹介コードを発行して、知り合いの店舗に共有しましょう。
+                    </p>
+                    <form method="POST" action="{{ url_for('shop_admin.create_referral_code') }}">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-lg me-1"></i>新しいコードを発行
+                        </button>
+                    </form>
+                    
+                    {% if active_codes %}
+                    <hr>
+                    <h6>有効なコード一覧</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>コード</th>
+                                    <th>発行日</th>
+                                    <th>有効期限</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ref in active_codes %}
+                                <tr>
+                                    <td>
+                                        <code class="bg-light px-2 py-1 rounded">{{ ref.referral_code }}</code>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-1"
+                                                onclick="copyToClipboard('{{ ref.referral_code }}')"
+                                                title="コピー">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </td>
+                                    <td>{{ ref.created_at.strftime('%Y/%m/%d') }}</td>
+                                    <td>
+                                        {% if ref.expires_at %}
+                                        {{ ref.expires_at.strftime('%Y/%m/%d') }}
+                                        {% else %}
+                                        −
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- 紹介コードを使用 -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-ticket me-1"></i> 紹介コードを使用</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        他の店舗から紹介コードを受け取った場合は、こちらで入力してください。
+                    </p>
+                    <form method="POST" action="{{ url_for('shop_admin.use_referral_code') }}">
+                        <div class="input-group">
+                            <input type="text" name="code" class="form-control text-uppercase" 
+                                   placeholder="紹介コードを入力" maxlength="20" required>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-lg me-1"></i>使用する
+                            </button>
+                        </div>
+                    </form>
+                    
+                    {% if shop.referral_used %}
+                    <hr>
+                    <div class="alert alert-success mb-0">
+                        <i class="bi bi-check-circle me-1"></i>
+                        この店舗は既に紹介を受けています
+                        （コード: {{ shop.referral_used.referral_code }}）
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 紹介履歴 -->
+    {% if used_referrals %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-clock-history me-1"></i> 紹介履歴</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>コード</th>
+                            <th>紹介先店舗</th>
+                            <th>使用日</th>
+                            <th>特典</th>
+                            <th>ステータス</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ref in used_referrals %}
+                        <tr>
+                            <td><code>{{ ref.referral_code }}</code></td>
+                            <td>
+                                {% if ref.referred_shop %}
+                                {{ ref.referred_shop.name }}
+                                {% else %}
+                                −
+                                {% endif %}
+                            </td>
+                            <td>{{ ref.used_at.strftime('%Y/%m/%d %H:%M') if ref.used_at else '−' }}</td>
+                            <td>
+                                {% if ref.free_months_granted > 0 %}
+                                <span class="badge bg-success">+{{ ref.free_months_granted }}ヶ月</span>
+                                {% else %}
+                                −
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if ref.status == 'rewarded' %}bg-success
+                                    {% elif ref.status == 'used' %}bg-warning text-dark
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ ref.status_label }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        alert('コードをコピーしました: ' + text);
+    }, function() {
+        alert('コピーに失敗しました');
+    });
+}
+</script>
+{% endblock %}

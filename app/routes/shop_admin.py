@@ -1303,3 +1303,95 @@ def cancel_plan():
     
     flash('プランの解約を受け付けました。現在の契約期間終了後、無料プランに移行します。', 'info')
     return redirect(url_for('shop_admin.plan'))
+
+
+# ==================== 紹介制度 ====================
+
+@shop_admin_bp.route('/referral')
+@login_required
+@shop_access_required
+def referral():
+    """紹介制度管理ページ"""
+    from ..models.referral import ShopReferral
+    
+    shop = g.current_shop
+    
+    # 紹介統計
+    stats = ShopReferral.get_shop_referral_stats(shop.id)
+    
+    # 有効な紹介コード一覧
+    active_codes = ShopReferral.get_active_codes(shop.id)
+    
+    # 使用済み紹介一覧
+    used_referrals = ShopReferral.query.filter(
+        ShopReferral.referrer_shop_id == shop.id,
+        ShopReferral.status.in_([ShopReferral.STATUS_USED, ShopReferral.STATUS_REWARDED])
+    ).order_by(ShopReferral.used_at.desc()).limit(20).all()
+    
+    return render_template('shop_admin/referral.html',
+                           shop=shop,
+                           stats=stats,
+                           active_codes=active_codes,
+                           used_referrals=used_referrals,
+                           max_free_months=ShopReferral.MAX_FREE_MONTHS)
+
+
+@shop_admin_bp.route('/referral/create', methods=['POST'])
+@login_required
+@shop_access_required
+@limiter.limit("10 per hour")
+def create_referral_code():
+    """紹介コードを発行"""
+    from ..models.referral import ShopReferral
+    
+    shop = g.current_shop
+    
+    # 紹介統計をチェック（最大特典に達している場合も発行は可能）
+    stats = ShopReferral.get_shop_referral_stats(shop.id)
+    
+    # 新しいコードを発行
+    referral = ShopReferral.create_for_shop(shop.id, expires_days=30)
+    db.session.commit()
+    
+    audit_log('referral_code_created', 'shop', shop.id,
+              new_value={'code': referral.referral_code})
+    
+    flash(f'紹介コードを発行しました: {referral.referral_code}', 'success')
+    return redirect(url_for('shop_admin.referral'))
+
+
+@shop_admin_bp.route('/referral/use', methods=['POST'])
+@login_required
+@shop_access_required
+@limiter.limit("5 per hour")
+def use_referral_code():
+    """紹介コードを使用（自店舗が紹介を受ける）"""
+    from ..models.referral import ShopReferral
+    
+    shop = g.current_shop
+    code = request.form.get('code', '').strip().upper()
+    
+    if not code:
+        flash('紹介コードを入力してください。', 'danger')
+        return redirect(url_for('shop_admin.referral'))
+    
+    success, referral, error = ShopReferral.use_code(code, shop.id)
+    
+    if not success:
+        flash(error, 'danger')
+        return redirect(url_for('shop_admin.referral'))
+    
+    db.session.commit()
+    
+    # 紹介元に特典を付与
+    success, months, error = referral.grant_reward()
+    if success:
+        db.session.commit()
+        flash(f'紹介コードを使用しました！紹介元に{months}ヶ月の無料延長が付与されました。', 'success')
+    else:
+        flash(f'紹介コードを使用しましたが、特典付与に失敗しました: {error}', 'warning')
+    
+    audit_log('referral_code_used', 'shop', shop.id,
+              new_value={'code': code, 'referrer_shop_id': referral.referrer_shop_id})
+    
+    return redirect(url_for('shop_admin.referral'))

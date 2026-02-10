@@ -461,7 +461,120 @@ def ranking_top1(area):
                           month=month)
 
 
-@public_bp.route('/apply')
+@public_bp.route('/apply', methods=['GET', 'POST'])
 def shop_apply():
     """店舗掲載申し込みページ"""
-    return render_template('public/shop_apply.html')
+    from ..models.shop import Shop
+    from ..models.user import User
+    from ..extensions import db
+    import secrets
+    import string
+    
+    if request.method == 'POST':
+        # フォームデータ取得
+        shop_name = request.form.get('shop_name', '').strip()
+        area = request.form.get('area', '')
+        category = request.form.get('category', '')
+        contact_name = request.form.get('contact_name', '').strip()
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+        message = request.form.get('message', '').strip()
+        
+        # バリデーション
+        errors = []
+        if not shop_name:
+            errors.append('店舗名は必須です。')
+        if not area or area not in Shop.AREAS:
+            errors.append('エリアを選択してください。')
+        if not category or category not in Shop.CATEGORIES:
+            errors.append('業態を選択してください。')
+        if not contact_name:
+            errors.append('担当者名は必須です。')
+        if not email:
+            errors.append('メールアドレスは必須です。')
+        elif '@' not in email:
+            errors.append('有効なメールアドレスを入力してください。')
+        if not phone:
+            errors.append('電話番号は必須です。')
+        
+        # 重複チェック
+        existing_shop = Shop.query.filter_by(name=shop_name, area=area).first()
+        if existing_shop:
+            errors.append('同名の店舗が既に登録されています。')
+        
+        existing_email = User.query.filter_by(email=email).first()
+        if existing_email:
+            errors.append('このメールアドレスは既に使用されています。')
+        
+        if errors:
+            for error in errors:
+                flash(error, 'danger')
+            return render_template('public/shop_apply.html',
+                                   areas=Shop.AREAS,
+                                   categories=Shop.CATEGORIES,
+                                   category_labels=Shop.CATEGORY_LABELS,
+                                   form_data={
+                                       'shop_name': shop_name,
+                                       'area': area,
+                                       'category': category,
+                                       'contact_name': contact_name,
+                                       'email': email,
+                                       'phone': phone,
+                                       'message': message
+                                   })
+        
+        # 店舗を審査待ち状態で作成
+        shop = Shop(
+            name=shop_name,
+            area=area,
+            category=category,
+            phone=phone,
+            review_status=Shop.STATUS_PENDING,
+            review_notes=f'担当者: {contact_name}\nメール: {email}\n備考: {message}' if message else f'担当者: {contact_name}\nメール: {email}',
+            is_active=False,
+            is_published=False
+        )
+        db.session.add(shop)
+        db.session.flush()  # shop.idを取得
+        
+        # 仮パスワード生成
+        temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+        
+        # ユーザー作成（店舗オーナー）
+        user = User(
+            email=email,
+            name=contact_name,
+            role='shop_owner'
+        )
+        user.set_password(temp_password)
+        db.session.add(user)
+        db.session.flush()
+        
+        # ShopMemberとして紐付け
+        from ..models.user import ShopMember
+        shop_member = ShopMember(
+            user_id=user.id,
+            shop_id=shop.id,
+            role='owner'
+        )
+        db.session.add(shop_member)
+        
+        # 申込情報を保存（審査完了時のメール送信用）
+        shop.review_notes = f'担当者: {contact_name}\nメール: {email}\n仮パスワード: {temp_password}\n備考: {message}' if message else f'担当者: {contact_name}\nメール: {email}\n仮パスワード: {temp_password}'
+        
+        db.session.commit()
+        
+        flash('お申し込みありがとうございます！審査完了後、ご登録のメールアドレスにログイン情報をお送りします。', 'success')
+        return redirect(url_for('public.shop_apply_complete'))
+    
+    return render_template('public/shop_apply.html',
+                           areas=Shop.AREAS,
+                           categories=Shop.CATEGORIES,
+                           category_labels=Shop.CATEGORY_LABELS,
+                           form_data=None)
+
+
+@public_bp.route('/apply/complete')
+def shop_apply_complete():
+    """店舗申込完了ページ"""
+    return render_template('public/shop_apply_complete.html')

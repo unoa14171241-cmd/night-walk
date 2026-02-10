@@ -54,9 +54,15 @@
                     {% endif %}
                 </p>
             </div>
-            <span class="vacancy-badge vacancy-badge-lg vacancy-{{ vacancy_colors.get(shop.current_vacancy, 'secondary') }}">
-                {{ vacancy_labels.get(shop.current_vacancy, '−') }}
-            </span>
+            <div class="text-end">
+                <span class="vacancy-badge vacancy-badge-lg vacancy-{{ vacancy_colors.get(shop.current_vacancy, 'secondary') }} d-block mb-2">
+                    {{ vacancy_labels.get(shop.current_vacancy, '−') }}
+                </span>
+                <!-- 直前予約ボタン -->
+                <a href="{{ url_for('customer.booking', shop_id=shop.id) }}" class="btn btn-primary btn-sm">
+                    📅 直前予約（30〜60分後）
+                </a>
+            </div>
         </div>
     </div>
     

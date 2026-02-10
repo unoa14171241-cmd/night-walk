@@ -275,26 +275,61 @@ def toggle_shop(shop_id):
 @admin_bp.route('/shops/<int:shop_id>/approve', methods=['POST'])
 @admin_required
 def approve_shop(shop_id):
-    """審査承認 - ワンクリックで承認・管理画面開放"""
+    """審査承認 - ワンクリックで承認・管理画面開放・メール通知"""
     shop = Shop.query.get_or_404(shop_id)
     notes = request.form.get('notes', '').strip()
     
     old_status = shop.review_status
     shop.approve(reviewer_id=current_user.id, notes=notes)
+    
+    # 店舗を有効化・公開設定
+    shop.is_active = True
+    
     db.session.commit()
     
     audit_log('shop.approve', 'shop', shop.id,
              old_value={'review_status': old_status},
              new_value={'review_status': shop.review_status})
     
-    flash(f'店舗「{shop.name}」を承認しました。管理画面へのログインが可能になりました。', 'success')
+    # 店舗オーナーにメール通知
+    email_sent = False
+    try:
+        # 店舗オーナーを取得
+        shop_member = ShopMember.query.filter_by(shop_id=shop.id, role='owner').first()
+        if shop_member:
+            owner = User.query.get(shop_member.user_id)
+            if owner:
+                # review_notesから仮パスワードを抽出
+                temp_password = None
+                if shop.review_notes:
+                    import re
+                    match = re.search(r'仮パスワード:\s*(\S+)', shop.review_notes)
+                    if match:
+                        temp_password = match.group(1)
+                
+                if temp_password:
+                    from ..services.email_service import EmailService
+                    email_sent = EmailService.send_shop_approval_notification(shop, owner, temp_password)
+                    
+                    if email_sent:
+                        current_app.logger.info(f"Approval email sent to {owner.email}")
+                    else:
+                        current_app.logger.warning(f"Failed to send approval email to {owner.email}")
+    except Exception as e:
+        current_app.logger.error(f"Error sending approval email: {e}")
+    
+    if email_sent:
+        flash(f'店舗「{shop.name}」を承認しました。ログイン情報をメールで送信しました。', 'success')
+    else:
+        flash(f'店舗「{shop.name}」を承認しました。管理画面へのログインが可能になりました。', 'success')
+    
     return redirect(url_for('admin.shop_detail', shop_id=shop_id))
 
 
 @admin_bp.route('/shops/<int:shop_id>/reject', methods=['POST'])
 @admin_required
 def reject_shop(shop_id):
-    """審査却下"""
+    """審査却下・メール通知"""
     shop = Shop.query.get_or_404(shop_id)
     notes = request.form.get('notes', '').strip()
     
@@ -309,6 +344,17 @@ def reject_shop(shop_id):
     audit_log('shop.reject', 'shop', shop.id,
              old_value={'review_status': old_status},
              new_value={'review_status': shop.review_status, 'notes': notes})
+    
+    # 店舗オーナーにメール通知
+    try:
+        shop_member = ShopMember.query.filter_by(shop_id=shop.id, role='owner').first()
+        if shop_member:
+            owner = User.query.get(shop_member.user_id)
+            if owner:
+                from ..services.email_service import EmailService
+                EmailService.send_shop_rejection_notification(shop, owner, notes)
+    except Exception as e:
+        current_app.logger.error(f"Error sending rejection email: {e}")
     
     flash(f'店舗「{shop.name}」を却下しました。', 'warning')
     return redirect(url_for('admin.shop_detail', shop_id=shop_id))

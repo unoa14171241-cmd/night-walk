@@ -733,3 +733,190 @@ def exchange_reward(shop_id):
         flash(message, 'danger')
     
     return redirect(url_for('customer.point_card_detail', shop_id=shop_id))
+
+
+# ==================== 直前限定予約 ====================
+
+@customer_bp.route('/booking/<int:shop_id>', methods=['GET', 'POST'])
+@limiter.limit("20 per hour")
+def booking(shop_id):
+    """
+    直前限定予約ページ
+    - 指名キャスト選択（必須）
+    - 予約時間選択（30〜60分後のみ）
+    """
+    from ..services.booking_service import BookingService
+    from ..models.booking import BookingLog
+    
+    shop = Shop.query.filter_by(id=shop_id, is_active=True, is_published=True).first_or_404()
+    
+    # 予約可能なキャスト一覧
+    casts = BookingService.get_available_casts(shop_id)
+    
+    if not casts:
+        flash('現在、予約可能なキャストがいません。', 'warning')
+        return redirect(url_for('public.shop_detail', shop_id=shop_id))
+    
+    # 選択可能な予約時間
+    available_times = BookingLog.get_available_times()
+    
+    if request.method == 'POST':
+        cast_id = request.form.get('cast_id', type=int)
+        scheduled_time = request.form.get('scheduled_time')
+        customer_phone = request.form.get('phone', '').strip()
+        customer_name = request.form.get('name', '').strip()
+        party_size = request.form.get('party_size', 1, type=int)
+        notes = request.form.get('notes', '').strip()
+        
+        # バリデーション
+        errors = []
+        
+        if not cast_id:
+            errors.append('指名キャストを選択してください（必須）')
+        
+        if not scheduled_time:
+            errors.append('予約時間を選択してください')
+        
+        if not customer_phone:
+            errors.append('電話番号を入力してください')
+        else:
+            # 電話番号正規化
+            phone_valid, phone_result = validate_phone_number(customer_phone)
+            if not phone_valid:
+                errors.append(phone_result)
+            else:
+                customer_phone = phone_result
+        
+        if not customer_name:
+            errors.append('お名前を入力してください')
+        
+        if party_size < 1 or party_size > 10:
+            errors.append('人数は1〜10名で入力してください')
+        
+        if errors:
+            for error in errors:
+                flash(error, 'danger')
+            return render_template('customer/booking.html',
+                                   shop=shop,
+                                   casts=casts,
+                                   available_times=available_times,
+                                   selected_cast_id=cast_id,
+                                   customer_phone=customer_phone,
+                                   customer_name=customer_name,
+                                   party_size=party_size,
+                                   notes=notes,
+                                   now=datetime.utcnow())
+        
+        # 予約時間をパース
+        try:
+            scheduled_at = datetime.strptime(scheduled_time, '%Y-%m-%d %H:%M')
+        except ValueError:
+            flash('予約時間の形式が正しくありません。', 'danger')
+            return render_template('customer/booking.html',
+                                   shop=shop,
+                                   casts=casts,
+                                   available_times=available_times,
+                                   now=datetime.utcnow())
+        
+        # 顧客ID（ログインしている場合）
+        customer_id = None
+        if current_user.is_authenticated and hasattr(current_user, 'is_customer') and current_user.is_customer:
+            customer_id = current_user.id
+        
+        # 予約作成
+        result = BookingService.create_booking(
+            shop_id=shop_id,
+            cast_id=cast_id,
+            scheduled_at=scheduled_at,
+            customer_id=customer_id,
+            customer_phone=customer_phone,
+            customer_name=customer_name,
+            party_size=party_size,
+            notes=notes,
+            booking_type='web'
+        )
+        
+        if not result['success']:
+            flash(result['error'], 'danger')
+            return render_template('customer/booking.html',
+                                   shop=shop,
+                                   casts=casts,
+                                   available_times=available_times,
+                                   selected_cast_id=cast_id,
+                                   customer_phone=customer_phone,
+                                   customer_name=customer_name,
+                                   party_size=party_size,
+                                   notes=notes,
+                                   now=datetime.utcnow())
+        
+        # 予約成功
+        booking = result['booking']
+        flash(f'予約が完了しました！{booking.scheduled_at.strftime("%H:%M")}にお越しください。', 'success')
+        
+        return redirect(url_for('customer.booking_complete', booking_id=booking.id))
+    
+    return render_template('customer/booking.html',
+                           shop=shop,
+                           casts=casts,
+                           available_times=available_times,
+                           now=datetime.utcnow())
+
+
+@customer_bp.route('/booking/complete/<int:booking_id>')
+def booking_complete(booking_id):
+    """予約完了ページ"""
+    from ..models.booking import BookingLog
+    
+    booking = BookingLog.query.get_or_404(booking_id)
+    
+    return render_template('customer/booking_complete.html',
+                           booking=booking,
+                           shop=booking.shop,
+                           cast=booking.cast)
+
+
+@customer_bp.route('/booking/<int:booking_id>/cancel', methods=['POST'])
+@limiter.limit("10 per hour")
+def cancel_booking(booking_id):
+    """予約キャンセル"""
+    from ..services.booking_service import BookingService
+    from ..models.booking import BookingLog
+    
+    booking = BookingLog.query.get_or_404(booking_id)
+    
+    # 本人確認（電話番号 or ログインユーザー）
+    customer_phone = request.form.get('phone', '').strip()
+    if customer_phone:
+        phone_valid, normalized_phone = validate_phone_number(customer_phone)
+        if phone_valid:
+            customer_phone = normalized_phone
+    
+    is_owner = False
+    if current_user.is_authenticated and hasattr(current_user, 'is_customer'):
+        if booking.customer_id == current_user.id:
+            is_owner = True
+    
+    if not is_owner and booking.customer_phone != customer_phone:
+        flash('予約者の電話番号を入力してください。', 'danger')
+        return redirect(url_for('customer.booking_complete', booking_id=booking_id))
+    
+    reason = request.form.get('reason', '').strip()
+    result = BookingService.cancel_booking(booking_id, reason=reason)
+    
+    if result['success']:
+        flash('予約をキャンセルしました。', 'info')
+        return redirect(url_for('public.shop_detail', shop_id=booking.shop_id))
+    else:
+        flash(result['error'], 'danger')
+        return redirect(url_for('customer.booking_complete', booking_id=booking_id))
+
+
+@customer_bp.route('/my-bookings')
+@customer_login_required
+def my_bookings():
+    """マイ予約一覧"""
+    from ..services.booking_service import BookingService
+    
+    bookings = BookingService.get_customer_bookings(customer_id=current_user.id, limit=50)
+    
+    return render_template('customer/my_bookings.html', bookings=bookings)

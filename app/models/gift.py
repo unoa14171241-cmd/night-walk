@@ -276,8 +276,9 @@ class Gift(db.Model):
     image_filename = db.Column(db.String(255))
     
     # 分配率（%）- 合計100%
-    cast_rate = db.Column(db.Integer, default=50)      # キャスト: 50%
-    shop_rate = db.Column(db.Integer, default=20)      # 店舗: 20%
+    # 要件: キャスト40% / 店舗30% / 運営30%
+    cast_rate = db.Column(db.Integer, default=40)      # キャスト: 40%
+    shop_rate = db.Column(db.Integer, default=30)      # 店舗: 30%
     platform_rate = db.Column(db.Integer, default=30)  # 運営: 30%
     
     is_active = db.Column(db.Boolean, default=True)

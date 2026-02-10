@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}予約 - {{ shop.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('public.index') }}">ホーム</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}">{{ shop.name }}</a></li>
+            <li class="breadcrumb-item active">予約</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-calendar-check me-2"></i>
+                        直前限定予約
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- 注意事項 -->
+                    <div class="alert alert-info mb-4">
+                        <h6 class="alert-heading"><i class="bi bi-info-circle me-1"></i> 直前限定予約について</h6>
+                        <ul class="mb-0 small">
+                            <li><strong>予約可能時間:</strong> 30分〜60分後の時間帯のみ</li>
+                            <li><strong>指名キャスト:</strong> 必ずキャストを選択してください</li>
+                            <li><strong>遅刻について:</strong> 予約時刻から10分超過で自動キャンセルとなります</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('customer.booking', shop_id=shop.id) }}">
+                        <!-- 指名キャスト選択（必須） -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-person-heart me-1"></i>
+                                指名キャスト <span class="text-danger">*必須</span>
+                            </label>
+                            <div class="row g-3">
+                                {% for cast in casts %}
+                                <div class="col-6 col-md-4">
+                                    <div class="cast-select-card">
+                                        <input type="radio" class="btn-check" name="cast_id" 
+                                               id="cast_{{ cast.id }}" value="{{ cast.id }}"
+                                               {% if selected_cast_id == cast.id %}checked{% endif %}
+                                               required>
+                                        <label class="btn btn-outline-secondary w-100 h-100 p-2" for="cast_{{ cast.id }}">
+                                            <div class="text-center">
+                                                <img src="{{ cast.image_url }}" 
+                                                     alt="{{ cast.name_display }}"
+                                                     class="rounded-circle mb-2"
+                                                     style="width: 60px; height: 60px; object-fit: cover;">
+                                                <div class="fw-bold small">{{ cast.name_display }}</div>
+                                                {% if cast.work_status == 'working' %}
+                                                <span class="badge bg-success">出勤中</span>
+                                                {% elif cast.work_status == 'scheduled' %}
+                                                <span class="badge bg-warning text-dark">出勤予定</span>
+                                                {% else %}
+                                                <span class="badge bg-secondary">休み</span>
+                                                {% endif %}
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- 予約時間選択 -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-clock me-1"></i>
+                                予約時間 <span class="text-danger">*必須</span>
+                            </label>
+                            <select name="scheduled_time" class="form-select" required>
+                                <option value="">-- 時間を選択 --</option>
+                                {% for time in available_times %}
+                                <option value="{{ time.strftime('%Y-%m-%d %H:%M') }}">
+                                    {{ time.strftime('%H:%M') }}〜（約{{ ((time - now).total_seconds() / 60)|int }}分後）
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">予約可能: 30分〜60分後</div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <!-- 予約者情報 -->
+                        <h5 class="mb-3"><i class="bi bi-person me-1"></i> 予約者情報</h5>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">電話番号 <span class="text-danger">*必須</span></label>
+                                <input type="tel" name="phone" class="form-control" 
+                                       placeholder="09012345678"
+                                       value="{{ customer_phone or (current_user.phone_number if current_user.is_authenticated and current_user.is_customer else '') }}"
+                                       required>
+                                <div class="form-text">確認のご連絡に使用します</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">お名前 <span class="text-danger">*必須</span></label>
+                                <input type="text" name="name" class="form-control" 
+                                       placeholder="お名前"
+                                       value="{{ customer_name or (current_user.nickname if current_user.is_authenticated and current_user.is_customer else '') }}"
+                                       required>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-4">
+                                <label class="form-label">人数</label>
+                                <select name="party_size" class="form-select">
+                                    {% for i in range(1, 11) %}
+                                    <option value="{{ i }}" {% if party_size == i %}selected{% endif %}>
+                                        {{ i }}名
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">備考</label>
+                                <input type="text" name="notes" class="form-control" 
+                                       placeholder="（任意）リクエストなど"
+                                       value="{{ notes or '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 text-center">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="bi bi-check-lg me-1"></i>
+                                予約を確定する
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- サイドバー: 店舗情報 -->
+        <div class="col-lg-4 mt-4 mt-lg-0">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ shop.name }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if shop.main_image %}
+                    <img src="{{ shop.main_image }}" alt="{{ shop.name }}" 
+                         class="img-fluid rounded mb-3">
+                    {% endif %}
+                    
+                    <dl class="small mb-0">
+                        <dt><i class="bi bi-geo-alt me-1"></i> エリア</dt>
+                        <dd>{{ shop.area }}</dd>
+                        
+                        <dt><i class="bi bi-clock me-1"></i> 営業時間</dt>
+                        <dd>{{ shop.business_hours or '−' }}</dd>
+                        
+                        <dt><i class="bi bi-telephone me-1"></i> 電話</dt>
+                        <dd>{{ shop.phone or '−' }}</dd>
+                        
+                        {% if shop.vacancy_status %}
+                        <dt><i class="bi bi-people me-1"></i> 空席状況</dt>
+                        <dd>
+                            <span class="badge bg-{{ shop.vacancy_status.color }}">
+                                {{ shop.vacancy_status.label }}
+                            </span>
+                        </dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.cast-select-card .btn-check:checked + .btn {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: white;
+}
+.cast-select-card .btn {
+    transition: all 0.2s;
+}
+.cast-select-card .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

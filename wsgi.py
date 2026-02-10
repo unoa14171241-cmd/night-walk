@@ -85,6 +85,20 @@ def setup_scheduler():
             replace_existing=True
         )
         
+        # 遅刻キャンセルジョブ（毎分実行）
+        def run_late_cancellation_job():
+            with app.app_context():
+                from app.jobs.booking_job import process_late_cancellations
+                process_late_cancellations()
+        
+        scheduler.add_job(
+            run_late_cancellation_job,
+            IntervalTrigger(minutes=1),
+            id='late_cancellation',
+            name='Process Late Cancellations',
+            replace_existing=True
+        )
+        
         scheduler.start()
         logger.info("[SCHEDULER] APScheduler started with %d jobs", len(scheduler.get_jobs()))
         
@@ -238,6 +252,36 @@ def auto_migrate_columns():
                     except Exception as col_e:
                         print(f"[WARNING] Failed to add 'is_demo': {col_e}")
                         db.session.rollback()
+            
+            # booking_logsテーブルのカラムをチェック（直前限定予約・指名キャスト）
+            if 'booking_logs' in inspector.get_table_names():
+                columns = [col['name'] for col in inspector.get_columns('booking_logs')]
+                
+                booking_columns = [
+                    ("cast_id", "INTEGER"),
+                    ("customer_id", "INTEGER"),
+                    ("customer_phone", "VARCHAR(20)"),
+                    ("customer_name", "VARCHAR(100)"),
+                    ("party_size", "INTEGER DEFAULT 1"),
+                    ("scheduled_at", "TIMESTAMP"),
+                    ("cancelled_at", "TIMESTAMP"),
+                    ("cancel_reason", "VARCHAR(255)"),
+                    ("checked_in_at", "TIMESTAMP"),
+                    ("updated_at", "TIMESTAMP"),
+                ]
+                
+                for col_name, col_type in booking_columns:
+                    if col_name not in columns:
+                        print(f"[INFO] Adding '{col_name}' column to booking_logs table...")
+                        try:
+                            db.session.execute(text(
+                                f"ALTER TABLE booking_logs ADD COLUMN {col_name} {col_type}"
+                            ))
+                            db.session.commit()
+                            print(f"[SUCCESS] '{col_name}' column added to booking_logs table!")
+                        except Exception as col_e:
+                            print(f"[WARNING] Failed to add '{col_name}': {col_e}")
+                            db.session.rollback()
                     
         except Exception as e:
             print(f"[WARNING] Column migration error: {e}")
