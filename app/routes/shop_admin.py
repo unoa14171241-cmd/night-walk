@@ -7,7 +7,7 @@ from datetime import datetime, date, timedelta
 from flask import Blueprint, render_template, redirect, url_for, flash, request, g, session, current_app, jsonify
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from ..extensions import db
+from ..extensions import db, limiter
 from ..models.shop import Shop, VacancyStatus, VacancyHistory, ShopImage
 from ..models.job import Job
 from ..models.booking import BookingLog
