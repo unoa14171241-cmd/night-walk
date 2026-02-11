@@ -199,6 +199,9 @@ def auto_migrate_columns():
                     ("pin_hash", "VARCHAR(255)"),
                     ("last_login_at", "TIMESTAMP"),
                     ("is_visible", "BOOLEAN DEFAULT TRUE"),
+                    ("monthly_gift_goal", "INTEGER DEFAULT 0"),
+                    ("monthly_gift_goal_message", "VARCHAR(200)"),
+                    ("show_gift_progress", "BOOLEAN DEFAULT FALSE"),
                 ]
                 
                 for col_name, col_type in cast_columns:
