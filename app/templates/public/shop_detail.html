@@ -31,11 +31,11 @@
   {%- if images and images|length > 0 %},
   "image": "{{ images[0].url }}"
   {%- endif %}
-  {%- if review_score and review_score.review_count and review_score.review_count > 0 %},
+  {%- if review_data and review_data.count and review_data.count > 0 %},
   "aggregateRating": {
     "@type": "AggregateRating",
-    "ratingValue": "{{ review_score.average_rating | round(1) }}",
-    "reviewCount": "{{ review_score.review_count }}",
+    "ratingValue": "{{ review_data.average | round(1) }}",
+    "reviewCount": "{{ review_data.count }}",
     "bestRating": "5",
     "worstRating": "1"
   }
