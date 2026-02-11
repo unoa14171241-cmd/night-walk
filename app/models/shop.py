@@ -19,8 +19,6 @@ class Shop(db.Model):
     CATEGORY_CONCAFE = 'concafe'
     CATEGORY_GIRLS_BAR = 'girls_bar'
     CATEGORY_KYABAKURA = 'kyabakura'
-    CATEGORY_FUZOKU = 'fuzoku'
-    CATEGORY_DERIHERU = 'deriheru'
     CATEGORY_LOUNGE = 'lounge'
     CATEGORY_LUXURY_LOUNGE = 'luxury_lounge'
     CATEGORY_CLUB = 'club'
@@ -30,17 +28,14 @@ class Shop(db.Model):
     
     CATEGORIES = [
         CATEGORY_SNACK, CATEGORY_CONCAFE, CATEGORY_GIRLS_BAR,
-        CATEGORY_KYABAKURA, CATEGORY_FUZOKU, CATEGORY_DERIHERU, 
-        CATEGORY_LOUNGE, CATEGORY_LUXURY_LOUNGE, CATEGORY_CLUB, 
-        CATEGORY_BAR, CATEGORY_MENS_ESTHE, CATEGORY_OTHER
+        CATEGORY_KYABAKURA, CATEGORY_LOUNGE, CATEGORY_LUXURY_LOUNGE, 
+        CATEGORY_CLUB, CATEGORY_BAR, CATEGORY_MENS_ESTHE, CATEGORY_OTHER
     ]
     CATEGORY_LABELS = {
         CATEGORY_SNACK: 'スナック',
         CATEGORY_CONCAFE: 'コンカフェ',
         CATEGORY_GIRLS_BAR: 'ガールズバー',
         CATEGORY_KYABAKURA: 'キャバクラ',
-        CATEGORY_FUZOKU: '風俗',
-        CATEGORY_DERIHERU: 'デリヘル',
         CATEGORY_LOUNGE: 'ラウンジ',
         CATEGORY_LUXURY_LOUNGE: '高級ラウンジ',
         CATEGORY_CLUB: 'クラブ',
@@ -52,9 +47,8 @@ class Shop(db.Model):
     # シーン別グループ（目的別検索用）
     SCENE_LIGHT = 'light'
     SCENE_ENTERTAINMENT = 'entertainment'
-    SCENE_ADULT = 'adult'
     
-    SCENES = [SCENE_LIGHT, SCENE_ENTERTAINMENT, SCENE_ADULT]
+    SCENES = [SCENE_LIGHT, SCENE_ENTERTAINMENT]
     
     SCENE_GROUPS = {
         SCENE_LIGHT: {
@@ -71,15 +65,7 @@ class Shop(db.Model):
             'categories_display': 'キャバクラ / コンカフェ / ガールズバー',
             'price_range': '6,000〜15,000円目安',
             'color': '#ef4444',
-            'categories': ['kyabakura', 'club', 'luxury_lounge', 'concafe', 'girls_bar']
-        },
-        SCENE_ADULT: {
-            'name': 'アダルトナイト',
-            'description': '大人向け・特別な体験',
-            'categories_display': '風俗 / デリヘル / 個室系',
-            'price_range': '',
-            'color': '#9b59b6',
-            'categories': ['fuzoku', 'deriheru', 'mens_esthe']
+            'categories': ['kyabakura', 'club', 'luxury_lounge', 'concafe', 'girls_bar', 'mens_esthe']
         }
     }
     

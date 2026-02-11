@@ -10,11 +10,12 @@ DEFAULT_COMMISSION_BY_CATEGORY = {
     'snack': 700,       # スナック
     'concafe': 700,     # コンカフェ
     'kyabakura': 1800,  # キャバクラ
-    'fuzoku': 2000,     # 風俗
-    'deriheru': 2000,   # デリヘル
     'lounge': 1000,     # ラウンジ
     'club': 1000,       # クラブ
     'bar': 700,         # バー
+    'mens_esthe': 1000, # メンズエステ
+    'girls_bar': 700,   # ガールズバー
+    'luxury_lounge': 1500, # 高級ラウンジ
     'other': 1000,      # その他
 }
 
