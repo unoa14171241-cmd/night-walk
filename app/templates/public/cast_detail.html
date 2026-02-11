@@ -22,9 +22,9 @@
       "addressRegion": "岡山県"
     }
   }
-  {% if cast.image_url %},
+  {%- if cast.image_url %},
   "image": "{{ cast.image_url }}"
-  {% endif %}
+  {%- endif %}
 }
 </script>
 {% endblock %}

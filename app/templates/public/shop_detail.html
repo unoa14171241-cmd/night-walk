@@ -1,8 +1,8 @@
 {% extends "customer/base.html" %}
 
-{% block title %}{{ shop.name }} | {{ shop.area }}の{{ shop.category_label }} - Night-Walk{% endblock %}
+{% block title %}{{ shop.name }} | {{ shop.area }}の{{ shop.category_label or '店舗' }} - Night-Walk{% endblock %}
 
-{% block meta_description %}{{ shop.name }}は{{ shop.area }}にある{{ shop.category_label }}です。{% if shop.business_hours %}営業時間: {{ shop.business_hours }}{% endif %}{% if shop.price_range %} 料金: {{ shop.price_range }}{% endif %} 空席状況をリアルタイムで確認できます。{% endblock %}
+{% block meta_description %}{{ shop.name }}は{{ shop.area }}にある{{ shop.category_label or '店舗' }}です。{% if shop.business_hours %}営業時間: {{ shop.business_hours }}{% endif %}{% if shop.price_range %} 料金: {{ shop.price_range }}{% endif %} 空席状況をリアルタイムで確認できます。{% endblock %}
 
 {% block og_type %}place{% endblock %}
 
@@ -14,24 +14,24 @@
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
   "name": "{{ shop.name }}",
-  "description": "{{ shop.description | default(shop.area + 'にある' + shop.category_label) | replace('"', '\\"') | truncate(200) }}",
+  "description": "{{ (shop.description or (shop.area ~ 'にある' ~ (shop.category_label or '店舗'))) | replace('"', '\\"') | truncate(200) }}",
   "address": {
     "@type": "PostalAddress",
     "addressLocality": "{{ shop.area }}",
     "addressRegion": "岡山県",
     "addressCountry": "JP"
-  }
-  {% if shop.phone %},
-  "telephone": "{{ shop.phone }}"
-  {% endif %}
-  {% if shop.business_hours %},
-  "openingHours": "{{ shop.business_hours }}"
-  {% endif %}
-  {% if images and images[0] %},
-  "image": "{{ images[0].url }}"
-  {% endif %},
+  },
   "url": "{{ request.url }}"
-  {% if review_score and review_score.review_count > 0 %},
+  {%- if shop.phone %},
+  "telephone": "{{ shop.phone }}"
+  {%- endif %}
+  {%- if shop.business_hours %},
+  "openingHours": "{{ shop.business_hours }}"
+  {%- endif %}
+  {%- if images and images|length > 0 %},
+  "image": "{{ images[0].url }}"
+  {%- endif %}
+  {%- if review_score and review_score.review_count and review_score.review_count > 0 %},
   "aggregateRating": {
     "@type": "AggregateRating",
     "ratingValue": "{{ review_score.average_rating | round(1) }}",
@@ -39,7 +39,7 @@
     "bestRating": "5",
     "worstRating": "1"
   }
-  {% endif %}
+  {%- endif %}
 }
 </script>
 {% endblock %}
