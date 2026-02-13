@@ -174,6 +174,12 @@ def auto_migrate_columns():
                     ("campaign_free_months", "INTEGER DEFAULT 0"),
                     ("campaign_start_date", "DATE"),
                     ("campaign_notes", "TEXT"),
+                    # 振込口座情報
+                    ("bank_name", "VARCHAR(100)"),
+                    ("bank_branch", "VARCHAR(100)"),
+                    ("account_type", "VARCHAR(20)"),
+                    ("account_number", "VARCHAR(20)"),
+                    ("account_holder", "VARCHAR(100)"),
                 ]
                 
                 for col_name, col_type in shop_columns:

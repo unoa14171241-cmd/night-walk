@@ -142,6 +142,52 @@
                     </div>
                 </div>
                 
+                <div class="form-section">
+                    <h3>振込口座情報</h3>
+                    <p class="form-section-desc">売上の振込先口座をご入力ください。</p>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="bank_name">金融機関名 <span class="required">*</span></label>
+                        <input type="text" id="bank_name" name="bank_name" class="form-control"
+                               value="{{ form_data.bank_name if form_data else '' }}"
+                               placeholder="例: 中国銀行" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="bank_branch">支店名 <span class="required">*</span></label>
+                        <input type="text" id="bank_branch" name="bank_branch" class="form-control"
+                               value="{{ form_data.bank_branch if form_data else '' }}"
+                               placeholder="例: 岡山駅前支店" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="account_type">口座種別 <span class="required">*</span></label>
+                            <select id="account_type" name="account_type" class="form-control" required>
+                                <option value="">-- 選択 --</option>
+                                <option value="普通" {% if form_data and form_data.account_type == '普通' %}selected{% endif %}>普通</option>
+                                <option value="当座" {% if form_data and form_data.account_type == '当座' %}selected{% endif %}>当座</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="account_number">口座番号 <span class="required">*</span></label>
+                            <input type="text" id="account_number" name="account_number" class="form-control"
+                                   value="{{ form_data.account_number if form_data else '' }}"
+                                   placeholder="例: 1234567" pattern="[0-9]{7,8}" maxlength="8" required>
+                            <small class="form-text">半角数字7〜8桁で入力してください</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="account_holder">口座名義（カタカナ） <span class="required">*</span></label>
+                        <input type="text" id="account_holder" name="account_holder" class="form-control"
+                               value="{{ form_data.account_holder if form_data else '' }}"
+                               placeholder="例: カ）ナイトウォーク" required>
+                        <small class="form-text">通帳に記載の名義をカタカナで入力してください</small>
+                    </div>
+                </div>
+                
                 <div class="form-submit">
                     <button type="submit" class="btn btn-primary btn-lg">
                         📝 申し込む
@@ -373,8 +419,14 @@ section h2 {
 
 .form-section h3 {
     font-size: 1rem;
-    margin-bottom: var(--space-md);
+    margin-bottom: var(--space-sm);
     color: var(--color-primary);
+}
+
+.form-section-desc {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-md);
 }
 
 .form-group {

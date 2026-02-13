@@ -1,7 +1,7 @@
 """
 Night-Walk MVP - Public Routes (公開ページ)
 """
-from flask import Blueprint, render_template, request, current_app, session, make_response
+from flask import Blueprint, render_template, request, current_app, session, make_response, flash, redirect, url_for
 from flask_login import current_user
 from ..models.shop import Shop, VacancyStatus
 from ..models.content import Announcement, Advertisement
@@ -480,6 +480,13 @@ def shop_apply():
         phone = request.form.get('phone', '').strip()
         message = request.form.get('message', '').strip()
         
+        # 振込口座情報
+        bank_name = request.form.get('bank_name', '').strip()
+        bank_branch = request.form.get('bank_branch', '').strip()
+        account_type = request.form.get('account_type', '').strip()
+        account_number = request.form.get('account_number', '').strip()
+        account_holder = request.form.get('account_holder', '').strip()
+        
         # バリデーション
         errors = []
         if not shop_name:
@@ -496,6 +503,20 @@ def shop_apply():
             errors.append('有効なメールアドレスを入力してください。')
         if not phone:
             errors.append('電話番号は必須です。')
+        
+        # 口座情報バリデーション
+        if not bank_name:
+            errors.append('金融機関名は必須です。')
+        if not bank_branch:
+            errors.append('支店名は必須です。')
+        if not account_type or account_type not in ['普通', '当座']:
+            errors.append('口座種別を選択してください。')
+        if not account_number:
+            errors.append('口座番号は必須です。')
+        elif not account_number.isdigit() or len(account_number) < 7 or len(account_number) > 8:
+            errors.append('口座番号は7〜8桁の数字で入力してください。')
+        if not account_holder:
+            errors.append('口座名義は必須です。')
         
         # 重複チェック
         existing_shop = Shop.query.filter_by(name=shop_name, area=area).first()
@@ -520,7 +541,12 @@ def shop_apply():
                                        'contact_name': contact_name,
                                        'email': email,
                                        'phone': phone,
-                                       'message': message
+                                       'message': message,
+                                       'bank_name': bank_name,
+                                       'bank_branch': bank_branch,
+                                       'account_type': account_type,
+                                       'account_number': account_number,
+                                       'account_holder': account_holder
                                    })
         
         # 店舗を審査待ち状態で作成
@@ -532,7 +558,13 @@ def shop_apply():
             review_status=Shop.STATUS_PENDING,
             review_notes=f'担当者: {contact_name}\nメール: {email}\n備考: {message}' if message else f'担当者: {contact_name}\nメール: {email}',
             is_active=False,
-            is_published=False
+            is_published=False,
+            # 振込口座情報
+            bank_name=bank_name,
+            bank_branch=bank_branch,
+            account_type=account_type,
+            account_number=account_number,
+            account_holder=account_holder
         )
         db.session.add(shop)
         db.session.flush()  # shop.idを取得
