@@ -549,55 +549,78 @@ def shop_apply():
                                        'account_holder': account_holder
                                    })
         
-        # 店舗を審査待ち状態で作成
-        shop = Shop(
-            name=shop_name,
-            area=area,
-            category=category,
-            phone=phone,
-            review_status=Shop.STATUS_PENDING,
-            review_notes=f'担当者: {contact_name}\nメール: {email}\n備考: {message}' if message else f'担当者: {contact_name}\nメール: {email}',
-            is_active=False,
-            is_published=False,
-            # 振込口座情報
-            bank_name=bank_name,
-            bank_branch=bank_branch,
-            account_type=account_type,
-            account_number=account_number,
-            account_holder=account_holder
-        )
-        db.session.add(shop)
-        db.session.flush()  # shop.idを取得
-        
-        # 仮パスワード生成
-        temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
-        
-        # ユーザー作成（店舗オーナー）
-        user = User(
-            email=email,
-            name=contact_name,
-            role='shop_owner'
-        )
-        user.set_password(temp_password)
-        db.session.add(user)
-        db.session.flush()
-        
-        # ShopMemberとして紐付け
-        from ..models.user import ShopMember
-        shop_member = ShopMember(
-            user_id=user.id,
-            shop_id=shop.id,
-            role='owner'
-        )
-        db.session.add(shop_member)
-        
-        # 申込情報を保存（審査完了時のメール送信用）
-        shop.review_notes = f'担当者: {contact_name}\nメール: {email}\n仮パスワード: {temp_password}\n備考: {message}' if message else f'担当者: {contact_name}\nメール: {email}\n仮パスワード: {temp_password}'
-        
-        db.session.commit()
-        
-        flash('お申し込みありがとうございます！審査完了後、ご登録のメールアドレスにログイン情報をお送りします。', 'success')
-        return redirect(url_for('public.shop_apply_complete'))
+        try:
+            # 店舗を審査待ち状態で作成
+            shop = Shop(
+                name=shop_name,
+                area=area,
+                category=category,
+                phone=phone,
+                review_status=Shop.STATUS_PENDING,
+                review_notes=f'担当者: {contact_name}\nメール: {email}\n備考: {message}' if message else f'担当者: {contact_name}\nメール: {email}',
+                is_active=False,
+                is_published=False,
+                # 振込口座情報
+                bank_name=bank_name,
+                bank_branch=bank_branch,
+                account_type=account_type,
+                account_number=account_number,
+                account_holder=account_holder
+            )
+            db.session.add(shop)
+            db.session.flush()  # shop.idを取得
+            
+            # 仮パスワード生成
+            temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+            
+            # ユーザー作成（店舗オーナー）
+            user = User(
+                email=email,
+                name=contact_name,
+                role='shop_owner'
+            )
+            user.set_password(temp_password)
+            db.session.add(user)
+            db.session.flush()
+            
+            # ShopMemberとして紐付け
+            from ..models.user import ShopMember
+            shop_member = ShopMember(
+                user_id=user.id,
+                shop_id=shop.id,
+                role='owner'
+            )
+            db.session.add(shop_member)
+            
+            # 申込情報を保存（審査完了時のメール送信用）
+            shop.review_notes = f'担当者: {contact_name}\nメール: {email}\n仮パスワード: {temp_password}\n備考: {message}' if message else f'担当者: {contact_name}\nメール: {email}\n仮パスワード: {temp_password}'
+            
+            db.session.commit()
+            
+            flash('お申し込みありがとうございます！審査完了後、ご登録のメールアドレスにログイン情報をお送りします。', 'success')
+            return redirect(url_for('public.shop_apply_complete'))
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Shop application error: {e}", exc_info=True)
+            flash(f'申し込み処理中にエラーが発生しました: {str(e)}', 'danger')
+            return render_template('public/shop_apply.html',
+                                   areas=Shop.AREAS,
+                                   categories=Shop.CATEGORIES,
+                                   category_labels=Shop.CATEGORY_LABELS,
+                                   form_data={
+                                       'shop_name': shop_name,
+                                       'area': area,
+                                       'category': category,
+                                       'contact_name': contact_name,
+                                       'email': email,
+                                       'phone': phone,
+                                       'message': message,
+                                       'bank_name': bank_name,
+                                       'bank_branch': bank_branch,
+                                       'account_type': account_type,
+                                       'account_number': account_number,
+                                       'account_holder': account_holder
+                                   })
     
     return render_template('public/shop_apply.html',
                            areas=Shop.AREAS,

@@ -144,11 +144,11 @@ class Shop(db.Model):
     campaign_notes = db.Column(db.Text)          # 特別条件（任意テキスト）
     
     # 振込口座情報
-    bank_name = db.Column(db.String(100))        # 金融機関名
-    bank_branch = db.Column(db.String(100))      # 支店名
-    account_type = db.Column(db.String(20))      # 口座種別（普通/当座）
-    account_number = db.Column(db.String(20))    # 口座番号
-    account_holder = db.Column(db.String(100))   # 口座名義（カタカナ）
+    bank_name = db.Column(db.String(100), nullable=True)        # 金融機関名
+    bank_branch = db.Column(db.String(100), nullable=True)      # 支店名
+    account_type = db.Column(db.String(20), nullable=True)      # 口座種別（普通/当座）
+    account_number = db.Column(db.String(20), nullable=True)    # 口座番号
+    account_holder = db.Column(db.String(100), nullable=True)   # 口座名義（カタカナ）
     
     # Relationships
     members = db.relationship('ShopMember', back_populates='shop', lazy='dynamic', cascade='all, delete-orphan')
