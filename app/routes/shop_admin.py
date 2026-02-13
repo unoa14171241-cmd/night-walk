@@ -20,7 +20,7 @@ from ..utils.logger import audit_log
 from ..utils.helpers import get_client_ip
 from ..services.qrcode_service import generate_qrcode_base64, generate_qrcode_svg
 from ..services.image_service import resize_and_optimize_image
-from ..services.storage_service import upload_image, delete_image, get_image_url
+from ..services.storage_service import upload_image as cloud_upload, delete_image as cloud_delete, get_image_url
 
 shop_admin_bp = Blueprint('shop_admin', __name__)
 
@@ -37,7 +37,7 @@ def save_shop_image(file, shop_id):
     if not file or not allowed_file(file.filename):
         return None
     
-    result = upload_image(file, 'shops', filename_prefix=f"{shop_id}_")
+    result = cloud_upload(file, 'shops', filename_prefix=f"{shop_id}_")
     if result:
         return result['filename']
     return None
@@ -346,7 +346,7 @@ def upload_image():
     try:
         optimized_data, fmt = resize_and_optimize_image(file)
         if optimized_data:
-            result = upload_image(optimized_data, 'shops', filename_prefix=f"{shop.id}_")
+            result = cloud_upload(optimized_data, 'shops', filename_prefix=f"{shop.id}_")
             filename = result['filename'] if result else None
         else:
             filename = save_shop_image(file, shop.id)
@@ -389,7 +389,7 @@ def delete_image(image_id):
     
     # Delete file (cloud or local)
     try:
-        delete_image(image.filename, 'shops')
+        cloud_delete(image.filename, 'shops')
     except Exception as e:
         current_app.logger.error(f"Failed to delete image file: {e}")
     
@@ -507,7 +507,7 @@ def new_cast():
                 try:
                     optimized_data, fmt = resize_and_optimize_image(file)
                     if optimized_data:
-                        result = upload_image(optimized_data, 'casts', filename_prefix=f"cast_{shop.id}_")
+                        result = cloud_upload(optimized_data, 'casts', filename_prefix=f"cast_{shop.id}_")
                         if result:
                             cast.image_filename = result['filename']
                     else:
@@ -596,24 +596,24 @@ def edit_cast(cast_id):
                 try:
                     optimized_data, fmt = resize_and_optimize_image(file)
                     if optimized_data:
-                        result = upload_image(optimized_data, 'casts', filename_prefix=f"cast_{shop.id}_")
+                        result = cloud_upload(optimized_data, 'casts', filename_prefix=f"cast_{shop.id}_")
                         if result:
                             # 古い画像を削除
                             if cast.image_filename:
-                                delete_image(cast.image_filename, 'casts')
+                                cloud_delete(cast.image_filename, 'casts')
                             cast.image_filename = result['filename']
                     else:
                         new_filename = save_cast_image(file, shop.id)
                         if new_filename:
                             if cast.image_filename:
-                                delete_image(cast.image_filename, 'casts')
+                                cloud_delete(cast.image_filename, 'casts')
                             cast.image_filename = new_filename
                 except Exception as e:
                     current_app.logger.error(f"Cast image upload failed: {e}")
                     new_filename = save_cast_image(file, shop.id)
                     if new_filename:
                         if cast.image_filename:
-                            delete_image(cast.image_filename, 'casts')
+                            cloud_delete(cast.image_filename, 'casts')
                         cast.image_filename = new_filename
         
         db.session.commit()
@@ -637,7 +637,7 @@ def delete_cast(cast_id):
     # Delete image (cloud or local)
     if cast.image_filename:
         try:
-            delete_image(cast.image_filename, 'casts')
+            cloud_delete(cast.image_filename, 'casts')
         except:
             pass
     
@@ -726,7 +726,7 @@ def save_cast_image(file, shop_id):
         return None
     
     file.seek(0)
-    result = upload_image(file, 'casts', filename_prefix=f"cast_{shop_id}_")
+    result = cloud_upload(file, 'casts', filename_prefix=f"cast_{shop_id}_")
     if result:
         return result['filename']
     return None
