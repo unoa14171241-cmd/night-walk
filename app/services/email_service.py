@@ -187,7 +187,7 @@ class EmailService:
             <div class="footer">
                 <p>
                     Night-Walk運営事務局<br>
-                    <a href="mailto:info@night-walk.jp">info@night-walk.jp</a>
+                    <a href="mailto:yorutabi2025@gmail.com">yorutabi2025@gmail.com</a>
                 </p>
                 <p>
                     ※ このメールは自動送信されています。
@@ -280,7 +280,7 @@ class EmailService:
             <div class="footer">
                 <p>
                     Night-Walk運営事務局<br>
-                    <a href="mailto:info@night-walk.jp">info@night-walk.jp</a>
+                    <a href="mailto:yorutabi2025@gmail.com">yorutabi2025@gmail.com</a>
                 </p>
             </div>
         </body>
