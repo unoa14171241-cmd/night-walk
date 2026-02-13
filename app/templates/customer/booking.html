@@ -33,6 +33,7 @@
                     </div>
                     
                     <form method="POST" action="{{ url_for('customer.booking', shop_id=shop.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <!-- 指名キャスト選択（必須） -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">

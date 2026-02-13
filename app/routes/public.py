@@ -464,6 +464,7 @@ def ranking_top1(area):
 @public_bp.route('/apply', methods=['GET', 'POST'])
 def shop_apply():
     """店舗掲載申し込みページ"""
+    from flask import flash, redirect, url_for
     from ..models.shop import Shop
     from ..models.user import User
     from ..extensions import db
