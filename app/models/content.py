@@ -99,8 +99,16 @@ class Advertisement(db.Model):
     
     @property
     def display_image_url(self):
-        """Get the image URL for display."""
+        """Get the image URL for display (cloud or local)."""
         if self.image_filename:
+            # Cloudinary public_id形式
+            if self.image_filename.startswith('night-walk/') or self.image_filename.startswith('http'):
+                if self.image_filename.startswith('http'):
+                    return self.image_filename
+                from flask import current_app
+                cloud_name = current_app.config.get('CLOUDINARY_CLOUD_NAME')
+                if cloud_name:
+                    return f"https://res.cloudinary.com/{cloud_name}/image/upload/{self.image_filename}"
             return f'/static/uploads/ads/{self.image_filename}'
         return self.image_url
     

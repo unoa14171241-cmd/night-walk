@@ -21,6 +21,7 @@ from ..models.system import SystemStatus, ContentReport, SystemLog, DemoAccount
 from ..models.shop import ShopImage
 from ..utils.decorators import admin_required
 from ..utils.logger import audit_log
+from ..services.storage_service import upload_image as cloud_upload_image, delete_image as cloud_delete_image
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -638,7 +639,7 @@ def new_advertisement():
                                   positions=Advertisement.POSITIONS,
                                   position_labels=Advertisement.POSITION_LABELS)
         
-        # Handle image upload
+        # Handle image upload (cloud or local)
         image_filename = None
         if 'image' in request.files:
             file = request.files['image']
@@ -647,13 +648,9 @@ def new_advertisement():
                 is_valid, error_message = validate_image_file(file)
                 
                 if is_valid:
-                    ext = file.filename.rsplit('.', 1)[1].lower()
-                    image_filename = f"ad_{uuid.uuid4().hex[:8]}.{ext}"
-                    
-                    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'ads')
-                    os.makedirs(upload_dir, exist_ok=True)
-                    
-                    file.save(os.path.join(upload_dir, image_filename))
+                    result = cloud_upload_image(file, 'ads', filename_prefix='ad_')
+                    if result:
+                        image_filename = result['filename']
                 else:
                     flash(error_message, 'danger')
                     return render_template('admin/advertisement_form.html', 
@@ -715,27 +712,20 @@ def edit_advertisement(id):
         advertisement.priority = int(request.form.get('priority', 0))
         advertisement.is_active = request.form.get('is_active') == 'on'
         
-        # Handle image upload
+        # Handle image upload (cloud or local)
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename and allowed_file(file.filename):
                 # Delete old image
                 if advertisement.image_filename:
-                    old_path = os.path.join(current_app.root_path, 'static', 'uploads', 'ads', advertisement.image_filename)
-                    if os.path.exists(old_path):
-                        try:
-                            os.remove(old_path)
-                        except:
-                            pass
+                    try:
+                        cloud_delete_image(advertisement.image_filename, 'ads')
+                    except:
+                        pass
                 
-                ext = file.filename.rsplit('.', 1)[1].lower()
-                image_filename = f"ad_{uuid.uuid4().hex[:8]}.{ext}"
-                
-                upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'ads')
-                os.makedirs(upload_dir, exist_ok=True)
-                
-                file.save(os.path.join(upload_dir, image_filename))
-                advertisement.image_filename = image_filename
+                result = cloud_upload_image(file, 'ads', filename_prefix='ad_')
+                if result:
+                    advertisement.image_filename = result['filename']
         
         # Update image URL if provided
         image_url = request.form.get('image_url', '').strip()
@@ -778,14 +768,12 @@ def delete_advertisement(id):
     """Delete advertisement."""
     advertisement = Advertisement.query.get_or_404(id)
     
-    # Delete image file
+    # Delete image file (cloud or local)
     if advertisement.image_filename:
-        filepath = os.path.join(current_app.root_path, 'static', 'uploads', 'ads', advertisement.image_filename)
-        if os.path.exists(filepath):
-            try:
-                os.remove(filepath)
-            except:
-                pass
+        try:
+            cloud_delete_image(advertisement.image_filename, 'ads')
+        except:
+            pass
     
     db.session.delete(advertisement)
     db.session.commit()
@@ -2285,9 +2273,7 @@ def handle_content_report(report_id):
             if image:
                 # ファイルを削除
                 try:
-                    filepath = os.path.join(current_app.root_path, 'static', 'uploads', 'shops', image.filename)
-                    if os.path.exists(filepath):
-                        os.remove(filepath)
+                    cloud_delete_image(image.filename, 'shops')
                 except:
                     pass
                 db.session.delete(image)
@@ -2355,11 +2341,9 @@ def admin_delete_image(image_id):
     image = ShopImage.query.get_or_404(image_id)
     shop_id = image.shop_id
     
-    # ファイルを削除
+    # ファイルを削除 (cloud or local)
     try:
-        filepath = os.path.join(current_app.root_path, 'static', 'uploads', 'shops', image.filename)
-        if os.path.exists(filepath):
-            os.remove(filepath)
+        cloud_delete_image(image.filename, 'shops')
     except Exception as e:
         current_app.logger.error(f"画像ファイル削除エラー: {e}")
     

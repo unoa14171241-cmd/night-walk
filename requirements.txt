@@ -24,6 +24,9 @@ stripe>=5.0.0,<7.0.0
 # Scheduler
 APScheduler==3.10.4
 
+# Cloud Storage
+cloudinary>=1.36.0
+
 # Utilities
 gunicorn==21.2.0
 Pillow>=10.0.0

@@ -70,8 +70,16 @@ class Cast(db.Model):
     
     @property
     def image_url(self):
-        """画像URL"""
+        """画像URL (cloud or local)"""
         if self.image_filename:
+            # Cloudinary public_id形式
+            if self.image_filename.startswith('night-walk/') or self.image_filename.startswith('http'):
+                if self.image_filename.startswith('http'):
+                    return self.image_filename
+                from flask import current_app
+                cloud_name = current_app.config.get('CLOUDINARY_CLOUD_NAME')
+                if cloud_name:
+                    return f"https://res.cloudinary.com/{cloud_name}/image/upload/{self.image_filename}"
             return url_for('static', filename=f'uploads/casts/{self.image_filename}')
         return url_for('static', filename='images/default_cast.png')
     
@@ -304,8 +312,16 @@ class Gift(db.Model):
     
     @property
     def image_url(self):
-        """画像URL"""
+        """画像URL (cloud or local)"""
         if self.image_filename:
+            # Cloudinary public_id形式
+            if self.image_filename.startswith('night-walk/') or self.image_filename.startswith('http'):
+                if self.image_filename.startswith('http'):
+                    return self.image_filename
+                from flask import current_app
+                cloud_name = current_app.config.get('CLOUDINARY_CLOUD_NAME')
+                if cloud_name:
+                    return f"https://res.cloudinary.com/{cloud_name}/image/upload/{self.image_filename}"
             return url_for('static', filename=f'uploads/gifts/{self.image_filename}')
         return url_for('static', filename='images/default_gift.png')
     

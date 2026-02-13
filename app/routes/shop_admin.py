@@ -20,6 +20,7 @@ from ..utils.logger import audit_log
 from ..utils.helpers import get_client_ip
 from ..services.qrcode_service import generate_qrcode_base64, generate_qrcode_svg
 from ..services.image_service import resize_and_optimize_image
+from ..services.storage_service import upload_image, delete_image, get_image_url
 
 shop_admin_bp = Blueprint('shop_admin', __name__)
 
@@ -32,23 +33,14 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def save_shop_image(file, shop_id):
-    """Save uploaded image and return filename."""
+    """Save uploaded image and return filename (cloud or local)."""
     if not file or not allowed_file(file.filename):
         return None
     
-    # Create unique filename
-    ext = file.filename.rsplit('.', 1)[1].lower()
-    filename = f"{shop_id}_{uuid.uuid4().hex[:8]}.{ext}"
-    
-    # Ensure upload directory exists
-    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'shops')
-    os.makedirs(upload_dir, exist_ok=True)
-    
-    # Save file
-    filepath = os.path.join(upload_dir, filename)
-    file.save(filepath)
-    
-    return filename
+    result = upload_image(file, 'shops', filename_prefix=f"{shop_id}_")
+    if result:
+        return result['filename']
+    return None
 
 
 @shop_admin_bp.before_request
@@ -350,26 +342,16 @@ def upload_image():
         flash(error_message, 'danger')
         return redirect(url_for('shop_admin.images'))
     
-    # 画像を自動リサイズ
+    # 画像を自動リサイズ＆クラウドアップロード
     try:
         optimized_data, fmt = resize_and_optimize_image(file)
         if optimized_data:
-            # 新しいファイル名を生成
-            ext = 'jpg' if fmt == 'JPEG' else file.filename.rsplit('.', 1)[1].lower()
-            filename = f"{shop.id}_{uuid.uuid4().hex[:8]}.{ext}"
-            
-            # 保存
-            upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'shops')
-            os.makedirs(upload_dir, exist_ok=True)
-            filepath = os.path.join(upload_dir, filename)
-            
-            with open(filepath, 'wb') as f:
-                f.write(optimized_data)
+            result = upload_image(optimized_data, 'shops', filename_prefix=f"{shop.id}_")
+            filename = result['filename'] if result else None
         else:
-            # フォールバック
             filename = save_shop_image(file, shop.id)
     except Exception as e:
-        print(f"[ERROR] Image resize failed: {e}")
+        current_app.logger.error(f"Image upload failed: {e}")
         filename = save_shop_image(file, shop.id)
     
     if not filename:
@@ -405,11 +387,9 @@ def delete_image(image_id):
     
     image = ShopImage.query.filter_by(id=image_id, shop_id=shop.id).first_or_404()
     
-    # Delete file
+    # Delete file (cloud or local)
     try:
-        filepath = os.path.join(current_app.root_path, 'static', 'uploads', 'shops', image.filename)
-        if os.path.exists(filepath):
-            os.remove(filepath)
+        delete_image(image.filename, 'shops')
     except Exception as e:
         current_app.logger.error(f"Failed to delete image file: {e}")
     
@@ -520,13 +500,25 @@ def new_cast():
             sort_order=max_order + 1
         )
         
-        # Handle image upload
+        # Handle image upload (cloud or local)
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename:
-                filename = save_cast_image(file, shop.id)
-                if filename:
-                    cast.image_filename = filename
+                try:
+                    optimized_data, fmt = resize_and_optimize_image(file)
+                    if optimized_data:
+                        result = upload_image(optimized_data, 'casts', filename_prefix=f"cast_{shop.id}_")
+                        if result:
+                            cast.image_filename = result['filename']
+                    else:
+                        filename = save_cast_image(file, shop.id)
+                        if filename:
+                            cast.image_filename = filename
+                except Exception as e:
+                    current_app.logger.error(f"Cast image upload failed: {e}")
+                    filename = save_cast_image(file, shop.id)
+                    if filename:
+                        cast.image_filename = filename
         
         db.session.add(cast)
         db.session.commit()
@@ -597,49 +589,32 @@ def edit_cast(cast_id):
         cast.monthly_gift_goal_message = request.form.get('monthly_gift_goal_message', '').strip() or None
         cast.show_gift_progress = request.form.get('show_gift_progress') == 'on'
         
-        # Handle image upload with auto-resize
+        # Handle image upload with auto-resize (cloud or local)
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename:
-                # 画像を自動リサイズ
                 try:
                     optimized_data, fmt = resize_and_optimize_image(file)
                     if optimized_data:
-                        # 新しいファイル名を生成
-                        ext = 'jpg' if fmt == 'JPEG' else file.filename.rsplit('.', 1)[1].lower()
-                        new_filename = f"{shop.id}_{uuid.uuid4().hex[:8]}.{ext}"
-                        
-                        # 保存
-                        upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'casts')
-                        os.makedirs(upload_dir, exist_ok=True)
-                        filepath = os.path.join(upload_dir, new_filename)
-                        
-                        with open(filepath, 'wb') as f:
-                            f.write(optimized_data)
-                        
-                        # 古い画像を削除
-                        if cast.image_filename:
-                            try:
-                                old_path = os.path.join(upload_dir, cast.image_filename)
-                                if os.path.exists(old_path):
-                                    os.remove(old_path)
-                            except:
-                                pass
-                        
-                        cast.image_filename = new_filename
+                        result = upload_image(optimized_data, 'casts', filename_prefix=f"cast_{shop.id}_")
+                        if result:
+                            # 古い画像を削除
+                            if cast.image_filename:
+                                delete_image(cast.image_filename, 'casts')
+                            cast.image_filename = result['filename']
+                    else:
+                        new_filename = save_cast_image(file, shop.id)
+                        if new_filename:
+                            if cast.image_filename:
+                                delete_image(cast.image_filename, 'casts')
+                            cast.image_filename = new_filename
                 except Exception as e:
-                    print(f"[ERROR] Image resize failed: {e}")
-                    # フォールバック: 元の方法で保存
-                    filename = save_cast_image(file, shop.id)
-                    if filename:
+                    current_app.logger.error(f"Cast image upload failed: {e}")
+                    new_filename = save_cast_image(file, shop.id)
+                    if new_filename:
                         if cast.image_filename:
-                            try:
-                                old_path = os.path.join(current_app.root_path, 'static', 'uploads', 'casts', cast.image_filename)
-                                if os.path.exists(old_path):
-                                    os.remove(old_path)
-                            except:
-                                pass
-                        cast.image_filename = filename
+                            delete_image(cast.image_filename, 'casts')
+                        cast.image_filename = new_filename
         
         db.session.commit()
         
@@ -659,12 +634,10 @@ def delete_cast(cast_id):
     
     cast_name = cast.name_display
     
-    # Delete image
+    # Delete image (cloud or local)
     if cast.image_filename:
         try:
-            filepath = os.path.join(current_app.root_path, 'static', 'uploads', 'casts', cast.image_filename)
-            if os.path.exists(filepath):
-                os.remove(filepath)
+            delete_image(cast.image_filename, 'casts')
         except:
             pass
     
@@ -745,27 +718,18 @@ def earnings():
 
 
 def save_cast_image(file, shop_id):
-    """Save uploaded cast image and return filename."""
+    """Save uploaded cast image and return filename (cloud or local)."""
     from ..utils.helpers import validate_image_file
     
     is_valid, error_message = validate_image_file(file)
     if not is_valid:
         return None
     
-    # Create unique filename
-    ext = file.filename.rsplit('.', 1)[1].lower()
-    filename = f"cast_{shop_id}_{uuid.uuid4().hex[:8]}.{ext}"
-    
-    # Ensure upload directory exists
-    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'casts')
-    os.makedirs(upload_dir, exist_ok=True)
-    
-    # Save file
-    filepath = os.path.join(upload_dir, filename)
-    file.seek(0)  # Reset file position
-    file.save(filepath)
-    
-    return filename
+    file.seek(0)
+    result = upload_image(file, 'casts', filename_prefix=f"cast_{shop_id}_")
+    if result:
+        return result['filename']
+    return None
 
 
 # ============================================

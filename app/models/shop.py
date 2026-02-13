@@ -512,7 +512,17 @@ class ShopImage(db.Model):
     
     @property
     def url(self):
-        """Get image URL for display."""
+        """Get image URL for display (cloud or local)."""
+        if not self.filename:
+            return None
+        # Cloudinary public_id形式
+        if self.filename.startswith('night-walk/') or self.filename.startswith('http'):
+            if self.filename.startswith('http'):
+                return self.filename
+            from flask import current_app
+            cloud_name = current_app.config.get('CLOUDINARY_CLOUD_NAME')
+            if cloud_name:
+                return f"https://res.cloudinary.com/{cloud_name}/image/upload/{self.filename}"
         return f'/static/uploads/shops/{self.filename}'
     
     @property
