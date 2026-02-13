@@ -288,8 +288,8 @@ def shop_qrcode():
     shop_url = url_for('public.shop_detail', shop_id=shop.id, _external=True)
     
     # QRコード生成（高解像度）
-    qr_png_base64 = generate_qrcode_base64(shop_url, scale=15)
-    qr_png_high_res = generate_qrcode_base64(shop_url, scale=25)  # 印刷用高解像度
+    qr_png_base64 = generate_qrcode_base64(shop_url, size=15)
+    qr_png_high_res = generate_qrcode_base64(shop_url, size=25)  # 印刷用高解像度
     qr_svg = generate_qrcode_svg(shop_url)
     
     return render_template('shop_admin/qrcode.html',
