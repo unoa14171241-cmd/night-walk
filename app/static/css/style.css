@@ -1153,16 +1153,36 @@ textarea.form-control {
    Responsive
    ============================================ */
 @media (max-width: 768px) {
-    h1 {
-        font-size: 1.75rem;
+
+    /* Compact Navbar for Mobile */
+    .navbar {
+        padding: 0.4rem 0 !important;
     }
 
-    h2 {
-        font-size: 1.5rem;
+    .navbar-brand {
+        font-size: 1rem !important;
+        gap: 0.2rem !important;
+    }
+
+    .brand-icon {
+        font-size: 1.1rem !important;
+    }
+
+    .nav-link {
+        font-size: 0.7rem !important;
+        padding: 0.2rem 0.4rem !important;
     }
 
     .navbar-menu {
-        gap: var(--space-md);
+        gap: 0.4rem !important;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    h2 {
+        font-size: 1.3rem;
     }
 
     .admin-layout {
@@ -1176,10 +1196,13 @@ textarea.form-control {
         top: 0;
         bottom: 0;
         width: 280px;
-        z-index: 1100;
+        z-index: 2000;
+        /* Sidebar over everything */
         transition: left var(--transition-base);
         box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
         overflow-y: auto;
+        background: #1a0a25;
+        /* Solid dark background */
     }
 
     .admin-sidebar.active {
@@ -1190,9 +1213,9 @@ textarea.form-control {
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.7);
+        background: rgba(0, 0, 0, 0.8);
         backdrop-filter: blur(4px);
-        z-index: 1050;
+        z-index: 1900;
     }
 
     .admin-sidebar-overlay.active {
@@ -1203,49 +1226,54 @@ textarea.form-control {
         display: flex !important;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: var(--space-lg);
-        padding-bottom: var(--space-md);
+        margin-bottom: var(--space-md);
+        padding: var(--space-md);
         border-bottom: 1px solid var(--color-border);
     }
 
     .admin-content {
-        padding: var(--space-md);
+        padding: var(--space-sm);
     }
 
     .admin-mobile-header {
         display: flex !important;
         align-items: center;
-        gap: var(--space-md);
-        margin-bottom: var(--space-lg);
-        background: var(--color-bg-card);
-        padding: var(--space-sm) var(--space-md);
-        border-radius: var(--radius-md);
-        border: 1px solid var(--color-border);
+        justify-content: space-between;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-md);
+        background: rgba(255, 215, 0, 0.1);
+        padding: 0.4rem 0.8rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--color-primary);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
     }
 
     .sidebar-toggle-btn {
-        background: var(--color-bg-elevated);
-        border: 1px solid var(--color-border);
-        color: var(--color-primary);
-        padding: var(--space-sm);
+        background: var(--gradient-gold);
+        border: none;
+        color: #1a0a25;
+        padding: 0.3rem 0.6rem;
         border-radius: var(--radius-sm);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
+        font-weight: 700;
+        font-size: 0.9rem;
     }
 
     /* Compact Text for Mobile Admin */
     .admin-content h1 {
-        font-size: 1.25rem;
+        font-size: 1rem;
+        margin-bottom: 0.4rem;
     }
 
     .admin-content h2 {
-        font-size: 1.1rem;
+        font-size: 0.95rem;
     }
 
     .admin-content h3 {
-        font-size: 1rem;
+        font-size: 0.85rem;
     }
 
     .stats-grid {
