@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initFlashMessages();
     initVacancyButtons();
     initVacancyRefresh();
+    initAdminSidebar();
 });
 
 /**
@@ -177,4 +178,56 @@ async function initiateCall(shopId) {
     // This would trigger the Twilio call flow
     // For MVP, we might just show a confirmation modal
     alert('電話予約機能は準備中です。直接店舗にお電話ください。');
+}
+/**
+ * Admin Sidebar Toggle for Mobile
+ */
+function initAdminSidebar() {
+    const showBtn = document.getElementById('showSidebar');
+    const hideBtn = document.getElementById('hideSidebar');
+    const sidebar = document.getElementById('adminSidebar');
+    const overlay = document.getElementById('adminSidebarOverlay');
+    
+    // Check if we are on an admin page with a sidebar
+    if (!sidebar || !overlay) {
+        // Automatically inject mobile header if admin layout exists
+        const adminContent = document.querySelector('.admin-content');
+        if (adminContent && !document.querySelector('.admin-mobile-header')) {
+            const mobileHeader = document.createElement('div');
+            mobileHeader.className = 'admin-mobile-header';
+            mobileHeader.innerHTML = `
+                <button class="sidebar-toggle-btn" id="showSidebar">☰</button>
+                <span style="font-weight: 700; color: var(--color-primary);">MENU</span>
+            `;
+            adminContent.prepend(mobileHeader);
+            
+            // Re-call init after injection
+            setTimeout(initAdminSidebar, 0);
+        }
+        return;
+    }
+    
+    if (showBtn) {
+        showBtn.addEventListener('click', () => {
+            sidebar.classList.add('active');
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent scroll
+        });
+    }
+    
+    if (hideBtn) {
+        hideBtn.addEventListener('click', () => {
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+    }
+    
+    if (overlay) {
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+    }
 }
