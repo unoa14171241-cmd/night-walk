@@ -188,27 +188,12 @@ function initAdminSidebar() {
     const sidebar = document.getElementById('adminSidebar');
     const overlay = document.getElementById('adminSidebarOverlay');
 
-    // Check if we are on an admin page with a sidebar
-    if (!sidebar || !overlay) {
-        // Automatically inject mobile header if admin layout exists
-        const adminContent = document.querySelector('.admin-content');
-        if (adminContent && !document.querySelector('.admin-mobile-header')) {
-            const mobileHeader = document.createElement('div');
-            mobileHeader.className = 'admin-mobile-header';
-            mobileHeader.innerHTML = `
-                <button class="sidebar-toggle-btn" id="showSidebar">☰ MENU</button>
-                <span style="font-size: 0.8rem; font-weight: 700; color: var(--color-primary);">管理パネル</span>
-            `;
-            adminContent.prepend(mobileHeader);
-
-            // Re-call init after injection
-            setTimeout(initAdminSidebar, 0);
-        }
-        return;
-    }
+    // Safety check - we need at least sidebar and overlay for toggle to work
+    if (!sidebar || !overlay) return;
 
     if (showBtn) {
-        showBtn.addEventListener('click', () => {
+        showBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             sidebar.classList.add('active');
             overlay.classList.add('active');
             document.body.style.overflow = 'hidden'; // Prevent scroll
