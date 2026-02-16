@@ -1608,6 +1608,7 @@ textarea.form-control {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    line-height: 1.2;
 }
 
 .search-subtitle {
@@ -1966,7 +1967,22 @@ textarea.form-control {
     }
 
     .search-title {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
+        white-space: nowrap;
+        margin-bottom: 0.5rem;
+    }
+
+    .search-hero {
+        margin-bottom: 0.75rem;
+    }
+
+    .scene-selection {
+        margin-bottom: 1rem;
+        padding: 0;
+    }
+
+    .scene-cards {
+        gap: 0.5rem;
     }
 
     .keyword-search {
