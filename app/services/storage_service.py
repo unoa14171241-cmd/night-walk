@@ -26,31 +26,68 @@ def _get_cloudinary():
 
 def is_cloud_storage_enabled():
     """クラウドストレージが有効かどうか"""
-    return bool(current_app.config.get('USE_CLOUD_STORAGE'))
+    return bool(current_app.config.get('CLOUDINARY_CLOUD_NAME'))
+
+
+def is_db_storage_enabled():
+    """データベースストレージが有効かどうか (クラウド設定がない場合のデフォルト)"""
+    return not is_cloud_storage_enabled()
 
 
 def upload_image(file_data, folder, filename_prefix='', optimize=True):
     """
     画像をアップロードする。
-    Cloudinaryが設定されていればクラウドに、なければローカルに保存。
-    
-    Args:
-        file_data: ファイルオブジェクト（werkzeug FileStorage）またはbytesデータ
-        folder: サブフォルダ名（'shops', 'casts', 'ads', 'gifts'）
-        filename_prefix: ファイル名のプレフィックス
-        optimize: 画像を最適化するかどうか
-    
-    Returns:
-        dict: {
-            'filename': str,  # ローカルファイル名またはCloudinary public_id
-            'url': str,       # 画像のURL
-            'storage': str,   # 'local' or 'cloudinary'
-        }
-        or None on failure
+    1. Cloudinaryが設定されていればクラウドに保存。
+    2. Cloudinary設定がなければ、DB（PostgreSQL）に保存して永続化（Render対策）。
+    3. 開発環境などでDBを使わない場合はローカル。
     """
     if is_cloud_storage_enabled():
         return _upload_to_cloudinary(file_data, folder, filename_prefix)
+    elif current_app.config.get('DEBUG') and not os.environ.get('DATABASE_URL'):
+        # 開発環境でローカルDBかつCloudinary設定がない場合のみローカルファイル
+        return _upload_to_local(file_data, folder, filename_prefix)
     else:
+        # 本番環境（Render等）でクラウド設定がない場合はDB保存を優先
+        return _upload_to_db(file_data, folder, filename_prefix)
+
+
+def _upload_to_db(file_data, folder, filename_prefix=''):
+    """PostgreSQLにバイナリとして保存 (永続化のため)"""
+    try:
+        from ..models import ImageStore, db
+        import mimetypes
+        
+        unique_id = uuid.uuid4().hex[:8]
+        ext = 'jpg'
+        mimetype = 'image/jpeg'
+        
+        # ファイルデータの準備
+        if isinstance(file_data, bytes):
+            data = file_data
+        elif hasattr(file_data, 'read'):
+            file_data.seek(0)
+            data = file_data.read()
+            if hasattr(file_data, 'filename') and file_data.filename:
+                parts = file_data.filename.rsplit('.', 1)
+                if len(parts) > 1:
+                    ext = parts[1].lower()
+                mimetype = mimetypes.guess_type(file_data.filename)[0] or 'image/jpeg'
+        else:
+            return None
+            
+        filename = f"{folder}/{filename_prefix}{unique_id}.{ext}"
+        
+        # DBに保存
+        ImageStore.save_image(filename, data, mimetype)
+        db.session.commit()
+        
+        return {
+            'filename': filename,
+            'url': f'/images_db/{filename}',
+            'storage': 'database'
+        }
+    except Exception as e:
+        current_app.logger.error(f"Database image upload failed: {e}", exc_info=True)
         return _upload_to_local(file_data, folder, filename_prefix)
 
 
@@ -151,10 +188,24 @@ def delete_image(filename, folder):
         return
     
     # Cloudinaryのpublic_idかどうかを判定
-    if '/' in filename or is_cloud_storage_enabled():
+    if '/' in filename and not '.' in filename:
         _delete_from_cloudinary(filename)
+    elif '.' in filename and '/' in filename:
+        # DB保存の場合 (例: 'shops/abc.jpg')
+        _delete_from_db(filename)
     else:
         _delete_from_local(filename, folder)
+
+
+def _delete_from_db(filename):
+    """DBから削除"""
+    try:
+        from ..models import ImageStore, db
+        if ImageStore.delete_image(filename):
+            db.session.commit()
+            current_app.logger.info(f"Database image deleted: {filename}")
+    except Exception as e:
+        current_app.logger.warning(f"Database delete failed for {filename}: {e}")
 
 
 def _delete_from_cloudinary(public_id):
@@ -202,6 +253,10 @@ def get_image_url(filename, folder):
             return f"https://res.cloudinary.com/{cloud_name}/image/upload/{filename}"
         # フォールバック
         return f'/static/uploads/{folder}/{filename}'
+    
+    # DB保存URLの場合
+    if filename.startswith('images_db/') or '/' in filename and '.' in filename:
+        return f'/images_db/{filename}' if not filename.startswith('/') else filename
     
     # ローカルファイルパス
     return f'/static/uploads/{folder}/{filename}'

@@ -245,3 +245,42 @@ class DemoAccount(db.Model):
     def get_active_demos(cls):
         """有効なデモアカウント一覧"""
         return cls.query.filter_by(is_active=True).order_by(cls.name).all()
+
+
+class ImageStore(db.Model):
+    """データベース保存用画像データ (Render等の一時的なファイルシステム用)"""
+    __tablename__ = 'image_store'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    data = db.Column(db.LargeBinary, nullable=False)  # 画像バイナリデータ
+    mimetype = db.Column(db.String(50))              # 例: 'image/jpeg'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    @classmethod
+    def save_image(cls, filename, data, mimetype=None):
+        """画像を保存または更新"""
+        existing = cls.query.filter_by(filename=filename).first()
+        if existing:
+            existing.data = data
+            existing.mimetype = mimetype
+            existing.created_at = datetime.utcnow()
+            return existing
+        
+        new_image = cls(filename=filename, data=data, mimetype=mimetype)
+        db.session.add(new_image)
+        return new_image
+    
+    @classmethod
+    def get_image(cls, filename):
+        """画像データを取得"""
+        return cls.query.filter_by(filename=filename).first()
+    
+    @classmethod
+    def delete_image(cls, filename):
+        """画像を削除"""
+        image = cls.query.filter_by(filename=filename).first()
+        if image:
+            db.session.delete(image)
+            return True
+        return False

@@ -748,3 +748,20 @@ Sitemap: {base_url}/sitemap.xml
 """
     
     return Response(content, mimetype='text/plain')
+
+
+@public_bp.route('/images_db/<path:filename>')
+def serve_db_image(filename):
+    """データベースから画像データを読み込んで返す (Render対策)"""
+    from ..models import ImageStore
+    
+    image = ImageStore.get_image(filename)
+    if not image:
+        from flask import abort
+        abort(404)
+        
+    response = make_response(image.data)
+    response.headers['Content-Type'] = image.mimetype or 'image/jpeg'
+    # キャッシュを1週間有効にする
+    response.headers['Cache-Control'] = 'public, max-age=604800'
+    return response

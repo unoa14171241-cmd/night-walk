@@ -28,7 +28,7 @@ from .review import ShopReview, PhoneVerification, ShopReviewScore
 # 店舗ポイントカード
 from .shop_point import ShopPointCard, CustomerShopPoint, ShopPointTransaction, ShopPointReward
 # システム管理（デモ・障害対応）
-from .system import SystemStatus, ContentReport, SystemLog, DemoAccount
+from .system import SystemStatus, ContentReport, SystemLog, DemoAccount, ImageStore
 # 紹介制度
 from .referral import ShopReferral
 
@@ -92,6 +92,7 @@ __all__ = [
     'ContentReport',
     'SystemLog',
     'DemoAccount',
+    'ImageStore',
     # 紹介制度
     'ShopReferral',
 ]
