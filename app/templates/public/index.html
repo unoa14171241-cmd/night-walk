@@ -10,10 +10,8 @@
     {% if top_ads %}
     <div class="banner-carousel mb-4">
         {% for ad in top_ads %}
-        <a href="{{ url_for('public.ad_click', ad_id=ad.id) }}" 
-           class="banner-item {% if loop.first %}active{% endif %}"
-           target="_blank"
-           rel="noopener">
+        <a href="{{ url_for('public.ad_click', ad_id=ad.id) }}" class="banner-item {% if loop.first %}active{% endif %}"
+            target="_blank" rel="noopener">
             {% if ad.display_image_url %}
             <img src="{{ ad.display_image_url }}" alt="{{ ad.title }}">
             {% else %}
@@ -32,23 +30,22 @@
         {% endif %}
     </div>
     {% endif %}
-    
+
     <!-- Search Section -->
     <div class="search-section">
         <div class="search-hero">
             <h1 class="search-title">
-                ✨ 岡山・倉敷のナイトスポット ✨
+                岡山・倉敷ナイトスポット
             </h1>
         </div>
-        
+
         <!-- 目的別選択（シーン選択） -->
         <div class="scene-selection">
             <div class="scene-cards">
                 {% for scene_key in scenes %}
                 {% set scene = scene_groups[scene_key] %}
-                <a href="{{ url_for('public.search', scene=scene_key) }}" 
-                   class="scene-card" 
-                   style="--scene-color: {{ scene.color }}">
+                <a href="{{ url_for('public.search', scene=scene_key) }}" class="scene-card"
+                    style="--scene-color: {{ scene.color }}">
                     <div class="scene-indicator" style="background: {{ scene.color }}"></div>
                     <div class="scene-content">
                         <div class="scene-name">{{ scene.name }}</div>
@@ -59,29 +56,26 @@
                 {% endfor %}
             </div>
         </div>
-        
+
         <!-- Feature Ribbons -->
         <div class="feature-ribbons feature-ribbons-inline">
             <span class="ribbon">★高待遇のお仕事</span>
             <span class="ribbon">★体入歓迎</span>
             <span class="ribbon">★送迎あり</span>
         </div>
-        
+
         <!-- Keyword Search -->
         <form action="{{ url_for('public.search') }}" method="GET" class="search-form">
             <div class="keyword-search">
                 <div class="search-input-wrapper">
                     <span class="search-icon">🔍</span>
-                    <input type="text" 
-                           name="q" 
-                           class="search-input" 
-                           placeholder="店舗名、エリア、キーワードで検索..."
-                           autocomplete="off">
+                    <input type="text" name="q" class="search-input" placeholder="店舗名、エリア、キーワードで検索..."
+                        autocomplete="off">
                 </div>
                 <button type="submit" class="btn btn-primary btn-lg">検索</button>
             </div>
         </form>
-        
+
         <!-- Condition Search -->
         <div class="condition-search">
             <div class="condition-header" onclick="toggleConditions()">
@@ -99,7 +93,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                    
+
                     <div class="condition-item">
                         <label>業態</label>
                         <select name="category" class="form-control">
@@ -109,7 +103,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                    
+
                     <div class="condition-item">
                         <label>料金帯</label>
                         <select name="price" class="form-control">
@@ -119,7 +113,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                    
+
                     <div class="condition-item">
                         <label>空席状況</label>
                         <select name="vacancy" class="form-control">
@@ -129,19 +123,19 @@
                         </select>
                     </div>
                 </div>
-                
+
                 <div class="condition-options">
                     <label class="form-check">
                         <input type="checkbox" name="has_job" value="1" class="form-check-input">
                         <span>求人募集中のみ</span>
                     </label>
                 </div>
-                
+
                 <button type="submit" class="btn btn-gold btn-block">✨ この条件で検索</button>
             </form>
         </div>
     </div>
-    
+
     <!-- Announcements -->
     {% if announcements %}
     <div class="announcements-section mb-4">
@@ -164,7 +158,7 @@
         </div>
     </div>
     {% endif %}
-    
+
     <!-- Quick Area Links -->
     <div class="quick-links mb-4">
         <h3 class="section-title">📍 エリアから探す</h3>
@@ -176,7 +170,7 @@
             {% endfor %}
         </div>
     </div>
-    
+
     <!-- Featured Shops -->
     {% if featured_shops %}
     <div class="featured-section mb-4">
@@ -190,7 +184,7 @@
         </div>
     </div>
     {% endif %}
-    
+
     <!-- Recent Shops -->
     {% if recent_shops %}
     <div class="recent-section mb-4">
@@ -202,7 +196,7 @@
             {% include "public/_shop_card.html" %}
             {% endfor %}
         </div>
-        
+
         <div class="text-center mt-3">
             <a href="{{ url_for('public.search') }}" class="btn btn-gold">
                 ✨ すべての店舗を見る →
@@ -214,48 +208,48 @@
 
 {% block extra_js %}
 <script>
-// Condition search toggle
-function toggleConditions() {
-    const form = document.getElementById('condition-form');
-    const toggle = document.getElementById('condition-toggle');
-    
-    if (form.style.display === 'none' || form.style.display === '') {
-        form.style.display = 'block';
-        toggle.textContent = '▲';
-    } else {
-        form.style.display = 'none';
-        toggle.textContent = '▼';
+    // Condition search toggle
+    function toggleConditions() {
+        const form = document.getElementById('condition-form');
+        const toggle = document.getElementById('condition-toggle');
+
+        if (form.style.display === 'none' || form.style.display === '') {
+            form.style.display = 'block';
+            toggle.textContent = '▲';
+        } else {
+            form.style.display = 'none';
+            toggle.textContent = '▼';
+        }
     }
-}
 
-// Banner carousel
-const bannerItems = document.querySelectorAll('.banner-item');
-const dots = document.querySelectorAll('.banner-dots .dot');
-let currentBanner = 0;
+    // Banner carousel
+    const bannerItems = document.querySelectorAll('.banner-item');
+    const dots = document.querySelectorAll('.banner-dots .dot');
+    let currentBanner = 0;
 
-if (bannerItems.length > 1) {
-    setInterval(() => {
-        bannerItems[currentBanner].classList.remove('active');
-        if (dots[currentBanner]) dots[currentBanner].classList.remove('active');
-        
-        currentBanner = (currentBanner + 1) % bannerItems.length;
-        
-        bannerItems[currentBanner].classList.add('active');
-        if (dots[currentBanner]) dots[currentBanner].classList.add('active');
-    }, 5000);
-    
-    dots.forEach((dot, index) => {
-        dot.addEventListener('click', () => {
+    if (bannerItems.length > 1) {
+        setInterval(() => {
             bannerItems[currentBanner].classList.remove('active');
-            dots[currentBanner].classList.remove('active');
-            
-            currentBanner = index;
-            
+            if (dots[currentBanner]) dots[currentBanner].classList.remove('active');
+
+            currentBanner = (currentBanner + 1) % bannerItems.length;
+
             bannerItems[currentBanner].classList.add('active');
-            dots[currentBanner].classList.add('active');
+            if (dots[currentBanner]) dots[currentBanner].classList.add('active');
+        }, 5000);
+
+        dots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                bannerItems[currentBanner].classList.remove('active');
+                dots[currentBanner].classList.remove('active');
+
+                currentBanner = index;
+
+                bannerItems[currentBanner].classList.add('active');
+                dots[currentBanner].classList.add('active');
+            });
         });
-    });
-}
+    }
 </script>
 {% endblock %}
 {% endblock %}
