@@ -20,7 +20,7 @@ class Call(db.Model):
     STATUS_BUSY = 'busy'
     
     id = db.Column(db.Integer, primary_key=True)
-    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'), nullable=False, index=True)
+    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), nullable=False, index=True)
     call_sid = db.Column(db.String(100), unique=True, index=True)  # Twilio Call SID
     caller_number = db.Column(db.String(20))
     status = db.Column(db.String(30))
@@ -78,14 +78,14 @@ class BookingLog(db.Model):
     LATE_CANCEL_MINUTES = 10  # 10分遅刻でキャンセル
     
     id = db.Column(db.Integer, primary_key=True)
-    call_id = db.Column(db.Integer, db.ForeignKey('calls.id'), index=True)
-    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'), nullable=False, index=True)
+    call_id = db.Column(db.Integer, db.ForeignKey('calls.id', ondelete='SET NULL'), index=True)
+    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), nullable=False, index=True)
     
     # 指名キャスト（必須）
-    cast_id = db.Column(db.Integer, db.ForeignKey('casts.id'), index=True)
+    cast_id = db.Column(db.Integer, db.ForeignKey('casts.id', ondelete='SET NULL'), index=True)
     
     # 顧客情報
-    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), index=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id', ondelete='SET NULL'), index=True)
     customer_phone = db.Column(db.String(20))  # 予約時の電話番号
     customer_name = db.Column(db.String(100))  # 予約者名
     party_size = db.Column(db.Integer, default=1)  # 人数

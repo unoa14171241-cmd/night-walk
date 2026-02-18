@@ -218,6 +218,19 @@
         </div>
         {% endif %}
         
+        <!-- 店舗削除 -->
+        <div class="card mt-4" style="border: 1px solid var(--color-danger);">
+            <h3 class="mb-3">⚠️ 危険な操作</h3>
+            <p class="text-muted mb-3">店舗を完全に削除します。関連する全てのデータ（キャスト、ギフト履歴、予約、課金情報など）も削除されます。<strong>この操作は取り消せません。</strong></p>
+            <form method="POST" action="{{ url_for('admin.delete_shop', shop_id=shop.id) }}" style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger" 
+                        onclick="return confirm('⚠️ 本当に店舗「{{ shop.name }}」を完全に削除しますか？\n\n関連する全てのデータ（キャスト、ギフト履歴、予約、課金情報など）も削除されます。\nこの操作は取り消せません。')">
+                    🗑️ 店舗を完全に削除
+                </button>
+            </form>
+        </div>
+        
         <!-- キャンペーン・振込設定 -->
         <div class="card mt-4">
             <h3 class="mb-3">💰 キャンペーン・振込設定</h3>

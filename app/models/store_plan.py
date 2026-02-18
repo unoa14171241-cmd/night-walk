@@ -135,7 +135,7 @@ class StorePlan(db.Model):
     extra_data = db.Column(db.JSON)
     
     # 監査情報
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     canceled_at = db.Column(db.DateTime)
@@ -326,7 +326,7 @@ class StorePlanHistory(db.Model):
     amount = db.Column(db.Integer)
     
     # 監査
-    performed_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    performed_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     performed_at = db.Column(db.DateTime, default=datetime.utcnow)
     note = db.Column(db.Text)
     

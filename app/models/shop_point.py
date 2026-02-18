@@ -154,7 +154,7 @@ class ShopPointTransaction(db.Model):
     
     # 来店確認方法（将来のQRコード等対応用）
     verification_method = db.Column(db.String(20))  # 'qr', 'manual', 'checkin'
-    verified_by = db.Column(db.Integer, db.ForeignKey('users.id'))  # 店舗スタッフID
+    verified_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))  # 店舗スタッフID
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -229,7 +229,7 @@ class ShopPointReward(db.Model):
     
     # 使用時の情報
     used_at = db.Column(db.DateTime)
-    used_by = db.Column(db.Integer, db.ForeignKey('users.id'))  # 確認した店舗スタッフ
+    used_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))  # 確認した店舗スタッフ
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     

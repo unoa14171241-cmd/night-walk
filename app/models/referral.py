@@ -37,13 +37,13 @@ class ShopReferral(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     # 紹介元店舗
-    referrer_shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'), nullable=False, index=True)
+    referrer_shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), nullable=False, index=True)
     
     # 紹介コード（ユニーク）
     referral_code = db.Column(db.String(20), unique=True, nullable=False, index=True)
     
     # 紹介先店舗（使用時に記録）
-    referred_shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'), index=True)
+    referred_shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='SET NULL'), index=True)
     
     # ステータス
     status = db.Column(db.String(20), nullable=False, default=STATUS_PENDING, index=True)

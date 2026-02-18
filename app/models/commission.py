@@ -118,9 +118,9 @@ class Commission(db.Model):
     }
     
     id = db.Column(db.Integer, primary_key=True)
-    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'), nullable=False, index=True)
-    booking_log_id = db.Column(db.Integer, db.ForeignKey('booking_logs.id'), index=True)  # 関連予約
-    monthly_billing_id = db.Column(db.Integer, db.ForeignKey('monthly_billings.id'), index=True)  # 月次請求
+    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), nullable=False, index=True)
+    booking_log_id = db.Column(db.Integer, db.ForeignKey('booking_logs.id', ondelete='SET NULL'), index=True)  # 関連予約
+    monthly_billing_id = db.Column(db.Integer, db.ForeignKey('monthly_billings.id', ondelete='SET NULL'), index=True)  # 月次請求
     
     # Commission details
     source = db.Column(db.String(20), nullable=False, default=SOURCE_PHONE)
@@ -213,7 +213,7 @@ class MonthlyBilling(db.Model):
     }
     
     id = db.Column(db.Integer, primary_key=True)
-    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'), nullable=False, index=True)
+    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), nullable=False, index=True)
     
     # Billing period
     year = db.Column(db.Integer, nullable=False, index=True)

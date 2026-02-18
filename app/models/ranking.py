@@ -151,7 +151,7 @@ class CastMonthlyRanking(db.Model):
     # 管理者による上書き
     is_overridden = db.Column(db.Boolean, default=False)  # 強制差し替え
     override_reason = db.Column(db.String(255))           # 差し替え理由
-    overridden_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    overridden_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     overridden_at = db.Column(db.DateTime)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -360,7 +360,7 @@ class RankingConfig(db.Model):
     value_type = db.Column(db.String(20), default='string')  # string, int, float, bool
     description = db.Column(db.String(255))
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    updated_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    updated_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     
     # デフォルト設定
     DEFAULTS = {

@@ -35,11 +35,11 @@ class Earning(db.Model):
     earning_type = db.Column(db.String(20), nullable=False, index=True)
     
     # 対象（タイプによりいずれか）
-    cast_id = db.Column(db.Integer, db.ForeignKey('casts.id'), index=True)
-    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'), index=True)
+    cast_id = db.Column(db.Integer, db.ForeignKey('casts.id', ondelete='SET NULL'), index=True)
+    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='SET NULL'), index=True)
     
     # 元となったギフト取引
-    gift_transaction_id = db.Column(db.Integer, db.ForeignKey('gift_transactions.id'))
+    gift_transaction_id = db.Column(db.Integer, db.ForeignKey('gift_transactions.id', ondelete='SET NULL'))
     
     amount = db.Column(db.Integer, nullable=False)  # 円
     

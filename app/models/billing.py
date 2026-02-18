@@ -65,7 +65,7 @@ class BillingEvent(db.Model):
     __tablename__ = 'billing_events'
     
     id = db.Column(db.Integer, primary_key=True)
-    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'), nullable=False, index=True)
+    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), nullable=False, index=True)
     event_type = db.Column(db.String(50), nullable=False, index=True)
     stripe_event_id = db.Column(db.String(100))
     amount = db.Column(db.Integer)  # 円

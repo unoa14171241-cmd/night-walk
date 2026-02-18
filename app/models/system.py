@@ -42,7 +42,7 @@ class SystemStatus(db.Model):
     is_active = db.Column(db.Boolean, default=True)  # 現在表示中か
     notify_users = db.Column(db.Boolean, default=False)  # ユーザーに通知するか
     
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -137,7 +137,7 @@ class ContentReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content_type = db.Column(db.String(50), nullable=False)  # コンテンツタイプ
     content_id = db.Column(db.Integer, nullable=False)       # コンテンツID
-    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'))  # 関連店舗
+    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='SET NULL'))  # 関連店舗
     
     reason = db.Column(db.String(50), nullable=False)
     description = db.Column(db.Text)  # 報告詳細
@@ -147,7 +147,7 @@ class ContentReport(db.Model):
     reporter_ip = db.Column(db.String(45))    # 報告者IP
     
     status = db.Column(db.String(20), default=STATUS_PENDING)
-    handled_by = db.Column(db.Integer, db.ForeignKey('users.id'))  # 対応者
+    handled_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))  # 対応者
     handled_at = db.Column(db.DateTime)
     handle_notes = db.Column(db.Text)  # 対応メモ
     
@@ -223,9 +223,9 @@ class DemoAccount(db.Model):
     description = db.Column(db.Text)
     
     # 関連データ
-    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # デモ用ユーザー
-    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'))  # デモ用カスタマー
+    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='SET NULL'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))  # デモ用ユーザー
+    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id', ondelete='SET NULL'))  # デモ用カスタマー
     
     # ログイン情報（表示用）
     demo_email = db.Column(db.String(255))
@@ -234,7 +234,7 @@ class DemoAccount(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     last_reset_at = db.Column(db.DateTime)  # 最終初期化日時
     
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

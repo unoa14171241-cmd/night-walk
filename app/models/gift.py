@@ -13,7 +13,7 @@ class Cast(db.Model):
     __tablename__ = 'casts'
     
     id = db.Column(db.Integer, primary_key=True)
-    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'), nullable=False, index=True)
+    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), nullable=False, index=True)
     
     name = db.Column(db.String(50), nullable=False)
     display_name = db.Column(db.String(50))  # 源氏名・表示名
@@ -348,10 +348,10 @@ class GiftTransaction(db.Model):
     STATUS_REFUNDED = 'refunded'    # 返金済み
     
     id = db.Column(db.Integer, primary_key=True)
-    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False, index=True)
-    cast_id = db.Column(db.Integer, db.ForeignKey('casts.id'), nullable=False, index=True)
-    gift_id = db.Column(db.Integer, db.ForeignKey('gifts.id'), nullable=False)
-    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'), nullable=False, index=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id', ondelete='CASCADE'), nullable=False, index=True)
+    cast_id = db.Column(db.Integer, db.ForeignKey('casts.id', ondelete='CASCADE'), nullable=False, index=True)
+    gift_id = db.Column(db.Integer, db.ForeignKey('gifts.id', ondelete='CASCADE'), nullable=False)
+    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), nullable=False, index=True)
     
     points_used = db.Column(db.Integer, nullable=False)
     message = db.Column(db.String(200))  # 応援メッセージ

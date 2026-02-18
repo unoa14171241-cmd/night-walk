@@ -22,7 +22,7 @@ class AuditLog(db.Model):
     ACTION_USER_LOGIN_FAILED = 'user.login_failed'
     
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), index=True)
     action = db.Column(db.String(100), nullable=False, index=True)
     target_type = db.Column(db.String(50))  # 'shop', 'user', 'job', etc.
     target_id = db.Column(db.Integer)

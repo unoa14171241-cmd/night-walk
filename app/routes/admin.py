@@ -15,7 +15,7 @@ from ..models.billing import Subscription
 from ..models.audit import AuditLog
 from ..models.content import Announcement, Advertisement
 from ..models.commission import CommissionRate, Commission, MonthlyBilling, get_default_commission, DEFAULT_COMMISSION_BY_CATEGORY
-from ..models.gift import Cast
+from ..models.gift import Cast, Gift, GiftTransaction
 from ..models.customer import Customer
 from ..models.system import SystemStatus, ContentReport, SystemLog, DemoAccount
 from ..models.shop import ShopImage
@@ -271,6 +271,98 @@ def toggle_shop(shop_id):
     status = '有効' if shop.is_active else '無効'
     flash(f'店舗「{shop.name}」を{status}にしました。', 'success')
     return redirect(url_for('admin.shop_detail', shop_id=shop_id))
+
+
+@admin_bp.route('/shops/<int:shop_id>/delete', methods=['POST'])
+@admin_required
+def delete_shop(shop_id):
+    """店舗を完全削除（関連データも全て削除）"""
+    shop = Shop.query.get_or_404(shop_id)
+    shop_name = shop.name
+    
+    try:
+        # --- 既存DBにはondeleteが無い可能性があるため、手動で関連データを削除 ---
+        
+        # 1. 収益データ（Earning）- cast_id/shop_id がNULL可なのでSET NULL的に削除
+        from ..models.earning import Earning
+        Earning.query.filter(
+            db.or_(Earning.shop_id == shop_id, 
+                   Earning.cast_id.in_(db.session.query(Cast.id).filter_by(shop_id=shop_id)))
+        ).delete(synchronize_session=False)
+        
+        # 2. ポイント取引のgift_transaction_id参照をNULLに
+        from ..models.point import PointTransaction
+        gift_tx_ids = db.session.query(GiftTransaction.id).filter_by(shop_id=shop_id).subquery()
+        PointTransaction.query.filter(
+            PointTransaction.gift_transaction_id.in_(gift_tx_ids)
+        ).update({PointTransaction.gift_transaction_id: None}, synchronize_session=False)
+        
+        # 3. ギフト取引（GiftTransaction）削除
+        GiftTransaction.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 4. ギフト（Gift）削除
+        Gift.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 5. 手数料（Commission）削除
+        Commission.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 6. 月次請求（MonthlyBilling）削除
+        MonthlyBilling.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 7. 予約ログ（BookingLog）削除
+        from ..models.booking import BookingLog, Call
+        BookingLog.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 8. 通話ログ（Call）削除
+        Call.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 9. 課金イベント（BillingEvent）削除
+        from ..models.billing import BillingEvent
+        BillingEvent.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 10. NULL可能なFK参照をSET NULL
+        from ..models.inquiry import Inquiry
+        Inquiry.query.filter_by(shop_id=shop_id).update({Inquiry.shop_id: None}, synchronize_session=False)
+        ContentReport.query.filter_by(shop_id=shop_id).update({ContentReport.shop_id: None}, synchronize_session=False)
+        DemoAccount.query.filter_by(shop_id=shop_id).update({DemoAccount.shop_id: None}, synchronize_session=False)
+        
+        # 11. 紹介コード（Referral）
+        from ..models.referral import Referral
+        Referral.query.filter_by(referrer_shop_id=shop_id).delete(synchronize_session=False)
+        Referral.query.filter_by(referred_shop_id=shop_id).update({Referral.referred_shop_id: None}, synchronize_session=False)
+        
+        # 12. キャスト関連のランキング・PV等（CASCADEがあるが念のため）
+        from ..models.ranking import CastPageView, CastMonthlyRanking, CastBadgeHistory
+        from ..models.shop_ranking import TrendingCast
+        cast_ids = [c.id for c in Cast.query.filter_by(shop_id=shop_id).all()]
+        if cast_ids:
+            CastPageView.query.filter(CastPageView.cast_id.in_(cast_ids)).delete(synchronize_session=False)
+            CastBadgeHistory.query.filter(CastBadgeHistory.cast_id.in_(cast_ids)).delete(synchronize_session=False)
+            CastMonthlyRanking.query.filter(CastMonthlyRanking.cast_id.in_(cast_ids)).delete(synchronize_session=False)
+            TrendingCast.query.filter(TrendingCast.cast_id.in_(cast_ids)).delete(synchronize_session=False)
+            from ..models.cast_shift import CastShift, ShiftTemplate
+            CastShift.query.filter(CastShift.cast_id.in_(cast_ids)).delete(synchronize_session=False)
+            ShiftTemplate.query.filter(ShiftTemplate.cast_id.in_(cast_ids)).delete(synchronize_session=False)
+        
+        # 13. キャスト（Cast）削除
+        Cast.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 14. 店舗本体を削除（CASCADE: ShopImage, VacancyStatus, VacancyHistory, 
+        #     ShopMember, Job, Subscription, CommissionRate, StorePlan, etc.）
+        db.session.delete(shop)
+        db.session.commit()
+        
+        audit_log('shop.delete', 'shop', shop_id,
+                 new_value={'name': shop_name})
+        
+        flash(f'店舗「{shop_name}」と関連データを全て削除しました。', 'success')
+        return redirect(url_for('admin.shops'))
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'店舗削除エラー (shop_id={shop_id}): {e}')
+        flash(f'店舗の削除に失敗しました: {str(e)}', 'danger')
+        return redirect(url_for('admin.shop_detail', shop_id=shop_id))
 
 
 @admin_bp.route('/shops/<int:shop_id>/approve', methods=['POST'])
@@ -1989,6 +2081,128 @@ def toggle_user(user_id):
     status = '有効' if user.is_active else '無効'
     flash(f'{user.name}さんを{status}にしました', 'success')
     return redirect(url_for('admin.user_detail', user_id=user_id))
+
+
+@admin_bp.route('/users/<int:user_id>/delete', methods=['POST'])
+@admin_required
+def delete_user(user_id):
+    """ユーザーを完全削除"""
+    user = User.query.get_or_404(user_id)
+    
+    # 自分自身は削除できない
+    if user.id == current_user.id:
+        flash('自分自身を削除することはできません', 'danger')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
+    
+    # 管理者は削除できない（安全策）
+    if user.role == 'admin' and user.id != current_user.id:
+        admin_count = User.query.filter_by(role='admin', is_active=True).count()
+        if admin_count <= 1:
+            flash('最後の管理者アカウントは削除できません', 'danger')
+            return redirect(url_for('admin.user_detail', user_id=user_id))
+    
+    user_name = user.name
+    
+    try:
+        # --- users.id を参照するFK（ondeleteなし）を手動で処理 ---
+        
+        # 1. 監査ログのuser_idをNULLに（履歴保持）
+        AuditLog.query.filter_by(user_id=user_id).update(
+            {AuditLog.user_id: None}, synchronize_session=False)
+        
+        # 2. Shop.reviewed_by をNULLに
+        Shop.query.filter_by(reviewed_by=user_id).update(
+            {Shop.reviewed_by: None}, synchronize_session=False)
+        
+        # 3. VacancyStatus.updated_by をNULLに
+        VacancyStatus.query.filter_by(updated_by=user_id).update(
+            {VacancyStatus.updated_by: None}, synchronize_session=False)
+        
+        # 4. VacancyHistory.changed_by をNULLに
+        from ..models.shop import VacancyHistory
+        VacancyHistory.query.filter_by(changed_by=user_id).update(
+            {VacancyHistory.changed_by: None}, synchronize_session=False)
+        
+        # 5. ShopImage.hidden_by をNULLに
+        ShopImage.query.filter_by(hidden_by=user_id).update(
+            {ShopImage.hidden_by: None}, synchronize_session=False)
+        
+        # 6. CastShift.created_by をNULLに
+        from ..models.cast_shift import CastShift
+        CastShift.query.filter_by(created_by=user_id).update(
+            {CastShift.created_by: None}, synchronize_session=False)
+        
+        # 7. ShopPointTransaction.verified_by をNULLに
+        from ..models.shop_point import ShopPointTransaction, ShopPointReward
+        ShopPointTransaction.query.filter_by(verified_by=user_id).update(
+            {ShopPointTransaction.verified_by: None}, synchronize_session=False)
+        
+        # 8. ShopPointReward.used_by をNULLに
+        ShopPointReward.query.filter_by(used_by=user_id).update(
+            {ShopPointReward.used_by: None}, synchronize_session=False)
+        
+        # 9. ShopMonthlyRanking.overridden_by をNULLに
+        from ..models.shop_ranking import ShopMonthlyRanking
+        ShopMonthlyRanking.query.filter_by(overridden_by=user_id).update(
+            {ShopMonthlyRanking.overridden_by: None}, synchronize_session=False)
+        
+        # 10. CastMonthlyRanking.overridden_by をNULLに
+        from ..models.ranking import CastMonthlyRanking, RankingConfig
+        CastMonthlyRanking.query.filter_by(overridden_by=user_id).update(
+            {CastMonthlyRanking.overridden_by: None}, synchronize_session=False)
+        
+        # 11. RankingConfig.updated_by をNULLに
+        RankingConfig.query.filter_by(updated_by=user_id).update(
+            {RankingConfig.updated_by: None}, synchronize_session=False)
+        
+        # 12. AdEntitlement.created_by / updated_by をNULLに
+        from ..models.ad_entitlement import AdEntitlement
+        AdEntitlement.query.filter_by(created_by=user_id).update(
+            {AdEntitlement.created_by: None}, synchronize_session=False)
+        AdEntitlement.query.filter_by(updated_by=user_id).update(
+            {AdEntitlement.updated_by: None}, synchronize_session=False)
+        
+        # 13. StorePlan.created_by をNULLに
+        from ..models.store_plan import StorePlan, StorePlanHistory
+        StorePlan.query.filter_by(created_by=user_id).update(
+            {StorePlan.created_by: None}, synchronize_session=False)
+        
+        # 14. StorePlanHistory.performed_by をNULLに
+        StorePlanHistory.query.filter_by(performed_by=user_id).update(
+            {StorePlanHistory.performed_by: None}, synchronize_session=False)
+        
+        # 15. SystemStatus.created_by をNULLに
+        SystemStatus.query.filter_by(created_by=user_id).update(
+            {SystemStatus.created_by: None}, synchronize_session=False)
+        
+        # 16. ContentReport.handled_by をNULLに
+        ContentReport.query.filter_by(handled_by=user_id).update(
+            {ContentReport.handled_by: None}, synchronize_session=False)
+        
+        # 17. DemoAccount.user_id / created_by をNULLに
+        DemoAccount.query.filter_by(user_id=user_id).update(
+            {DemoAccount.user_id: None}, synchronize_session=False)
+        DemoAccount.query.filter_by(created_by=user_id).update(
+            {DemoAccount.created_by: None}, synchronize_session=False)
+        
+        # 18. ShopMember削除（CASCADE設定あり、念のため手動）
+        ShopMember.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+        
+        # 19. ユーザー本体を削除
+        db.session.delete(user)
+        db.session.commit()
+        
+        audit_log('user.delete', 'user', user_id,
+                 new_value={'name': user_name})
+        
+        flash(f'ユーザー「{user_name}」を削除しました。', 'success')
+        return redirect(url_for('admin.users'))
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'ユーザー削除エラー (user_id={user_id}): {e}')
+        flash(f'ユーザーの削除に失敗しました: {str(e)}', 'danger')
+        return redirect(url_for('admin.user_detail', user_id=user_id))
 
 
 @admin_bp.route('/users/<int:user_id>/reset-password', methods=['POST'])

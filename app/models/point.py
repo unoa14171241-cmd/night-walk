@@ -83,7 +83,7 @@ class PointTransaction(db.Model):
     stripe_charge_id = db.Column(db.String(100))
     
     # ギフト使用時
-    gift_transaction_id = db.Column(db.Integer, db.ForeignKey('gift_transactions.id'))
+    gift_transaction_id = db.Column(db.Integer, db.ForeignKey('gift_transactions.id', ondelete='SET NULL'))
     
     description = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

@@ -131,7 +131,7 @@ class Shop(db.Model):
     # 審査フロー関連
     review_status = db.Column(db.String(20), nullable=False, default=STATUS_PENDING, index=True)
     reviewed_at = db.Column(db.DateTime)        # 審査完了日時
-    reviewed_by = db.Column(db.Integer, db.ForeignKey('users.id'))  # 審査担当者
+    reviewed_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))  # 審査担当者
     review_notes = db.Column(db.Text)           # 審査メモ
     
     # 振込サイクル設定
@@ -450,7 +450,7 @@ class VacancyStatus(db.Model):
     shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), unique=True, nullable=False, index=True)
     status = db.Column(db.String(10), nullable=False, default=STATUS_UNKNOWN)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    updated_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     
     # Relationships
     shop = db.relationship('Shop', back_populates='vacancy_status')
@@ -478,7 +478,7 @@ class VacancyHistory(db.Model):
     shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), nullable=False, index=True)
     status = db.Column(db.String(10), nullable=False)
     changed_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
-    changed_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    changed_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     ip_address = db.Column(db.String(45))
     
     # Relationships
@@ -504,7 +504,7 @@ class ShopImage(db.Model):
     # 不適切コンテンツ対策
     is_hidden = db.Column(db.Boolean, default=False)  # 管理者による非表示
     hidden_at = db.Column(db.DateTime)
-    hidden_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    hidden_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     hidden_reason = db.Column(db.String(200))
     
     # Relationships

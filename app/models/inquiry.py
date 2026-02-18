@@ -15,7 +15,7 @@ class Inquiry(db.Model):
     STATUS_CLOSED = 'closed'
     
     id = db.Column(db.Integer, primary_key=True)
-    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id'))  # NULLなら運営宛
+    shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='SET NULL'))  # NULLなら運営宛
     name = db.Column(db.String(100))
     email = db.Column(db.String(255))
     phone = db.Column(db.String(20))
