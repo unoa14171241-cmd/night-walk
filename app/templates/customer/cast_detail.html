@@ -15,7 +15,37 @@
         
         <div class="cast-info">
             <h1 class="cast-name">{{ cast.name_display }}</h1>
+            {% if cast.age %}
+            <p style="margin: 0 0 var(--space-sm); font-size: 1rem; color: var(--color-text-secondary);">{{ cast.age }}歳</p>
+            {% endif %}
             <p class="cast-shop">{{ cast.shop.name }}</p>
+            
+            <!-- 誕生日通知 -->
+            {% if birthdays %}
+            {% for bd in birthdays %}
+            {% if bd.is_today %}
+            <div class="birthday-alert-inline">
+                🎂🎉 今日は{{ cast.name_display }}の{{ bd.label or '誕生日' }}！ 🎉🎂
+            </div>
+            {% endif %}
+            {% endfor %}
+            {% endif %}
+            
+            <!-- タグ表示 -->
+            {% if cast_tags %}
+            <div class="cast-tags-section">
+                {% for category, tags in cast_tags.items() %}
+                <div class="tag-group">
+                    <span class="tag-group-label">{{ tag_category_icons.get(category, '🏷️') }} {{ tag_category_labels.get(category, category) }}</span>
+                    <div class="tag-list">
+                        {% for tag in tags %}
+                        <span class="cast-tag">{{ tag.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
             
             {% if cast.profile %}
             <div class="cast-bio" style="white-space: pre-line;">
@@ -69,22 +99,83 @@
             </div>
             {% endif %}
             
-            {% if cast.twitter_url or cast.instagram_url %}
+            <!-- SNS -->
+            {% if cast.twitter_url or cast.instagram_url or cast.tiktok_url %}
             <div class="cast-sns">
                 {% if cast.twitter_url %}
-                <a href="{{ cast.twitter_url }}" target="_blank" class="sns-link">Twitter</a>
+                <a href="{{ cast.twitter_url }}" target="_blank" class="sns-link">𝕏 Twitter</a>
                 {% endif %}
                 {% if cast.instagram_url %}
-                <a href="{{ cast.instagram_url }}" target="_blank" class="sns-link">Instagram</a>
+                <a href="{{ cast.instagram_url }}" target="_blank" class="sns-link">📷 Instagram</a>
+                {% endif %}
+                {% if cast.tiktok_url %}
+                <a href="{{ cast.tiktok_url }}" target="_blank" class="sns-link">🎵 TikTok</a>
                 {% endif %}
             </div>
             {% endif %}
         </div>
     </div>
     
+    <!-- ギャラリー -->
+    {% if gallery %}
+    <div class="gallery-section">
+        <h2>📷 フォトギャラリー</h2>
+        <div class="cast-gallery-grid">
+            {% for img in gallery %}
+            <div class="gallery-thumb" onclick="openCustomerGallery({{ loop.index0 }})">
+                <img src="{{ img.url }}" alt="{{ cast.name_display }} 写真{{ loop.index }}" loading="lazy">
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- ショート動画 -->
+    {% if cast.video_url %}
+    <div class="video-section">
+        <h2>🎬 ショート動画</h2>
+        <div style="text-align: center;">
+            {% if 'youtube.com' in cast.video_url or 'youtu.be' in cast.video_url %}
+            {% set video_id = cast.video_url.split('/')[-1].split('?')[0] %}
+            <iframe width="100%" height="400" 
+                    src="https://www.youtube.com/embed/{{ video_id }}" 
+                    frameborder="0" allowfullscreen
+                    style="border-radius: 12px; max-width: 340px;"></iframe>
+            {% else %}
+            <a href="{{ cast.video_url }}" target="_blank" class="btn btn-primary" style="width: 100%;">
+                🎬 動画を見る
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- 誕生日一覧 -->
+    {% if birthdays %}
+    <div class="birthdays-section">
+        <h2>🎂 記念日</h2>
+        <div class="birthday-list">
+            {% for bd in birthdays %}
+            <span class="birthday-chip {% if bd.is_today %}birthday-chip-today{% endif %}">
+                {{ bd.display }}{% if bd.label %} ({{ bd.label }}){% endif %}
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- ギフトへの意気込み -->
+    {% if cast.gift_appeal %}
+    <div class="gift-appeal-section">
+        <div class="gift-appeal-content">
+            💌 {{ cast.gift_appeal }}
+        </div>
+    </div>
+    {% endif %}
+    
     <!-- ギフト送信セクション -->
     <div class="gift-section">
-        <h2>ギフトを送る</h2>
+        <h2>🎁 ギフトを送る</h2>
         
         {% if current_user.is_authenticated and current_user.is_customer %}
             <div class="your-points">
@@ -159,6 +250,16 @@
     </div>
 </div>
 
+<!-- ギャラリーモーダル -->
+{% if gallery %}
+<div id="customerGalleryModal" class="gallery-overlay" style="display: none;" onclick="closeCustomerGallery(event)">
+    <button class="gallery-overlay-close" onclick="closeCustomerGallery(event)">✕</button>
+    <button class="gallery-overlay-nav gallery-overlay-prev" onclick="navCustomerGallery(-1, event)">❮</button>
+    <img id="customerGalleryImg" src="" class="gallery-overlay-img">
+    <button class="gallery-overlay-nav gallery-overlay-next" onclick="navCustomerGallery(1, event)">❯</button>
+</div>
+{% endif %}
+
 <script>
 function openGiftModal(giftId, giftName, giftPoints) {
     document.getElementById('modalGiftId').value = giftId;
@@ -177,9 +278,173 @@ document.getElementById('giftModal').addEventListener('click', function(e) {
         closeGiftModal();
     }
 });
+
+{% if gallery %}
+// ギャラリー
+const customerGalleryImages = [
+    {% for img in gallery %}
+    "{{ img.url }}"{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+let customerGalleryIdx = 0;
+
+function openCustomerGallery(idx) {
+    customerGalleryIdx = idx;
+    document.getElementById('customerGalleryImg').src = customerGalleryImages[idx];
+    document.getElementById('customerGalleryModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeCustomerGallery(e) {
+    if (e.target.id === 'customerGalleryModal' || e.target.classList.contains('gallery-overlay-close')) {
+        document.getElementById('customerGalleryModal').style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+function navCustomerGallery(dir, e) {
+    e.stopPropagation();
+    customerGalleryIdx = (customerGalleryIdx + dir + customerGalleryImages.length) % customerGalleryImages.length;
+    document.getElementById('customerGalleryImg').src = customerGalleryImages[customerGalleryIdx];
+}
+{% endif %}
 </script>
 
 <style>
+/* タグ */
+.cast-tags-section {
+    margin: var(--space-md) 0;
+}
+.tag-group {
+    margin-bottom: var(--space-sm);
+}
+.tag-group-label {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    display: block;
+    margin-bottom: 4px;
+}
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.cast-tag {
+    display: inline-block;
+    padding: 3px 12px;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    font-size: 0.75rem;
+    color: var(--color-text);
+}
+
+/* ギャラリー */
+.gallery-section, .video-section, .birthdays-section, .gift-appeal-section {
+    padding: var(--space-lg);
+}
+.gallery-section h2, .video-section h2, .birthdays-section h2 {
+    font-size: 1.1rem;
+    margin-bottom: var(--space-md);
+}
+.cast-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+.gallery-thumb {
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.gallery-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s;
+}
+.gallery-thumb:hover img {
+    transform: scale(1.05);
+}
+
+/* ギャラリーモーダル */
+.gallery-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.92);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.gallery-overlay-img {
+    max-width: 90vw;
+    max-height: 80vh;
+    object-fit: contain;
+    border-radius: 8px;
+}
+.gallery-overlay-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 2rem;
+    cursor: pointer;
+}
+.gallery-overlay-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: #fff;
+    font-size: 2rem;
+    padding: 12px;
+    cursor: pointer;
+    border-radius: 8px;
+}
+.gallery-overlay-prev { left: 12px; }
+.gallery-overlay-next { right: 12px; }
+
+/* 誕生日 */
+.birthday-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.birthday-chip {
+    padding: 6px 14px;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    font-size: 0.85rem;
+}
+.birthday-chip-today {
+    background: linear-gradient(135deg, rgba(255,105,180,0.2), rgba(255,182,193,0.2));
+    border-color: #ff69b4;
+}
+.birthday-alert-inline {
+    margin: var(--space-sm) 0;
+    padding: var(--space-sm) var(--space-md);
+    background: linear-gradient(135deg, rgba(255,105,180,0.15), rgba(255,182,193,0.15));
+    border-radius: 12px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* ギフト意気込み */
+.gift-appeal-section {
+    padding: 0 var(--space-lg);
+}
+.gift-appeal-content {
+    padding: var(--space-md);
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.08), rgba(168, 85, 247, 0.08));
+    border-radius: 12px;
+    font-size: 0.9rem;
+}
+
 /* ギフト進捗メーター */
 .gift-progress-section {
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(236, 72, 153, 0.1));

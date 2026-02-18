@@ -23,6 +23,10 @@ from .ad_entitlement import AdPlacement, AdEntitlement
 from .store_plan import StorePlan, StorePlanHistory
 from .shop_ranking import ShopPageView, ShopMonthlyRanking, TrendingShop, TrendingCast
 from .cast_shift import CastShift, ShiftTemplate
+# キャストプロフィール拡張
+from .cast_tag import CastTag
+from .cast_image import CastImage
+from .cast_birthday import CastBirthday
 # 口コミ評価システム
 from .review import ShopReview, PhoneVerification, ShopReviewScore
 # 店舗ポイントカード
@@ -78,6 +82,10 @@ __all__ = [
     'TrendingCast',
     'CastShift',
     'ShiftTemplate',
+    # キャストプロフィール拡張
+    'CastTag',
+    'CastImage',
+    'CastBirthday',
     # 口コミ評価システム
     'ShopReview',
     'PhoneVerification',

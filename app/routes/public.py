@@ -276,11 +276,31 @@ def cast_detail(cast_id):
     
     # ギフト一覧
     from ..models.gift import Gift
+    from ..models.cast_tag import CastTag
+    from ..models.cast_image import CastImage
+    from ..models.cast_birthday import CastBirthday
+    from ..models.cast_shift import CastShift
     gifts = Gift.get_active_gifts()
     
     # バッジ情報を取得
     cast_badges = AdService.get_cast_badges(cast_id)
     best_badge = AdService.get_best_badge('cast', cast_id)
+    
+    # タグ・画像・誕生日・シフト
+    cast_tags = CastTag.get_tags_by_cast(cast_id)
+    gallery = CastImage.get_gallery(cast_id)
+    birthdays = CastBirthday.get_birthdays(cast_id)
+    
+    # 今週のシフト
+    from datetime import date, timedelta
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())  # 月曜
+    week_end = week_start + timedelta(days=6)  # 日曜
+    shifts = CastShift.query.filter(
+        CastShift.cast_id == cast_id,
+        CastShift.shift_date >= week_start,
+        CastShift.shift_date <= week_end
+    ).order_by(CastShift.shift_date).all()
     
     return render_template('public/cast_detail.html',
                           cast=cast,
@@ -289,7 +309,13 @@ def cast_detail(cast_id):
                           cast_badges=cast_badges,
                           best_badge=best_badge,
                           vacancy_labels=VacancyStatus.STATUS_LABELS,
-                          vacancy_colors=VacancyStatus.STATUS_COLORS)
+                          vacancy_colors=VacancyStatus.STATUS_COLORS,
+                          cast_tags=cast_tags,
+                          gallery=gallery,
+                          birthdays=birthdays,
+                          shifts=shifts,
+                          tag_category_labels=CastTag.CATEGORY_LABELS,
+                          tag_category_icons=CastTag.CATEGORY_ICONS)
 
 
 @public_bp.route('/shops/<int:shop_id>/booking')

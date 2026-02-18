@@ -17,9 +17,16 @@ class Cast(db.Model):
     
     name = db.Column(db.String(50), nullable=False)
     display_name = db.Column(db.String(50))  # 源氏名・表示名
+    age = db.Column(db.Integer)  # 年齢
     profile = db.Column(db.Text)  # 自己紹介
     comment = db.Column(db.String(200))  # 本日のコメント（キャスト更新可能）
     image_filename = db.Column(db.String(255))
+    
+    # ショート動画
+    video_url = db.Column(db.String(500))  # ショート動画URL（YouTube Shorts, TikTok, Instagram Reels等）
+    
+    # ギフトへの意気込み
+    gift_appeal = db.Column(db.Text)  # ギフト（投げ銭）への意気込み自由記述
     
     # 出勤状況
     WORK_STATUS_OFF = 'off'           # 休み
@@ -39,6 +46,7 @@ class Cast(db.Model):
     # SNS
     twitter_url = db.Column(db.String(255))
     instagram_url = db.Column(db.String(255))
+    tiktok_url = db.Column(db.String(255))
     
     is_active = db.Column(db.Boolean, default=True)
     is_visible = db.Column(db.Boolean, default=True)  # プロフィールページを公開するか

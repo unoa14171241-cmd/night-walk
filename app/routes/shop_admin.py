@@ -15,6 +15,9 @@ from ..models.billing import Subscription
 from ..models.audit import AuditLog
 from ..models.gift import Cast, GiftTransaction
 from ..models.earning import Earning
+from ..models.cast_tag import CastTag
+from ..models.cast_image import CastImage
+from ..models.cast_birthday import CastBirthday
 from ..utils.decorators import shop_access_required, owner_required
 from ..utils.logger import audit_log
 from ..utils.helpers import get_client_ip
@@ -479,11 +482,26 @@ def new_cast():
         profile = request.form.get('profile', '').strip()
         twitter_url = request.form.get('twitter_url', '').strip()
         instagram_url = request.form.get('instagram_url', '').strip()
+        tiktok_url = request.form.get('tiktok_url', '').strip()
         is_accepting_gifts = request.form.get('is_accepting_gifts') == 'on'
+        
+        # 年齢
+        try:
+            age = int(request.form.get('age', '').strip()) if request.form.get('age', '').strip() else None
+        except (ValueError, TypeError):
+            age = None
         
         if not name:
             flash('名前を入力してください。', 'danger')
-            return render_template('shop_admin/cast_form.html', shop=shop, cast=None)
+            return render_template('shop_admin/cast_form.html', shop=shop, cast=None,
+                                   preset_tags=CastTag.PRESET_TAGS, tag_categories=CastTag.CATEGORIES,
+                                   tag_category_labels=CastTag.CATEGORY_LABELS)
+        
+        if age is None:
+            flash('年齢を入力してください。', 'danger')
+            return render_template('shop_admin/cast_form.html', shop=shop, cast=None,
+                                   preset_tags=CastTag.PRESET_TAGS, tag_categories=CastTag.CATEGORIES,
+                                   tag_category_labels=CastTag.CATEGORY_LABELS)
         
         # Get max sort order
         max_order = db.session.query(db.func.max(Cast.sort_order)).filter_by(shop_id=shop.id).scalar() or 0
@@ -492,9 +510,13 @@ def new_cast():
             shop_id=shop.id,
             name=name,
             display_name=display_name or None,
+            age=age,
             profile=profile,
             twitter_url=twitter_url or None,
             instagram_url=instagram_url or None,
+            tiktok_url=tiktok_url or None,
+            video_url=request.form.get('video_url', '').strip() or None,
+            gift_appeal=request.form.get('gift_appeal', '').strip() or None,
             is_accepting_gifts=is_accepting_gifts,
             is_active=True,
             sort_order=max_order + 1
@@ -521,6 +543,44 @@ def new_cast():
                         cast.image_filename = filename
         
         db.session.add(cast)
+        db.session.flush()  # cast.idを確定
+        
+        # タグ処理
+        for category in CastTag.CATEGORIES:
+            tag_values = request.form.get(f'tags_{category}', '').strip()
+            if tag_values:
+                tag_names = [t.strip() for t in tag_values.split(',') if t.strip()]
+                CastTag.set_tags(cast.id, category, tag_names)
+        
+        # 追加画像（ギャラリー）処理
+        gallery_files = request.files.getlist('gallery_images')
+        for idx, gfile in enumerate(gallery_files):
+            if gfile and gfile.filename:
+                try:
+                    optimized_data, fmt = resize_and_optimize_image(gfile)
+                    if optimized_data:
+                        result = cloud_upload(optimized_data, 'casts', filename_prefix=f"cast_{shop.id}_g{idx}_")
+                        if result:
+                            img = CastImage(cast_id=cast.id, filename=result['filename'], sort_order=idx)
+                            db.session.add(img)
+                except Exception as e:
+                    current_app.logger.error(f"Cast gallery image upload failed: {e}")
+        
+        # 誕生日処理
+        birthday_entries = request.form.getlist('birthday_date')
+        birthday_labels = request.form.getlist('birthday_label')
+        for i, bd in enumerate(birthday_entries):
+            if bd:
+                try:
+                    parts = bd.split('-')
+                    month = int(parts[0]) if len(parts) == 2 else int(parts[1])
+                    day = int(parts[1]) if len(parts) == 2 else int(parts[2])
+                    label = birthday_labels[i].strip() if i < len(birthday_labels) else ''
+                    cb = CastBirthday(cast_id=cast.id, birthday_month=month, birthday_day=day, label=label or None)
+                    db.session.add(cb)
+                except (ValueError, IndexError):
+                    pass
+        
         db.session.commit()
         
         audit_log(AuditLog.ACTION_CAST_CREATE if hasattr(AuditLog, 'ACTION_CAST_CREATE') else 'cast_create', 
@@ -529,7 +589,9 @@ def new_cast():
         flash(f'キャスト「{cast.name_display}」を登録しました。', 'success')
         return redirect(url_for('shop_admin.casts'))
     
-    return render_template('shop_admin/cast_form.html', shop=shop, cast=None)
+    return render_template('shop_admin/cast_form.html', shop=shop, cast=None,
+                           preset_tags=CastTag.PRESET_TAGS, tag_categories=CastTag.CATEGORIES,
+                           tag_category_labels=CastTag.CATEGORY_LABELS)
 
 
 @shop_admin_bp.route('/casts/<int:cast_id>/edit', methods=['GET', 'POST'])
@@ -545,17 +607,28 @@ def edit_cast(cast_id):
         
         if not name:
             flash('名前を入力してください。', 'danger')
-            return render_template('shop_admin/cast_form.html', shop=shop, cast=cast)
+            return render_template('shop_admin/cast_form.html', shop=shop, cast=cast,
+                                   preset_tags=CastTag.PRESET_TAGS, tag_categories=CastTag.CATEGORIES,
+                                   tag_category_labels=CastTag.CATEGORY_LABELS)
         
         cast.name = name
         cast.display_name = request.form.get('display_name', '').strip() or None
         cast.profile = request.form.get('profile', '').strip()
         cast.twitter_url = request.form.get('twitter_url', '').strip() or None
         cast.instagram_url = request.form.get('instagram_url', '').strip() or None
+        cast.tiktok_url = request.form.get('tiktok_url', '').strip() or None
+        cast.video_url = request.form.get('video_url', '').strip() or None
+        cast.gift_appeal = request.form.get('gift_appeal', '').strip() or None
         cast.is_accepting_gifts = request.form.get('is_accepting_gifts') == 'on'
         cast.is_active = request.form.get('is_active') == 'on'
         cast.is_visible = request.form.get('is_visible') == 'on'
         cast.is_featured = request.form.get('is_featured') == 'on'
+        
+        # 年齢
+        try:
+            cast.age = int(request.form.get('age', '').strip()) if request.form.get('age', '').strip() else None
+        except (ValueError, TypeError):
+            pass
         
         # キャストログイン設定
         enable_cast_login = request.form.get('enable_cast_login') == 'on'
@@ -616,12 +689,69 @@ def edit_cast(cast_id):
                             cloud_delete(cast.image_filename, 'casts')
                         cast.image_filename = new_filename
         
+        # タグ処理
+        for category in CastTag.CATEGORIES:
+            tag_values = request.form.get(f'tags_{category}', '').strip()
+            tag_names = [t.strip() for t in tag_values.split(',') if t.strip()] if tag_values else []
+            CastTag.set_tags(cast.id, category, tag_names)
+        
+        # 追加画像（ギャラリー）処理
+        gallery_files = request.files.getlist('gallery_images')
+        existing_count = CastImage.query.filter_by(cast_id=cast.id).count()
+        for idx, gfile in enumerate(gallery_files):
+            if gfile and gfile.filename:
+                try:
+                    optimized_data, fmt = resize_and_optimize_image(gfile)
+                    if optimized_data:
+                        result = cloud_upload(optimized_data, 'casts', filename_prefix=f"cast_{shop.id}_g{existing_count + idx}_")
+                        if result:
+                            img = CastImage(cast_id=cast.id, filename=result['filename'], sort_order=existing_count + idx)
+                            db.session.add(img)
+                except Exception as e:
+                    current_app.logger.error(f"Cast gallery image upload failed: {e}")
+        
+        # ギャラリー画像削除処理
+        delete_image_ids = request.form.getlist('delete_gallery_image')
+        for img_id in delete_image_ids:
+            try:
+                img = CastImage.query.get(int(img_id))
+                if img and img.cast_id == cast.id:
+                    cloud_delete(img.filename, 'casts')
+                    db.session.delete(img)
+            except (ValueError, Exception) as e:
+                current_app.logger.error(f"Gallery image delete failed: {e}")
+        
+        # 誕生日処理（一括再設定）
+        CastBirthday.query.filter_by(cast_id=cast.id).delete()
+        birthday_entries = request.form.getlist('birthday_date')
+        birthday_labels = request.form.getlist('birthday_label')
+        for i, bd in enumerate(birthday_entries):
+            if bd:
+                try:
+                    parts = bd.split('-')
+                    month = int(parts[0]) if len(parts) == 2 else int(parts[1])
+                    day = int(parts[1]) if len(parts) == 2 else int(parts[2])
+                    label = birthday_labels[i].strip() if i < len(birthday_labels) else ''
+                    cb = CastBirthday(cast_id=cast.id, birthday_month=month, birthday_day=day, label=label or None)
+                    db.session.add(cb)
+                except (ValueError, IndexError):
+                    pass
+        
         db.session.commit()
         
         flash(f'キャスト「{cast.name_display}」を更新しました。', 'success')
         return redirect(url_for('shop_admin.casts'))
     
-    return render_template('shop_admin/cast_form.html', shop=shop, cast=cast)
+    # 既存タグを取得
+    existing_tags = CastTag.get_tags_by_cast(cast.id) if cast else {}
+    existing_birthdays = CastBirthday.get_birthdays(cast.id) if cast else []
+    gallery = CastImage.get_gallery(cast.id) if cast else []
+    
+    return render_template('shop_admin/cast_form.html', shop=shop, cast=cast,
+                           preset_tags=CastTag.PRESET_TAGS, tag_categories=CastTag.CATEGORIES,
+                           tag_category_labels=CastTag.CATEGORY_LABELS,
+                           existing_tags=existing_tags, existing_birthdays=existing_birthdays,
+                           gallery=gallery)
 
 
 @shop_admin_bp.route('/casts/<int:cast_id>/delete', methods=['POST'])

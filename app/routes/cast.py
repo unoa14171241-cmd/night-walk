@@ -3,11 +3,16 @@ Night-Walk MVP - Cast Routes (キャスト用)
 キャストが自分のスマホから情報を更新できる機能
 """
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request, session, g
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session, g, current_app
 from ..extensions import db
 from ..models.gift import Cast
 from ..models.audit import AuditLog
+from ..models.cast_tag import CastTag
+from ..models.cast_image import CastImage
+from ..models.cast_birthday import CastBirthday
 from ..utils.logger import audit_log
+from ..services.image_service import resize_and_optimize_image
+from ..services.storage_service import upload_image as cloud_upload, delete_image as cloud_delete
 
 cast_bp = Blueprint('cast', __name__)
 
@@ -130,4 +135,90 @@ def update_status():
 def profile():
     """自分のプロフィール確認"""
     cast = g.current_cast
-    return render_template('cast/profile.html', cast=cast)
+    existing_tags = CastTag.get_tags_by_cast(cast.id)
+    existing_birthdays = CastBirthday.get_birthdays(cast.id)
+    gallery = CastImage.get_gallery(cast.id)
+    return render_template('cast/profile.html', cast=cast,
+                           existing_tags=existing_tags,
+                           existing_birthdays=existing_birthdays,
+                           gallery=gallery)
+
+
+@cast_bp.route('/edit-profile', methods=['GET', 'POST'])
+@cast_login_required
+def edit_profile():
+    """キャスト自身のプロフィール編集"""
+    cast = g.current_cast
+    
+    if request.method == 'POST':
+        cast.profile = request.form.get('profile', '').strip()
+        cast.twitter_url = request.form.get('twitter_url', '').strip() or None
+        cast.instagram_url = request.form.get('instagram_url', '').strip() or None
+        cast.tiktok_url = request.form.get('tiktok_url', '').strip() or None
+        cast.video_url = request.form.get('video_url', '').strip() or None
+        cast.gift_appeal = request.form.get('gift_appeal', '').strip() or None
+        cast.updated_at = datetime.utcnow()
+        
+        # タグ処理
+        for category in CastTag.CATEGORIES:
+            tag_values = request.form.get(f'tags_{category}', '').strip()
+            tag_names = [t.strip() for t in tag_values.split(',') if t.strip()] if tag_values else []
+            CastTag.set_tags(cast.id, category, tag_names)
+        
+        # ギャラリー画像追加
+        gallery_files = request.files.getlist('gallery_images')
+        existing_count = CastImage.query.filter_by(cast_id=cast.id).count()
+        for idx, gfile in enumerate(gallery_files):
+            if gfile and gfile.filename:
+                try:
+                    optimized_data, fmt = resize_and_optimize_image(gfile)
+                    if optimized_data:
+                        result = cloud_upload(optimized_data, 'casts', filename_prefix=f"cast_{cast.shop_id}_g{existing_count + idx}_")
+                        if result:
+                            img = CastImage(cast_id=cast.id, filename=result['filename'], sort_order=existing_count + idx)
+                            db.session.add(img)
+                except Exception as e:
+                    current_app.logger.error(f"Cast gallery image upload failed: {e}")
+        
+        # ギャラリー画像削除
+        delete_image_ids = request.form.getlist('delete_gallery_image')
+        for img_id in delete_image_ids:
+            try:
+                img = CastImage.query.get(int(img_id))
+                if img and img.cast_id == cast.id:
+                    cloud_delete(img.filename, 'casts')
+                    db.session.delete(img)
+            except (ValueError, Exception) as e:
+                current_app.logger.error(f"Gallery image delete failed: {e}")
+        
+        # 誕生日処理
+        CastBirthday.query.filter_by(cast_id=cast.id).delete()
+        birthday_entries = request.form.getlist('birthday_date')
+        birthday_labels = request.form.getlist('birthday_label')
+        for i, bd in enumerate(birthday_entries):
+            if bd:
+                try:
+                    parts = bd.split('-')
+                    month = int(parts[0]) if len(parts) == 2 else int(parts[1])
+                    day = int(parts[1]) if len(parts) == 2 else int(parts[2])
+                    label = birthday_labels[i].strip() if i < len(birthday_labels) else ''
+                    cb = CastBirthday(cast_id=cast.id, birthday_month=month, birthday_day=day, label=label or None)
+                    db.session.add(cb)
+                except (ValueError, IndexError):
+                    pass
+        
+        db.session.commit()
+        
+        audit_log('cast.profile_update', 'cast', cast.id)
+        flash('プロフィールを更新しました', 'success')
+        return redirect(url_for('cast.profile'))
+    
+    existing_tags = CastTag.get_tags_by_cast(cast.id)
+    existing_birthdays = CastBirthday.get_birthdays(cast.id)
+    gallery = CastImage.get_gallery(cast.id)
+    
+    return render_template('cast/edit_profile.html', cast=cast,
+                           preset_tags=CastTag.PRESET_TAGS, tag_categories=CastTag.CATEGORIES,
+                           tag_category_labels=CastTag.CATEGORY_LABELS,
+                           existing_tags=existing_tags, existing_birthdays=existing_birthdays,
+                           gallery=gallery)

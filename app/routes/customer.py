@@ -423,6 +423,10 @@ def purchase_success():
 @customer_bp.route('/cast/<int:cast_id>')
 def cast_detail(cast_id):
     """キャスト詳細・ギフト送信ページ"""
+    from ..models.cast_tag import CastTag
+    from ..models.cast_image import CastImage
+    from ..models.cast_birthday import CastBirthday
+    
     cast = Cast.query.get_or_404(cast_id)
     
     if not cast.is_active:
@@ -430,8 +434,14 @@ def cast_detail(cast_id):
         return redirect(url_for('public.shop_detail', shop_id=cast.shop_id))
     
     gifts = Gift.get_active_gifts()
+    cast_tags = CastTag.get_tags_by_cast(cast_id)
+    gallery = CastImage.get_gallery(cast_id)
+    birthdays = CastBirthday.get_birthdays(cast_id)
     
-    return render_template('customer/cast_detail.html', cast=cast, gifts=gifts)
+    return render_template('customer/cast_detail.html', cast=cast, gifts=gifts,
+                           cast_tags=cast_tags, gallery=gallery, birthdays=birthdays,
+                           tag_category_labels=CastTag.CATEGORY_LABELS,
+                           tag_category_icons=CastTag.CATEGORY_ICONS)
 
 
 @customer_bp.route('/cast/<int:cast_id>/gift', methods=['POST'])
