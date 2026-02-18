@@ -300,8 +300,7 @@ def delete_shop(shop_id):
         # 3. ギフト取引（GiftTransaction）削除
         GiftTransaction.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
         
-        # 4. ギフト（Gift）削除
-        Gift.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        # 4. ギフト（Gift）はグローバル定義（shop_idなし）のため削除不要
         
         # 5. 手数料（Commission）削除
         Commission.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
@@ -326,10 +325,10 @@ def delete_shop(shop_id):
         ContentReport.query.filter_by(shop_id=shop_id).update({ContentReport.shop_id: None}, synchronize_session=False)
         DemoAccount.query.filter_by(shop_id=shop_id).update({DemoAccount.shop_id: None}, synchronize_session=False)
         
-        # 11. 紹介コード（Referral）
-        from ..models.referral import Referral
-        Referral.query.filter_by(referrer_shop_id=shop_id).delete(synchronize_session=False)
-        Referral.query.filter_by(referred_shop_id=shop_id).update({Referral.referred_shop_id: None}, synchronize_session=False)
+        # 11. 紹介コード（ShopReferral）
+        from ..models.referral import ShopReferral
+        ShopReferral.query.filter_by(referrer_shop_id=shop_id).delete(synchronize_session=False)
+        ShopReferral.query.filter_by(referred_shop_id=shop_id).update({ShopReferral.referred_shop_id: None}, synchronize_session=False)
         
         # 12. キャスト関連のランキング・PV等（CASCADEがあるが念のため）
         from ..models.ranking import CastPageView, CastMonthlyRanking, CastBadgeHistory
@@ -343,6 +342,13 @@ def delete_shop(shop_id):
             from ..models.cast_shift import CastShift, ShiftTemplate
             CastShift.query.filter(CastShift.cast_id.in_(cast_ids)).delete(synchronize_session=False)
             ShiftTemplate.query.filter(ShiftTemplate.cast_id.in_(cast_ids)).delete(synchronize_session=False)
+            # キャストプロフィール拡張データ
+            from ..models.cast_tag import CastTag
+            from ..models.cast_image import CastImage
+            from ..models.cast_birthday import CastBirthday
+            CastTag.query.filter(CastTag.cast_id.in_(cast_ids)).delete(synchronize_session=False)
+            CastImage.query.filter(CastImage.cast_id.in_(cast_ids)).delete(synchronize_session=False)
+            CastBirthday.query.filter(CastBirthday.cast_id.in_(cast_ids)).delete(synchronize_session=False)
         
         # 13. キャスト（Cast）削除
         Cast.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
