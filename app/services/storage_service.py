@@ -54,7 +54,8 @@ def upload_image(file_data, folder, filename_prefix='', optimize=True):
 def _upload_to_db(file_data, folder, filename_prefix=''):
     """PostgreSQLにバイナリとして保存 (永続化のため)"""
     try:
-        from ..models import ImageStore, db
+        from ..models import ImageStore
+        from ..extensions import db
         import mimetypes
         
         unique_id = uuid.uuid4().hex[:8]
@@ -200,7 +201,8 @@ def delete_image(filename, folder):
 def _delete_from_db(filename):
     """DBから削除"""
     try:
-        from ..models import ImageStore, db
+        from ..models import ImageStore
+        from ..extensions import db
         if ImageStore.delete_image(filename):
             db.session.commit()
             current_app.logger.info(f"Database image deleted: {filename}")
