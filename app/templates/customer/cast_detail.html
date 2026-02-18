@@ -108,7 +108,7 @@
                         
                         {% if current_user.point_balance >= gift.points %}
                         <button type="button" class="btn btn-primary btn-block" 
-                                onclick="openGiftModal({{ gift.id }}, '{{ gift.name }}', {{ gift.points }})">
+                                onclick="openGiftModal({{ gift.id }}, '{{ gift.name | replace("'", "\\'") }}', {{ gift.points }})">
                             送る
                         </button>
                         {% else %}
