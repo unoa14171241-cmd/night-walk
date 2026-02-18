@@ -99,7 +99,7 @@ class Advertisement(db.Model):
     
     @property
     def display_image_url(self):
-        """Get the image URL for display (cloud or local)."""
+        """Get the image URL for display (cloud, database, or local)."""
         if self.image_filename:
             # Cloudinary public_id形式
             if self.image_filename.startswith('night-walk/') or self.image_filename.startswith('http'):
@@ -109,6 +109,9 @@ class Advertisement(db.Model):
                 cloud_name = current_app.config.get('CLOUDINARY_CLOUD_NAME')
                 if cloud_name:
                     return f"https://res.cloudinary.com/{cloud_name}/image/upload/{self.image_filename}"
+            # DB保存形式 (folder/file.ext) → /images_db/ ルートで配信
+            if '/' in self.image_filename:
+                return f'/images_db/{self.image_filename}'
             return f'/static/uploads/ads/{self.image_filename}'
         return self.image_url
     

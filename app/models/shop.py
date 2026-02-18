@@ -512,7 +512,7 @@ class ShopImage(db.Model):
     
     @property
     def url(self):
-        """Get image URL for display (cloud or local)."""
+        """Get image URL for display (cloud, database, or local)."""
         if not self.filename:
             return None
         # Cloudinary public_id形式
@@ -523,6 +523,9 @@ class ShopImage(db.Model):
             cloud_name = current_app.config.get('CLOUDINARY_CLOUD_NAME')
             if cloud_name:
                 return f"https://res.cloudinary.com/{cloud_name}/image/upload/{self.filename}"
+        # DB保存形式 (folder/file.ext) → /images_db/ ルートで配信
+        if '/' in self.filename:
+            return f'/images_db/{self.filename}'
         return f'/static/uploads/shops/{self.filename}'
     
     @property
