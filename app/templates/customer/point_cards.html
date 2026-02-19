@@ -3,17 +3,13 @@
 {% block title %}ポイントカード - Night-Walk{% endblock %}
 
 {% block content %}
-<div class="container">
- <h1 class="page-title"> ポイントカード</h1>
- 
- <p class="text-muted mb-4">
- 来店時にポイントが貯まります。貯めたポイントは各店舗で特典と交換できます。
- </p>
+<div class="container wallet-container">
+ <h1 class="page-title">ウォレット</h1>
  
  <!-- 有効な特典があれば表示 -->
  {% if rewards %}
  <div class="rewards-section mb-4">
- <h3> 交換済み特典</h3>
+ <h3>交換済み特典</h3>
  <div class="rewards-list">
  {% for reward in rewards %}
  <div class="reward-card">
@@ -28,46 +24,55 @@
  </div>
  {% endif %}
  
- <!-- ポイントカード一覧 -->
+ <!-- ウォレット風カードスタック -->
  {% if cards %}
- <div class="card-grid">
+ <div class="wallet-stack" id="walletStack">
  {% for card in cards %}
- <a href="{{ url_for('customer.point_card_detail', shop_id=card.shop_id) }}" class="point-card-item">
- {% if card.shop.point_card and card.shop.point_card.card_image_url %}
- <div class="point-card-header point-card-header-image" style="background-image: url('{{ get_image_url(card.shop.point_card.card_image_url, 'point_cards') }}');">
- {% else %}
- <div class="point-card-header" style="background: {{ card.shop.point_card.card_color if card.shop.point_card else '#6366f1' }};">
- {% endif %}
- <div class="shop-name">{{ card.shop.name }}</div>
- <div class="d-flex justify-between align-center">
- <div class="visit-count">{{ card.visit_count }}回来店</div>
+ <a href="{{ url_for('customer.point_card_detail', shop_id=card.shop_id) }}" 
+ class="wallet-card" 
+ style="--card-index: {{ loop.index0 }}; --card-total: {{ cards|length }}; {% if card.shop.point_card and card.shop.point_card.card_image_url %}--card-bg: url('{{ get_image_url(card.shop.point_card.card_image_url, 'point_cards') }}');{% else %}--card-bg: linear-gradient(135deg, {{ card.shop.point_card.card_color if card.shop.point_card else '#6366f1' }}, {{ card.shop.point_card.card_color if card.shop.point_card else '#6366f1' }}dd);{% endif %}">
+ <div class="wallet-card-inner">
+ <!-- カードヘッダー（常に見える部分） -->
+ <div class="wallet-card-top">
+ <div class="wallet-card-top-left">
+ <div class="wallet-shop-name">{{ card.shop.name }}</div>
+ <div class="wallet-card-label">{{ card.shop.point_card.card_name if card.shop.point_card else 'ポイントカード' }}</div>
+ </div>
+ <div class="wallet-card-top-right">
  {% if rank_map.get(card.shop_id) %}
- <div class="rank-badge-mini">
- {{ rank_map[card.shop_id].rank_icon }} {{ rank_map[card.shop_id].rank_name }}
+ <div class="wallet-rank-badge">
+ {{ rank_map[card.shop_id].rank_name }}
  </div>
  {% endif %}
  </div>
  </div>
- <div class="point-card-body">
- <div class="point-balance">
- <span class="point-value">{{ '{:,}'.format(card.point_balance) }}</span>
- <span class="point-label">pt</span>
+ 
+ <!-- カード本体（展開時に見える部分） -->
+ <div class="wallet-card-content">
+ <div class="wallet-points">
+ <span class="wallet-points-value">{{ '{:,}'.format(card.point_balance) }}</span>
+ <span class="wallet-points-unit">pt</span>
  </div>
+ <div class="wallet-card-footer">
+ <div class="wallet-visits">{{ card.visit_count }}回来店</div>
  {% if card.shop.point_card and card.shop.point_card.reward_threshold > 0 %}
- <div class="progress-bar-container">
- <div class="progress-bar" style="width: {{ card.progress_to_reward }}%;"></div>
+ <div class="wallet-progress-wrap">
+ <div class="wallet-progress-bar">
+ <div class="wallet-progress-fill" style="width: {{ card.progress_to_reward }}%;"></div>
  </div>
- <div class="progress-text">
- 特典まであと {{ '{:,}'.format(card.shop.point_card.reward_threshold - card.point_balance) }}pt
+ <div class="wallet-progress-text">
+ 特典まで {{ '{:,}'.format(card.shop.point_card.reward_threshold - card.point_balance) }}pt
+ </div>
  </div>
  {% endif %}
+ </div>
+ </div>
  </div>
  </a>
  {% endfor %}
  </div>
  {% else %}
  <div class="empty-state">
- <div class="empty-icon"></div>
  <p>まだポイントカードがありません</p>
  <p class="text-muted">店舗で来店ポイントを獲得すると、<br>自動的にカードが作成されます。</p>
  <a href="{{ url_for('public.index') }}" class="btn btn-primary">店舗を探す</a>
@@ -76,19 +81,206 @@
 </div>
 
 <style>
+.wallet-container {
+ max-width: 420px;
+ margin: 0 auto;
+ padding-bottom: 2rem;
+}
+
 .page-title {
+ font-size: 1.75rem;
+ font-weight: 700;
+ margin-bottom: 1.25rem;
+}
+
+/* ========== ウォレットスタック ========== */
+.wallet-stack {
+ position: relative;
+ perspective: 1200px;
+ padding-bottom: 1rem;
+}
+
+.wallet-card {
+ display: block;
+ text-decoration: none;
+ color: #fff;
+ position: relative;
+ width: 100%;
+ min-height: 200px;
+ border-radius: 16px;
+ overflow: hidden;
+ box-shadow: 
+ 0 2px 8px rgba(0, 0, 0, 0.15),
+ 0 8px 24px rgba(0, 0, 0, 0.1);
+ transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+ margin-top 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+ box-shadow 0.3s ease;
+ z-index: calc(var(--card-total) - var(--card-index));
+}
+
+/* スタック時の重なり（2枚目以降は上のカードに被る） */
+.wallet-card:not(:first-child) {
+ margin-top: -140px;
+}
+
+/* 背景 */
+.wallet-card-inner {
+ position: relative;
+ min-height: 200px;
+ padding: 1.25rem;
+ display: flex;
+ flex-direction: column;
+ justify-content: space-between;
+ background: var(--card-bg);
+ background-size: cover;
+ background-position: center;
+}
+
+/* 画像背景の場合のオーバーレイ */
+.wallet-card-inner::before {
+ content: '';
+ position: absolute;
+ inset: 0;
+ background: linear-gradient(
+ 180deg, 
+ rgba(0, 0, 0, 0.25) 0%, 
+ rgba(0, 0, 0, 0.05) 40%,
+ rgba(0, 0, 0, 0.35) 100%
+ );
+ z-index: 0;
+}
+
+.wallet-card-inner > * {
+ position: relative;
+ z-index: 1;
+}
+
+/* ---- カード上部（常に見える） ---- */
+.wallet-card-top {
+ display: flex;
+ justify-content: space-between;
+ align-items: flex-start;
+}
+
+.wallet-shop-name {
+ font-size: 1.1rem;
+ font-weight: 700;
+ letter-spacing: 0.02em;
+ text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.wallet-card-label {
+ font-size: 0.75rem;
+ opacity: 0.85;
+ margin-top: 2px;
+ text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.wallet-rank-badge {
+ background: rgba(255, 255, 255, 0.25);
+ backdrop-filter: blur(8px);
+ -webkit-backdrop-filter: blur(8px);
+ padding: 0.2rem 0.65rem;
+ border-radius: 1rem;
+ font-size: 0.75rem;
+ font-weight: 600;
+ white-space: nowrap;
+ border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* ---- カード本体 ---- */
+.wallet-card-content {
+ margin-top: auto;
+}
+
+.wallet-points {
  margin-bottom: 0.5rem;
 }
 
+.wallet-points-value {
+ font-size: 2.5rem;
+ font-weight: 700;
+ letter-spacing: -0.02em;
+ text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.wallet-points-unit {
+ font-size: 1rem;
+ opacity: 0.85;
+ margin-left: 2px;
+}
+
+.wallet-card-footer {
+ display: flex;
+ justify-content: space-between;
+ align-items: flex-end;
+}
+
+.wallet-visits {
+ font-size: 0.8rem;
+ opacity: 0.85;
+ background: rgba(255, 255, 255, 0.15);
+ padding: 0.15rem 0.5rem;
+ border-radius: 0.5rem;
+}
+
+.wallet-progress-wrap {
+ text-align: right;
+ flex: 1;
+ max-width: 160px;
+ margin-left: 0.75rem;
+}
+
+.wallet-progress-bar {
+ height: 5px;
+ background: rgba(255, 255, 255, 0.25);
+ border-radius: 3px;
+ overflow: hidden;
+ margin-bottom: 3px;
+}
+
+.wallet-progress-fill {
+ height: 100%;
+ background: rgba(255, 255, 255, 0.9);
+ border-radius: 3px;
+ transition: width 0.6s ease;
+}
+
+.wallet-progress-text {
+ font-size: 0.7rem;
+ opacity: 0.8;
+}
+
+/* ========== ホバー/タッチ展開 ========== */
+.wallet-stack:hover .wallet-card:not(:first-child),
+.wallet-stack.expanded .wallet-card:not(:first-child) {
+ margin-top: -80px;
+}
+
+.wallet-card:hover {
+ transform: translateY(-8px) scale(1.01);
+ box-shadow: 
+ 0 4px 16px rgba(0, 0, 0, 0.2),
+ 0 12px 40px rgba(0, 0, 0, 0.15);
+ z-index: 100;
+}
+
+/* タップでさらに開く */
+.wallet-stack.fan-out .wallet-card:not(:first-child) {
+ margin-top: -40px;
+}
+
+/* ========== 特典セクション ========== */
 .rewards-section {
  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(236, 72, 153, 0.1));
- border-radius: var(--radius-lg);
+ border-radius: 16px;
  padding: 1rem;
 }
 
 .rewards-section h3 {
- font-size: 1rem;
- margin-bottom: 1rem;
+ font-size: 0.9rem;
+ margin-bottom: 0.75rem;
+ font-weight: 600;
 }
 
 .rewards-list {
@@ -99,18 +291,20 @@
 
 .reward-card {
  background: var(--color-bg);
- border-radius: var(--radius);
+ border-radius: 12px;
  padding: 0.75rem;
 }
 
 .reward-shop {
  font-weight: 600;
  margin-bottom: 0.25rem;
+ font-size: 0.9rem;
 }
 
 .reward-description {
  color: #f59e0b;
  font-weight: 500;
+ font-size: 0.85rem;
 }
 
 .reward-expires {
@@ -119,122 +313,57 @@
  margin-top: 0.25rem;
 }
 
-.card-grid {
- display: grid;
- grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
- gap: 1rem;
-}
-
-.point-card-item {
- text-decoration: none;
- color: inherit;
- background: var(--color-bg-elevated);
- border-radius: var(--radius-lg);
- overflow: hidden;
- transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.point-card-item:hover {
- transform: translateY(-2px);
- box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-}
-
-.point-card-header {
- padding: 1rem;
- color: #fff;
-}
-
-.point-card-header-image {
- background-size: cover;
- background-position: center;
- position: relative;
-}
-
-.point-card-header-image::before {
- content: '';
- position: absolute;
- inset: 0;
- background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%);
-}
-
-.point-card-header-image > * {
- position: relative;
- z-index: 1;
-}
-
-.point-card-header .shop-name {
- font-weight: 600;
- font-size: 1.1rem;
- margin-bottom: 0.25rem;
-}
-
-.point-card-header .visit-count {
- font-size: 0.85rem;
- opacity: 0.9;
-}
-
-.rank-badge-mini {
- background: rgba(255,255,255,0.25);
- padding: 0.15rem 0.6rem;
- border-radius: 1rem;
- font-size: 0.8rem;
- font-weight: 600;
- white-space: nowrap;
-}
-
-.point-card-body {
- padding: 1rem;
-}
-
-.point-balance {
- text-align: center;
- margin-bottom: 0.75rem;
-}
-
-.point-balance .point-value {
- font-size: 2rem;
- font-weight: 700;
- color: var(--color-primary);
-}
-
-.point-balance .point-label {
- font-size: 1rem;
- color: var(--color-text-muted);
-}
-
-.progress-bar-container {
- height: 8px;
- background: var(--color-bg);
- border-radius: 4px;
- overflow: hidden;
- margin-bottom: 0.5rem;
-}
-
-.progress-bar {
- height: 100%;
- background: linear-gradient(90deg, #f59e0b, #ec4899);
- border-radius: 4px;
- transition: width 0.5s ease;
-}
-
-.progress-text {
- font-size: 0.8rem;
- color: var(--color-text-muted);
- text-align: center;
-}
-
+/* ========== 空状態 ========== */
 .empty-state {
  text-align: center;
- padding: 3rem 1rem;
-}
-
-.empty-icon {
- font-size: 4rem;
- margin-bottom: 1rem;
+ padding: 4rem 1rem;
 }
 
 .empty-state p {
  margin-bottom: 0.5rem;
 }
+
+/* ========== モバイル調整 ========== */
+@media (max-width: 480px) {
+ .wallet-card {
+ min-height: 180px;
+ border-radius: 14px;
+ }
+ 
+ .wallet-card:not(:first-child) {
+ margin-top: -120px;
+ }
+ 
+ .wallet-stack:hover .wallet-card:not(:first-child),
+ .wallet-stack.expanded .wallet-card:not(:first-child) {
+ margin-top: -70px;
+ }
+ 
+ .wallet-points-value {
+ font-size: 2.2rem;
+ }
+ 
+ .wallet-card-inner {
+ padding: 1rem;
+ min-height: 180px;
+ }
+}
 </style>
+
+<script>
+// タッチデバイスでスタックをタップして展開
+document.addEventListener('DOMContentLoaded', function() {
+ var stack = document.getElementById('walletStack');
+ if (!stack) return;
+ 
+ // モバイルでスタック領域をタップすると展開/収縮
+ var expanded = false;
+ stack.addEventListener('click', function(e) {
+ // リンククリックは通常どおり遷移
+ if (e.target.closest('.wallet-card')) return;
+ expanded = !expanded;
+ stack.classList.toggle('fan-out', expanded);
+ });
+});
+</script>
 {% endblock %}
