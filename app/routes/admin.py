@@ -358,8 +358,58 @@ def delete_shop(shop_id):
         CustomerShopRank.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
         ShopPointRank.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
         
-        # 14. 店舗本体を削除（CASCADE: ShopImage, VacancyStatus, VacancyHistory, 
-        #     ShopMember, Job, Subscription, CommissionRate, StorePlan, etc.）
+        # 14. 店舗ページビュー・月次ランキング・トレンド削除
+        from ..models.shop_ranking import ShopPageView, ShopMonthlyRanking, TrendingShop
+        ShopPageView.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        ShopMonthlyRanking.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        TrendingShop.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 15. ポイントカード関連削除
+        from ..models.shop_point import ShopPointCard, CustomerShopPoint, ShopPointTransaction, ShopPointReward
+        ShopPointReward.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        ShopPointTransaction.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        CustomerShopPoint.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        ShopPointCard.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 16. 口コミ・評価削除
+        from ..models.review import ShopReview, ShopReviewScore
+        ShopReview.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        ShopReviewScore.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 17. 広告エンタイトルメント削除（target_idで店舗を参照）
+        from ..models.ad_entitlement import AdEntitlement
+        AdEntitlement.query.filter_by(target_type='shop', target_id=shop_id).delete(synchronize_session=False)
+        
+        # 18. ストアプラン・プラン履歴削除
+        from ..models.store_plan import StorePlan, StorePlanHistory
+        StorePlanHistory.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        StorePlan.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 19. Subscription・BillingEvent削除
+        from ..models.billing import Subscription, BillingEvent
+        BillingEvent.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        Subscription.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 20. CommissionRate削除
+        from ..models.commission import CommissionRate
+        CommissionRate.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 21. VacancyStatus・VacancyHistory・ShopImage・ShopMember・Job削除
+        from ..models.shop import VacancyStatus, VacancyHistory, ShopImage
+        VacancyHistory.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        VacancyStatus.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        ShopImage.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        from ..models.user import ShopMember
+        ShopMember.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        from ..models.job import Job
+        Job.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 22. CastShift・ShiftTemplate（shop_id直接）削除
+        from ..models.cast_shift import CastShift, ShiftTemplate
+        CastShift.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        ShiftTemplate.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
+        # 23. 店舗本体を削除
         db.session.delete(shop)
         db.session.commit()
         
