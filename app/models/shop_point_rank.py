@@ -23,7 +23,7 @@ class ShopPointRank(db.Model):
 
     # デザイン
     rank_color = db.Column(db.String(20), default='#6366f1')
-    rank_icon = db.Column(db.String(10), default='⭐')
+    rank_icon = db.Column(db.String(10), default='')
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -43,7 +43,7 @@ class ShopPointRank(db.Model):
             'rank_level': 1,
             'min_total_points': 500,
             'point_multiplier': 1.0,
-            'rank_icon': '🥉',
+            'rank_icon': '',
             'rank_color': '#CD7F32',
             'bonus_description': '',
         },
@@ -52,7 +52,7 @@ class ShopPointRank(db.Model):
             'rank_level': 2,
             'min_total_points': 2000,
             'point_multiplier': 1.2,
-            'rank_icon': '🥈',
+            'rank_icon': '',
             'rank_color': '#C0C0C0',
             'bonus_description': 'ポイント1.2倍',
         },
@@ -61,7 +61,7 @@ class ShopPointRank(db.Model):
             'rank_level': 3,
             'min_total_points': 5000,
             'point_multiplier': 1.5,
-            'rank_icon': '🥇',
+            'rank_icon': '',
             'rank_color': '#FFD700',
             'bonus_description': 'ポイント1.5倍',
         },
@@ -70,7 +70,7 @@ class ShopPointRank(db.Model):
             'rank_level': 4,
             'min_total_points': 10000,
             'point_multiplier': 2.0,
-            'rank_icon': '💎',
+            'rank_icon': '',
             'rank_color': '#E5E4E2',
             'bonus_description': 'ポイント2倍',
         },

@@ -4,200 +4,200 @@
 
 {% block content %}
 <div class="admin-layout">
-    {% include "admin/_sidebar.html" %}
-    
-    <div class="admin-content">
-        <div class="d-flex justify-between align-center mb-4">
-            <h1 class="mb-0">送客手数料明細</h1>
-            <a href="{{ url_for('admin.new_commission') }}" class="btn btn-primary">
-                + 手動登録
-            </a>
-        </div>
-        
-        <!-- Filters -->
-        <div class="card mb-4">
-            <form method="GET" class="filter-form">
-                <div class="filter-grid">
-                    <div class="filter-item">
-                        <label>店舗</label>
-                        <select name="shop_id" class="form-control" onchange="this.form.submit()">
-                            <option value="">すべて</option>
-                            {% for shop in shops %}
-                            <option value="{{ shop.id }}" {% if selected_shop == shop.id %}selected{% endif %}>
-                                {{ shop.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="filter-item">
-                        <label>年</label>
-                        <select name="year" class="form-control" onchange="this.form.submit()">
-                            {% for y in range(2024, 2030) %}
-                            <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>
-                                {{ y }}年
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="filter-item">
-                        <label>月</label>
-                        <select name="month" class="form-control" onchange="this.form.submit()">
-                            <option value="">すべて</option>
-                            {% for m in range(1, 13) %}
-                            <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>
-                                {{ m }}月
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="filter-item">
-                        <label>ステータス</label>
-                        <select name="status" class="form-control" onchange="this.form.submit()">
-                            <option value="">すべて</option>
-                            {% for key, label in statuses.items() %}
-                            <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>
-                                {{ label }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-            </form>
-        </div>
-        
-        <!-- Summary -->
-        <div class="summary-cards mb-4">
-            <div class="summary-card">
-                <span class="summary-label">件数</span>
-                <span class="summary-value">{{ total_count }}件</span>
-            </div>
-            <div class="summary-card">
-                <span class="summary-label">合計金額</span>
-                <span class="summary-value text-primary">¥{{ "{:,}".format(total_amount) }}</span>
-            </div>
-        </div>
-        
-        <!-- Commission List -->
-        <div class="card">
-            {% if commissions %}
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>来店日</th>
-                            <th>店舗</th>
-                            <th>送客元</th>
-                            <th>人数</th>
-                            <th>手数料</th>
-                            <th>ステータス</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for commission in commissions %}
-                        <tr>
-                            <td>{{ commission.visit_date.strftime('%Y/%m/%d') }}</td>
-                            <td>{{ commission.shop.name }}</td>
-                            <td>{{ sources.get(commission.source, commission.source) }}</td>
-                            <td>{{ commission.guest_count }}名</td>
-                            <td><strong>¥{{ "{:,}".format(commission.commission_amount) }}</strong></td>
-                            <td>
-                                {% if commission.status == 'pending' %}
-                                <span class="badge badge-warning">{{ commission.status_label }}</span>
-                                {% elif commission.status == 'confirmed' %}
-                                <span class="badge badge-success">{{ commission.status_label }}</span>
-                                {% elif commission.status == 'cancelled' %}
-                                <span class="badge" style="background: var(--color-bg-elevated);">{{ commission.status_label }}</span>
-                                {% elif commission.status == 'paid' %}
-                                <span class="badge badge-info">{{ commission.status_label }}</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="d-flex gap-1">
-                                    {% if commission.status == 'pending' %}
-                                    <form method="POST" action="{{ url_for('admin.confirm_commission', id=commission.id) }}" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm btn-success" title="確定">
-                                            済
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                    {% if commission.status in ['pending', 'confirmed'] %}
-                                    <form method="POST" action="{{ url_for('admin.cancel_commission', id=commission.id) }}" 
-                                          style="display: inline;"
-                                          onsubmit="return confirm('キャンセルしますか？')">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm btn-secondary" title="キャンセル">
-                                            ✕
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                    <form method="POST" action="{{ url_for('admin.delete_commission', id=commission.id) }}" 
-                                          style="display: inline;"
-                                          onsubmit="return confirm('削除しますか？この操作は取り消せません。')">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm btn-danger" title="削除">
-                                            🗑
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <p class="text-muted text-center">手数料明細がありません</p>
-            {% endif %}
-        </div>
-    </div>
+ {% include "admin/_sidebar.html" %}
+ 
+ <div class="admin-content">
+ <div class="d-flex justify-between align-center mb-4">
+ <h1 class="mb-0">送客手数料明細</h1>
+ <a href="{{ url_for('admin.new_commission') }}" class="btn btn-primary">
+ + 手動登録
+ </a>
+ </div>
+ 
+ <!-- Filters -->
+ <div class="card mb-4">
+ <form method="GET" class="filter-form">
+ <div class="filter-grid">
+ <div class="filter-item">
+ <label>店舗</label>
+ <select name="shop_id" class="form-control" onchange="this.form.submit()">
+ <option value="">すべて</option>
+ {% for shop in shops %}
+ <option value="{{ shop.id }}" {% if selected_shop == shop.id %}selected{% endif %}>
+ {{ shop.name }}
+ </option>
+ {% endfor %}
+ </select>
+ </div>
+ 
+ <div class="filter-item">
+ <label>年</label>
+ <select name="year" class="form-control" onchange="this.form.submit()">
+ {% for y in range(2024, 2030) %}
+ <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>
+ {{ y }}年
+ </option>
+ {% endfor %}
+ </select>
+ </div>
+ 
+ <div class="filter-item">
+ <label>月</label>
+ <select name="month" class="form-control" onchange="this.form.submit()">
+ <option value="">すべて</option>
+ {% for m in range(1, 13) %}
+ <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>
+ {{ m }}月
+ </option>
+ {% endfor %}
+ </select>
+ </div>
+ 
+ <div class="filter-item">
+ <label>ステータス</label>
+ <select name="status" class="form-control" onchange="this.form.submit()">
+ <option value="">すべて</option>
+ {% for key, label in statuses.items() %}
+ <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>
+ {{ label }}
+ </option>
+ {% endfor %}
+ </select>
+ </div>
+ </div>
+ </form>
+ </div>
+ 
+ <!-- Summary -->
+ <div class="summary-cards mb-4">
+ <div class="summary-card">
+ <span class="summary-label">件数</span>
+ <span class="summary-value">{{ total_count }}件</span>
+ </div>
+ <div class="summary-card">
+ <span class="summary-label">合計金額</span>
+ <span class="summary-value text-primary">¥{{ "{:,}".format(total_amount) }}</span>
+ </div>
+ </div>
+ 
+ <!-- Commission List -->
+ <div class="card">
+ {% if commissions %}
+ <div class="table-responsive">
+ <table class="table">
+ <thead>
+ <tr>
+ <th>来店日</th>
+ <th>店舗</th>
+ <th>送客元</th>
+ <th>人数</th>
+ <th>手数料</th>
+ <th>ステータス</th>
+ <th></th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for commission in commissions %}
+ <tr>
+ <td>{{ commission.visit_date.strftime('%Y/%m/%d') }}</td>
+ <td>{{ commission.shop.name }}</td>
+ <td>{{ sources.get(commission.source, commission.source) }}</td>
+ <td>{{ commission.guest_count }}名</td>
+ <td><strong>¥{{ "{:,}".format(commission.commission_amount) }}</strong></td>
+ <td>
+ {% if commission.status == 'pending' %}
+ <span class="badge badge-warning">{{ commission.status_label }}</span>
+ {% elif commission.status == 'confirmed' %}
+ <span class="badge badge-success">{{ commission.status_label }}</span>
+ {% elif commission.status == 'cancelled' %}
+ <span class="badge" style="background: var(--color-bg-elevated);">{{ commission.status_label }}</span>
+ {% elif commission.status == 'paid' %}
+ <span class="badge badge-info">{{ commission.status_label }}</span>
+ {% endif %}
+ </td>
+ <td>
+ <div class="d-flex gap-1">
+ {% if commission.status == 'pending' %}
+ <form method="POST" action="{{ url_for('admin.confirm_commission', id=commission.id) }}" style="display: inline;">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <button type="submit" class="btn btn-sm btn-success" title="確定">
+ 済
+ </button>
+ </form>
+ {% endif %}
+ {% if commission.status in ['pending', 'confirmed'] %}
+ <form method="POST" action="{{ url_for('admin.cancel_commission', id=commission.id) }}" 
+ style="display: inline;"
+ onsubmit="return confirm('キャンセルしますか？')">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <button type="submit" class="btn btn-sm btn-secondary" title="キャンセル">
+ 
+ </button>
+ </form>
+ {% endif %}
+ <form method="POST" action="{{ url_for('admin.delete_commission', id=commission.id) }}" 
+ style="display: inline;"
+ onsubmit="return confirm('削除しますか？この操作は取り消せません。')">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <button type="submit" class="btn btn-sm btn-danger" title="削除">
+ 
+ </button>
+ </form>
+ </div>
+ </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ {% else %}
+ <p class="text-muted text-center">手数料明細がありません</p>
+ {% endif %}
+ </div>
+ </div>
 </div>
 
 <style>
 .filter-form {
-    margin: 0;
+ margin: 0;
 }
 
 .filter-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: var(--space-md);
+ display: grid;
+ grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+ gap: var(--space-md);
 }
 
 .filter-item label {
-    display: block;
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
-    margin-bottom: var(--space-xs);
+ display: block;
+ font-size: 0.75rem;
+ color: var(--color-text-muted);
+ margin-bottom: var(--space-xs);
 }
 
 .summary-cards {
-    display: flex;
-    gap: var(--space-md);
+ display: flex;
+ gap: var(--space-md);
 }
 
 .summary-card {
-    background: var(--color-bg-card);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: var(--space-md) var(--space-lg);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xs);
+ background: var(--color-bg-card);
+ border: 1px solid var(--color-border);
+ border-radius: var(--radius-md);
+ padding: var(--space-md) var(--space-lg);
+ display: flex;
+ flex-direction: column;
+ gap: var(--space-xs);
 }
 
 .summary-label {
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
+ font-size: 0.75rem;
+ color: var(--color-text-muted);
 }
 
 .summary-value {
-    font-size: 1.5rem;
-    font-weight: 600;
+ font-size: 1.5rem;
+ font-weight: 600;
 }
 </style>
 {% endblock %}

@@ -1,467 +1,467 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Night-Walk{% endblock %}</title>
-    
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="{% block meta_description %}岡山・倉敷のナイトレジャー情報サイト。スナック、キャバクラ、ガールズバーなどの空席状況をリアルタイムで確認・予約できます。{% endblock %}">
-    {% block meta_robots %}{% if seo_noindex %}<meta name="robots" content="noindex, nofollow">{% else %}<meta name="robots" content="index, follow">{% endif %}{% endblock %}
-    {% block canonical %}{% if request %}<link rel="canonical" href="{{ request.url_root[:-1] }}{{ request.path }}">{% endif %}{% endblock %}
-    
-    <!-- OGP -->
-    <meta property="og:site_name" content="Night-Walk">
-    <meta property="og:locale" content="ja_JP">
-    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
-    <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}">
-    <meta property="og:description" content="{% block og_description %}{{ self.meta_description() }}{% endblock %}">
-    <meta property="og:url" content="{% block og_url %}{{ request.url if request else '' }}{% endblock %}">
-    <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/ogp-default.png', _external=True) }}{% endblock %}">
-    
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="{% block twitter_card %}summary_large_image{% endblock %}">
-    <meta name="twitter:title" content="{{ self.og_title() }}">
-    <meta name="twitter:description" content="{{ self.og_description() }}">
-    <meta name="twitter:image" content="{{ self.og_image() }}">
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/favicon-32.png') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
-    
-    {% block structured_data %}{% endblock %}
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
-    
-    <!-- Styles -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
-    <style>
-        /* Customer Layout */
-        .customer-layout {
-            display: flex;
-            min-height: calc(100vh - 60px - 50px);
-        }
-        
-        /* Customer Sidebar */
-        .customer-sidebar {
-            width: 240px;
-            background: linear-gradient(180deg, rgba(30, 15, 45, 0.98) 0%, rgba(20, 10, 35, 0.95) 100%);
-            padding: 1.5rem 0;
-            flex-shrink: 0;
-            border-right: 1px solid rgba(255, 215, 0, 0.2);
-        }
-        
-        .sidebar-user {
-            padding: 0 1.5rem 1.5rem;
-            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
-            margin-bottom: 1rem;
-        }
-        
-        .sidebar-user-name {
-            color: #ffd700;
-            font-weight: 600;
-            font-size: 1rem;
-            margin-bottom: 0.25rem;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-        }
-        
-        .sidebar-user-email {
-            color: rgba(255,255,255,0.5);
-            font-size: 0.75rem;
-        }
-        
-        .sidebar-points {
-            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
-            margin: 1rem 1rem 1.5rem;
-            padding: 1rem;
-            border-radius: 12px;
-            text-align: center;
-            box-shadow: 0 4px 20px rgba(236, 72, 153, 0.3);
-        }
-        
-        .sidebar-points-label {
-            color: rgba(255,255,255,0.8);
-            font-size: 0.75rem;
-            margin-bottom: 0.25rem;
-        }
-        
-        .sidebar-points-value {
-            color: #fff;
-            font-size: 1.5rem;
-            font-weight: 700;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-        
-        .sidebar-points-value span {
-            font-size: 0.875rem;
-            font-weight: 400;
-        }
-        
-        .sidebar-nav {
-            padding: 0;
-        }
-        
-        .sidebar-nav-section {
-            padding: 0.5rem 1rem;
-            color: rgba(255, 215, 0, 0.6);
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .sidebar-nav-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1.5rem;
-            color: rgba(255,255,255,0.7);
-            text-decoration: none;
-            transition: all 0.2s;
-            border-left: 3px solid transparent;
-        }
-        
-        .sidebar-nav-item:hover {
-            background: rgba(255, 215, 0, 0.1);
-            color: #ffd700;
-        }
-        
-        .sidebar-nav-item.active {
-            background: rgba(255, 215, 0, 0.15);
-            color: #ffd700;
-            border-left-color: #ffd700;
-        }
-        
-        .sidebar-nav-icon {
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.875rem;
-            color: #ec4899;
-        }
-        
-        .sidebar-nav-text {
-            font-size: 0.875rem;
-        }
-        
-        /* Customer Main Content - Dark Theme */
-        .customer-main {
-            flex: 1;
-            padding: 2rem;
-            background: linear-gradient(180deg, #1a0a25 0%, #0f0515 50%, #150820 100%);
-            overflow-y: auto;
-            position: relative;
-        }
-        
-        /* Sparkle glow effect for main content */
-        .customer-main::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(255, 215, 0, 0.15) 0%, transparent 30%),
-                radial-gradient(circle at 90% 30%, rgba(236, 72, 153, 0.12) 0%, transparent 35%),
-                radial-gradient(circle at 50% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
-                radial-gradient(circle at 20% 70%, rgba(255, 140, 0, 0.08) 0%, transparent 25%),
-                radial-gradient(circle at 80% 90%, rgba(59, 130, 246, 0.1) 0%, transparent 30%);
-            pointer-events: none;
-            z-index: 0;
-            animation: sparkle-bg 15s ease-in-out infinite alternate;
-        }
-        
-        /* Sparkle particles animation */
-        .customer-main::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                radial-gradient(2px 2px at 20px 30px, rgba(255, 215, 0, 0.8), transparent),
-                radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.6), transparent),
-                radial-gradient(2px 2px at 50px 160px, rgba(236, 72, 153, 0.7), transparent),
-                radial-gradient(2px 2px at 90px 40px, rgba(255, 215, 0, 0.6), transparent),
-                radial-gradient(2px 2px at 130px 80px, rgba(255, 255, 255, 0.5), transparent),
-                radial-gradient(2px 2px at 160px 120px, rgba(139, 92, 246, 0.6), transparent),
-                radial-gradient(3px 3px at 200px 50px, rgba(255, 215, 0, 0.9), transparent),
-                radial-gradient(2px 2px at 250px 150px, rgba(255, 255, 255, 0.7), transparent),
-                radial-gradient(2px 2px at 300px 100px, rgba(236, 72, 153, 0.6), transparent);
-            background-repeat: repeat;
-            background-size: 350px 200px;
-            pointer-events: none;
-            z-index: 0;
-            animation: sparkle-float 8s linear infinite;
-        }
-        
-        @keyframes sparkle-bg {
-            0% { opacity: 0.8; }
-            50% { opacity: 1; }
-            100% { opacity: 0.8; }
-        }
-        
-        @keyframes sparkle-float {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-200px); }
-        }
-        
-        .customer-main > * {
-            position: relative;
-            z-index: 1;
-        }
-        
-        /* モーダルはfixed表示を維持 */
-        .customer-main > .modal {
-            position: fixed;
-            z-index: 1000;
-        }
-        
-        /* Customer Navbar */
-        .customer-navbar {
-            background: linear-gradient(135deg, rgba(30, 15, 45, 0.98) 0%, rgba(20, 10, 35, 0.95) 100%);
-            padding: 0 2rem;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
-        }
-        
-        .customer-navbar-brand {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: #ffd700;
-            text-decoration: none;
-            font-size: 1.25rem;
-            font-weight: 600;
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-        }
-        
-        .customer-navbar-brand:hover {
-            color: #ffe44d;
-            text-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
-        }
-        
-        .customer-navbar-menu {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        
-        .customer-navbar-link {
-            color: rgba(255,255,255,0.8);
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            transition: all 0.2s;
-            font-size: 0.875rem;
-        }
-        
-        .customer-navbar-link:hover {
-            background: rgba(255, 215, 0, 0.1);
-            color: #ffd700;
-        }
-        
-        .customer-navbar-points {
-            background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
-            padding: 0.4rem 1rem;
-            border-radius: 20px;
-            color: #1a0a25;
-            font-weight: 600;
-            font-size: 0.875rem;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-        }
-        
-        /* No sidebar layout */
-        .customer-layout.no-sidebar .customer-sidebar {
-            display: none;
-        }
-        
-        .customer-layout.no-sidebar .customer-main {
-            max-width: 100%;
-        }
-        
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .customer-sidebar {
-                display: none;
-            }
-            
-            .customer-main {
-                padding: 0.75rem;
-            }
-            
-            /* Compact Navbar for Mobile */
-            .customer-navbar {
-                padding: 0 0.75rem;
-                height: 50px;
-            }
-            
-            .customer-navbar-brand {
-                font-size: 1rem;
-            }
-            
-            .customer-navbar-menu {
-                gap: 0.25rem;
-                flex-wrap: nowrap;
-            }
-            
-            .customer-navbar-link {
-                padding: 0.35rem 0.5rem;
-                font-size: 0.7rem;
-                white-space: nowrap;
-            }
-            
-            .customer-navbar-points {
-                padding: 0.25rem 0.6rem;
-                font-size: 0.7rem;
-                white-space: nowrap;
-            }
-        }
-        
-        /* Even smaller screens */
-        @media (max-width: 400px) {
-            .customer-navbar {
-                padding: 0 0.5rem;
-            }
-            
-            .customer-navbar-brand {
-                font-size: 0.9rem;
-            }
-            
-            .customer-navbar-menu {
-                gap: 0.15rem;
-            }
-            
-            .customer-navbar-link {
-                padding: 0.25rem 0.4rem;
-                font-size: 0.65rem;
-            }
-            
-            .customer-navbar-points {
-                padding: 0.2rem 0.5rem;
-                font-size: 0.65rem;
-            }
-        }
-    </style>
-    
-    {% block extra_css %}{% endblock %}
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>{% block title %}Night-Walk{% endblock %}</title>
+ 
+ <!-- SEO Meta Tags -->
+ <meta name="description" content="{% block meta_description %}岡山倉敷のナイトレジャー情報サイト。スナック、キャバクラ、ガールズバーなどの空席状況をリアルタイムで確認予約できます。{% endblock %}">
+ {% block meta_robots %}{% if seo_noindex %}<meta name="robots" content="noindex, nofollow">{% else %}<meta name="robots" content="index, follow">{% endif %}{% endblock %}
+ {% block canonical %}{% if request %}<link rel="canonical" href="{{ request.url_root[:-1] }}{{ request.path }}">{% endif %}{% endblock %}
+ 
+ <!-- OGP -->
+ <meta property="og:site_name" content="Night-Walk">
+ <meta property="og:locale" content="ja_JP">
+ <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+ <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}">
+ <meta property="og:description" content="{% block og_description %}{{ self.meta_description() }}{% endblock %}">
+ <meta property="og:url" content="{% block og_url %}{{ request.url if request else '' }}{% endblock %}">
+ <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/ogp-default.png', _external=True) }}{% endblock %}">
+ 
+ <!-- Twitter Card -->
+ <meta name="twitter:card" content="{% block twitter_card %}summary_large_image{% endblock %}">
+ <meta name="twitter:title" content="{{ self.og_title() }}">
+ <meta name="twitter:description" content="{{ self.og_description() }}">
+ <meta name="twitter:image" content="{{ self.og_image() }}">
+ 
+ <!-- Favicon -->
+ <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/favicon-32.png') }}">
+ <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
+ 
+ {% block structured_data %}{% endblock %}
+ 
+ <!-- Fonts -->
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+ 
+ <!-- Styles -->
+ <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+ 
+ <style>
+ /* Customer Layout */
+ .customer-layout {
+ display: flex;
+ min-height: calc(100vh - 60px - 50px);
+ }
+ 
+ /* Customer Sidebar */
+ .customer-sidebar {
+ width: 240px;
+ background: linear-gradient(180deg, rgba(30, 15, 45, 0.98) 0%, rgba(20, 10, 35, 0.95) 100%);
+ padding: 1.5rem 0;
+ flex-shrink: 0;
+ border-right: 1px solid rgba(255, 215, 0, 0.2);
+ }
+ 
+ .sidebar-user {
+ padding: 0 1.5rem 1.5rem;
+ border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+ margin-bottom: 1rem;
+ }
+ 
+ .sidebar-user-name {
+ color: #ffd700;
+ font-weight: 600;
+ font-size: 1rem;
+ margin-bottom: 0.25rem;
+ text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+ }
+ 
+ .sidebar-user-email {
+ color: rgba(255,255,255,0.5);
+ font-size: 0.75rem;
+ }
+ 
+ .sidebar-points {
+ background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+ margin: 1rem 1rem 1.5rem;
+ padding: 1rem;
+ border-radius: 12px;
+ text-align: center;
+ box-shadow: 0 4px 20px rgba(236, 72, 153, 0.3);
+ }
+ 
+ .sidebar-points-label {
+ color: rgba(255,255,255,0.8);
+ font-size: 0.75rem;
+ margin-bottom: 0.25rem;
+ }
+ 
+ .sidebar-points-value {
+ color: #fff;
+ font-size: 1.5rem;
+ font-weight: 700;
+ text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+ }
+ 
+ .sidebar-points-value span {
+ font-size: 0.875rem;
+ font-weight: 400;
+ }
+ 
+ .sidebar-nav {
+ padding: 0;
+ }
+ 
+ .sidebar-nav-section {
+ padding: 0.5rem 1rem;
+ color: rgba(255, 215, 0, 0.6);
+ font-size: 0.7rem;
+ text-transform: uppercase;
+ letter-spacing: 0.5px;
+ }
+ 
+ .sidebar-nav-item {
+ display: flex;
+ align-items: center;
+ gap: 0.75rem;
+ padding: 0.75rem 1.5rem;
+ color: rgba(255,255,255,0.7);
+ text-decoration: none;
+ transition: all 0.2s;
+ border-left: 3px solid transparent;
+ }
+ 
+ .sidebar-nav-item:hover {
+ background: rgba(255, 215, 0, 0.1);
+ color: #ffd700;
+ }
+ 
+ .sidebar-nav-item.active {
+ background: rgba(255, 215, 0, 0.15);
+ color: #ffd700;
+ border-left-color: #ffd700;
+ }
+ 
+ .sidebar-nav-icon {
+ width: 20px;
+ height: 20px;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-size: 0.875rem;
+ color: #ec4899;
+ }
+ 
+ .sidebar-nav-text {
+ font-size: 0.875rem;
+ }
+ 
+ /* Customer Main Content - Dark Theme */
+ .customer-main {
+ flex: 1;
+ padding: 2rem;
+ background: linear-gradient(180deg, #1a0a25 0%, #0f0515 50%, #150820 100%);
+ overflow-y: auto;
+ position: relative;
+ }
+ 
+ /* Sparkle glow effect for main content */
+ .customer-main::before {
+ content: '';
+ position: absolute;
+ top: 0;
+ left: 0;
+ width: 100%;
+ height: 100%;
+ background-image: 
+ radial-gradient(circle at 10% 20%, rgba(255, 215, 0, 0.15) 0%, transparent 30%),
+ radial-gradient(circle at 90% 30%, rgba(236, 72, 153, 0.12) 0%, transparent 35%),
+ radial-gradient(circle at 50% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
+ radial-gradient(circle at 20% 70%, rgba(255, 140, 0, 0.08) 0%, transparent 25%),
+ radial-gradient(circle at 80% 90%, rgba(59, 130, 246, 0.1) 0%, transparent 30%);
+ pointer-events: none;
+ z-index: 0;
+ animation: sparkle-bg 15s ease-in-out infinite alternate;
+ }
+ 
+ /* Sparkle particles animation */
+ .customer-main::after {
+ content: '';
+ position: absolute;
+ top: 0;
+ left: 0;
+ width: 100%;
+ height: 100%;
+ background-image: 
+ radial-gradient(2px 2px at 20px 30px, rgba(255, 215, 0, 0.8), transparent),
+ radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.6), transparent),
+ radial-gradient(2px 2px at 50px 160px, rgba(236, 72, 153, 0.7), transparent),
+ radial-gradient(2px 2px at 90px 40px, rgba(255, 215, 0, 0.6), transparent),
+ radial-gradient(2px 2px at 130px 80px, rgba(255, 255, 255, 0.5), transparent),
+ radial-gradient(2px 2px at 160px 120px, rgba(139, 92, 246, 0.6), transparent),
+ radial-gradient(3px 3px at 200px 50px, rgba(255, 215, 0, 0.9), transparent),
+ radial-gradient(2px 2px at 250px 150px, rgba(255, 255, 255, 0.7), transparent),
+ radial-gradient(2px 2px at 300px 100px, rgba(236, 72, 153, 0.6), transparent);
+ background-repeat: repeat;
+ background-size: 350px 200px;
+ pointer-events: none;
+ z-index: 0;
+ animation: sparkle-float 8s linear infinite;
+ }
+ 
+ @keyframes sparkle-bg {
+ 0% { opacity: 0.8; }
+ 50% { opacity: 1; }
+ 100% { opacity: 0.8; }
+ }
+ 
+ @keyframes sparkle-float {
+ 0% { transform: translateY(0); }
+ 100% { transform: translateY(-200px); }
+ }
+ 
+ .customer-main > * {
+ position: relative;
+ z-index: 1;
+ }
+ 
+ /* モーダルはfixed表示を維持 */
+ .customer-main > .modal {
+ position: fixed;
+ z-index: 1000;
+ }
+ 
+ /* Customer Navbar */
+ .customer-navbar {
+ background: linear-gradient(135deg, rgba(30, 15, 45, 0.98) 0%, rgba(20, 10, 35, 0.95) 100%);
+ padding: 0 2rem;
+ height: 60px;
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+ position: sticky;
+ top: 0;
+ z-index: 100;
+ border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+ }
+ 
+ .customer-navbar-brand {
+ display: flex;
+ align-items: center;
+ gap: 0.5rem;
+ color: #ffd700;
+ text-decoration: none;
+ font-size: 1.25rem;
+ font-weight: 600;
+ text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+ }
+ 
+ .customer-navbar-brand:hover {
+ color: #ffe44d;
+ text-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+ }
+ 
+ .customer-navbar-menu {
+ display: flex;
+ align-items: center;
+ gap: 1rem;
+ }
+ 
+ .customer-navbar-link {
+ color: rgba(255,255,255,0.8);
+ text-decoration: none;
+ padding: 0.5rem 1rem;
+ border-radius: 6px;
+ transition: all 0.2s;
+ font-size: 0.875rem;
+ }
+ 
+ .customer-navbar-link:hover {
+ background: rgba(255, 215, 0, 0.1);
+ color: #ffd700;
+ }
+ 
+ .customer-navbar-points {
+ background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+ padding: 0.4rem 1rem;
+ border-radius: 20px;
+ color: #1a0a25;
+ font-weight: 600;
+ font-size: 0.875rem;
+ box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+ }
+ 
+ /* No sidebar layout */
+ .customer-layout.no-sidebar .customer-sidebar {
+ display: none;
+ }
+ 
+ .customer-layout.no-sidebar .customer-main {
+ max-width: 100%;
+ }
+ 
+ /* Mobile Responsive */
+ @media (max-width: 768px) {
+ .customer-sidebar {
+ display: none;
+ }
+ 
+ .customer-main {
+ padding: 0.75rem;
+ }
+ 
+ /* Compact Navbar for Mobile */
+ .customer-navbar {
+ padding: 0 0.75rem;
+ height: 50px;
+ }
+ 
+ .customer-navbar-brand {
+ font-size: 1rem;
+ }
+ 
+ .customer-navbar-menu {
+ gap: 0.25rem;
+ flex-wrap: nowrap;
+ }
+ 
+ .customer-navbar-link {
+ padding: 0.35rem 0.5rem;
+ font-size: 0.7rem;
+ white-space: nowrap;
+ }
+ 
+ .customer-navbar-points {
+ padding: 0.25rem 0.6rem;
+ font-size: 0.7rem;
+ white-space: nowrap;
+ }
+ }
+ 
+ /* Even smaller screens */
+ @media (max-width: 400px) {
+ .customer-navbar {
+ padding: 0 0.5rem;
+ }
+ 
+ .customer-navbar-brand {
+ font-size: 0.9rem;
+ }
+ 
+ .customer-navbar-menu {
+ gap: 0.15rem;
+ }
+ 
+ .customer-navbar-link {
+ padding: 0.25rem 0.4rem;
+ font-size: 0.65rem;
+ }
+ 
+ .customer-navbar-points {
+ padding: 0.2rem 0.5rem;
+ font-size: 0.65rem;
+ }
+ }
+ </style>
+ 
+ {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Customer Navbar -->
-    <nav class="customer-navbar">
-        <a href="{{ url_for('public.index') }}" class="customer-navbar-brand">
-            🌙 Night-Walk
-        </a>
-        <div class="customer-navbar-menu">
-            <a href="{{ url_for('public.index') }}" class="customer-navbar-link">店舗を探す</a>
-            {% if current_user.is_authenticated and current_user.is_customer %}
-                <span class="customer-navbar-points">{{ current_user.point_balance | default(0) }}pt</span>
-                <a href="{{ url_for('customer.logout') }}" class="customer-navbar-link">ログアウト</a>
-            {% else %}
-                <a href="{{ url_for('customer.login') }}" class="customer-navbar-link">ログイン</a>
-                <a href="{{ url_for('customer.register') }}" class="customer-navbar-link" style="background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%); color: #fff;">新規登録</a>
-            {% endif %}
-        </div>
-    </nav>
-    
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div class="flash-messages">
-            <div class="container">
-                {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">
-                    {{ message }}
-                    <button class="alert-close" onclick="this.parentElement.remove()">×</button>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-    {% endwith %}
-    
-    <!-- Customer Layout -->
-    <div class="customer-layout {% if not current_user.is_authenticated or not current_user.is_customer %}no-sidebar{% endif %}">
-        {% if current_user.is_authenticated and current_user.is_customer %}
-        <!-- Sidebar -->
-        <aside class="customer-sidebar">
-            <div class="sidebar-user">
-                <div class="sidebar-user-name">{{ current_user.nickname }}</div>
-                <div class="sidebar-user-email">{{ current_user.email }}</div>
-            </div>
-            
-            <div class="sidebar-points">
-                <div class="sidebar-points-label">保有ポイント</div>
-                <div class="sidebar-points-value">{{ current_user.point_balance | default(0) }}<span>pt</span></div>
-            </div>
-            
-            <nav class="sidebar-nav">
-                <div class="sidebar-nav-section">メニュー</div>
-                
-                <a href="{{ url_for('customer.mypage') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.mypage' %}active{% endif %}">
-                    <span class="sidebar-nav-icon">H</span>
-                    <span class="sidebar-nav-text">マイページ</span>
-                </a>
-                
-                <a href="{{ url_for('customer.buy_points') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.buy_points' %}active{% endif %}">
-                    <span class="sidebar-nav-icon">P</span>
-                    <span class="sidebar-nav-text">ポイント購入</span>
-                </a>
-                
-                <a href="{{ url_for('public.index') }}" class="sidebar-nav-item">
-                    <span class="sidebar-nav-icon">S</span>
-                    <span class="sidebar-nav-text">店舗を探す</span>
-                </a>
-                
-                <div class="sidebar-nav-section">履歴</div>
-                
-                <a href="{{ url_for('customer.gift_history') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.gift_history' %}active{% endif %}">
-                    <span class="sidebar-nav-icon">G</span>
-                    <span class="sidebar-nav-text">ギフト履歴</span>
-                </a>
-                
-                <a href="{{ url_for('customer.point_history') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.point_history' %}active{% endif %}">
-                    <span class="sidebar-nav-icon">T</span>
-                    <span class="sidebar-nav-text">取引履歴</span>
-                </a>
-                
-                <div class="sidebar-nav-section">アカウント</div>
-                
-                <a href="{{ url_for('customer.logout') }}" class="sidebar-nav-item">
-                    <span class="sidebar-nav-icon">X</span>
-                    <span class="sidebar-nav-text">ログアウト</span>
-                </a>
-            </nav>
-        </aside>
-        {% endif %}
-        
-        <!-- Main Content -->
-        <main class="customer-main">
-            {% block content %}{% endblock %}
-        </main>
-    </div>
-    
-    <!-- Footer -->
-    <footer class="footer" style="background: linear-gradient(180deg, rgba(20, 10, 30, 0.95) 0%, rgba(15, 5, 21, 0.98) 100%); color: rgba(255,255,255,0.5); padding: 1rem; text-align: center; font-size: 0.875rem; border-top: 1px solid rgba(255, 215, 0, 0.2);">
-        <p>&copy; 2026 Night-Walk. All rights reserved.</p>
-    </footer>
-    
-    <!-- Scripts -->
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    {% block extra_js %}{% endblock %}
+ <!-- Customer Navbar -->
+ <nav class="customer-navbar">
+ <a href="{{ url_for('public.index') }}" class="customer-navbar-brand">
+ Night-Walk
+ </a>
+ <div class="customer-navbar-menu">
+ <a href="{{ url_for('public.index') }}" class="customer-navbar-link">店舗を探す</a>
+ {% if current_user.is_authenticated and current_user.is_customer %}
+ <span class="customer-navbar-points">{{ current_user.point_balance | default(0) }}pt</span>
+ <a href="{{ url_for('customer.logout') }}" class="customer-navbar-link">ログアウト</a>
+ {% else %}
+ <a href="{{ url_for('customer.login') }}" class="customer-navbar-link">ログイン</a>
+ <a href="{{ url_for('customer.register') }}" class="customer-navbar-link" style="background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%); color: #fff;">新規登録</a>
+ {% endif %}
+ </div>
+ </nav>
+ 
+ <!-- Flash Messages -->
+ {% with messages = get_flashed_messages(with_categories=true) %}
+ {% if messages %}
+ <div class="flash-messages">
+ <div class="container">
+ {% for category, message in messages %}
+ <div class="alert alert-{{ category }}">
+ {{ message }}
+ <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+ </div>
+ {% endfor %}
+ </div>
+ </div>
+ {% endif %}
+ {% endwith %}
+ 
+ <!-- Customer Layout -->
+ <div class="customer-layout {% if not current_user.is_authenticated or not current_user.is_customer %}no-sidebar{% endif %}">
+ {% if current_user.is_authenticated and current_user.is_customer %}
+ <!-- Sidebar -->
+ <aside class="customer-sidebar">
+ <div class="sidebar-user">
+ <div class="sidebar-user-name">{{ current_user.nickname }}</div>
+ <div class="sidebar-user-email">{{ current_user.email }}</div>
+ </div>
+ 
+ <div class="sidebar-points">
+ <div class="sidebar-points-label">保有ポイント</div>
+ <div class="sidebar-points-value">{{ current_user.point_balance | default(0) }}<span>pt</span></div>
+ </div>
+ 
+ <nav class="sidebar-nav">
+ <div class="sidebar-nav-section">メニュー</div>
+ 
+ <a href="{{ url_for('customer.mypage') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.mypage' %}active{% endif %}">
+ <span class="sidebar-nav-icon">H</span>
+ <span class="sidebar-nav-text">マイページ</span>
+ </a>
+ 
+ <a href="{{ url_for('customer.buy_points') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.buy_points' %}active{% endif %}">
+ <span class="sidebar-nav-icon">P</span>
+ <span class="sidebar-nav-text">ポイント購入</span>
+ </a>
+ 
+ <a href="{{ url_for('public.index') }}" class="sidebar-nav-item">
+ <span class="sidebar-nav-icon">S</span>
+ <span class="sidebar-nav-text">店舗を探す</span>
+ </a>
+ 
+ <div class="sidebar-nav-section">履歴</div>
+ 
+ <a href="{{ url_for('customer.gift_history') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.gift_history' %}active{% endif %}">
+ <span class="sidebar-nav-icon">G</span>
+ <span class="sidebar-nav-text">ギフト履歴</span>
+ </a>
+ 
+ <a href="{{ url_for('customer.point_history') }}" class="sidebar-nav-item {% if request.endpoint == 'customer.point_history' %}active{% endif %}">
+ <span class="sidebar-nav-icon">T</span>
+ <span class="sidebar-nav-text">取引履歴</span>
+ </a>
+ 
+ <div class="sidebar-nav-section">アカウント</div>
+ 
+ <a href="{{ url_for('customer.logout') }}" class="sidebar-nav-item">
+ <span class="sidebar-nav-icon">X</span>
+ <span class="sidebar-nav-text">ログアウト</span>
+ </a>
+ </nav>
+ </aside>
+ {% endif %}
+ 
+ <!-- Main Content -->
+ <main class="customer-main">
+ {% block content %}{% endblock %}
+ </main>
+ </div>
+ 
+ <!-- Footer -->
+ <footer class="footer" style="background: linear-gradient(180deg, rgba(20, 10, 30, 0.95) 0%, rgba(15, 5, 21, 0.98) 100%); color: rgba(255,255,255,0.5); padding: 1rem; text-align: center; font-size: 0.875rem; border-top: 1px solid rgba(255, 215, 0, 0.2);">
+ <p>&copy; 2026 Night-Walk. All rights reserved.</p>
+ </footer>
+ 
+ <!-- Scripts -->
+ <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+ {% block extra_js %}{% endblock %}
 </body>
 </html>

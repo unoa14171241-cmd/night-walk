@@ -4,179 +4,179 @@
 
 {% block content %}
 <div class="container container-md">
-    <p class="mb-3">
-        <a href="{{ url_for('shop_admin.edit') }}">← 店舗情報編集に戻る</a>
-    </p>
-    
-    <div class="card mb-4">
-        <div class="card-header">
-            <h1 class="card-title">画像管理</h1>
-            <p class="text-muted mb-0">{{ shop.name }}</p>
-        </div>
-        
-        <!-- Upload Form -->
-        <form method="POST" 
-              action="{{ url_for('shop_admin.upload_image') }}" 
-              enctype="multipart/form-data"
-              class="mb-4">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            
-            <div class="upload-area" id="upload-area">
-                <input type="file" 
-                       id="image" 
-                       name="image" 
-                       accept="image/png,image/jpeg,image/gif,image/webp"
-                       class="upload-input"
-                       required>
-                <div class="upload-content">
-                    <span class="upload-icon">📷</span>
-                    <p class="upload-text">クリックまたはドラッグ＆ドロップで画像をアップロード</p>
-                    <p class="upload-hint">PNG, JPG, GIF, WEBP（最大5MB）</p>
-                </div>
-            </div>
-            
-            <button type="submit" class="btn btn-primary mt-3">
-                アップロード
-            </button>
-        </form>
-    </div>
-    
-    <!-- Current Images -->
-    <div class="card">
-        <h3 class="mb-3">登録済み画像（{{ images | length }}枚）</h3>
-        
-        {% if images %}
-        <div class="image-grid" id="image-grid">
-            {% for image in images %}
-            <div class="image-item" data-id="{{ image.id }}">
-                <div class="image-preview">
-                    <img src="{{ image.url }}" alt="{{ image.original_filename }}">
-                    {% if image.is_main %}
-                    <span class="image-main-badge">メイン</span>
-                    {% endif %}
-                </div>
-                <div class="image-actions">
-                    {% if not image.is_main %}
-                    <form method="POST" action="{{ url_for('shop_admin.set_main_image', image_id=image.id) }}" style="display: inline;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-sm btn-secondary" title="メインに設定">
-                            ★
-                        </button>
-                    </form>
-                    {% endif %}
-                    <form method="POST" 
-                          action="{{ url_for('shop_admin.delete_image', image_id=image.id) }}" 
-                          style="display: inline;"
-                          onsubmit="return confirm('この画像を削除しますか？')">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-sm btn-danger" title="削除">
-                            🗑
-                        </button>
-                    </form>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        
-        <p class="text-muted mt-3" style="font-size: 0.75rem;">
-            ※ ★をクリックするとメイン画像に設定されます<br>
-            ※ メイン画像は店舗一覧のサムネイルとして使用されます
-        </p>
-        {% else %}
-        <p class="text-muted text-center">まだ画像が登録されていません</p>
-        {% endif %}
-    </div>
+ <p class="mb-3">
+ <a href="{{ url_for('shop_admin.edit') }}">← 店舗情報編集に戻る</a>
+ </p>
+ 
+ <div class="card mb-4">
+ <div class="card-header">
+ <h1 class="card-title">画像管理</h1>
+ <p class="text-muted mb-0">{{ shop.name }}</p>
+ </div>
+ 
+ <!-- Upload Form -->
+ <form method="POST" 
+ action="{{ url_for('shop_admin.upload_image') }}" 
+ enctype="multipart/form-data"
+ class="mb-4">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ 
+ <div class="upload-area" id="upload-area">
+ <input type="file" 
+ id="image" 
+ name="image" 
+ accept="image/png,image/jpeg,image/gif,image/webp"
+ class="upload-input"
+ required>
+ <div class="upload-content">
+ <span class="upload-icon"></span>
+ <p class="upload-text">クリックまたはドラッグ＆ドロップで画像をアップロード</p>
+ <p class="upload-hint">PNG, JPG, GIF, WEBP（最大5MB）</p>
+ </div>
+ </div>
+ 
+ <button type="submit" class="btn btn-primary mt-3">
+ アップロード
+ </button>
+ </form>
+ </div>
+ 
+ <!-- Current Images -->
+ <div class="card">
+ <h3 class="mb-3">登録済み画像（{{ images | length }}枚）</h3>
+ 
+ {% if images %}
+ <div class="image-grid" id="image-grid">
+ {% for image in images %}
+ <div class="image-item" data-id="{{ image.id }}">
+ <div class="image-preview">
+ <img src="{{ image.url }}" alt="{{ image.original_filename }}">
+ {% if image.is_main %}
+ <span class="image-main-badge">メイン</span>
+ {% endif %}
+ </div>
+ <div class="image-actions">
+ {% if not image.is_main %}
+ <form method="POST" action="{{ url_for('shop_admin.set_main_image', image_id=image.id) }}" style="display: inline;">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <button type="submit" class="btn btn-sm btn-secondary" title="メインに設定">
+ 
+ </button>
+ </form>
+ {% endif %}
+ <form method="POST" 
+ action="{{ url_for('shop_admin.delete_image', image_id=image.id) }}" 
+ style="display: inline;"
+ onsubmit="return confirm('この画像を削除しますか？')">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <button type="submit" class="btn btn-sm btn-danger" title="削除">
+ 
+ </button>
+ </form>
+ </div>
+ </div>
+ {% endfor %}
+ </div>
+ 
+ <p class="text-muted mt-3" style="font-size: 0.75rem;">
+ ※ をクリックするとメイン画像に設定されます<br>
+ ※ メイン画像は店舗一覧のサムネイルとして使用されます
+ </p>
+ {% else %}
+ <p class="text-muted text-center">まだ画像が登録されていません</p>
+ {% endif %}
+ </div>
 </div>
 
 <style>
 .upload-area {
-    position: relative;
-    border: 2px dashed var(--color-border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-2xl);
-    text-align: center;
-    cursor: pointer;
-    transition: all var(--transition-base);
+ position: relative;
+ border: 2px dashed var(--color-border);
+ border-radius: var(--radius-lg);
+ padding: var(--space-2xl);
+ text-align: center;
+ cursor: pointer;
+ transition: all var(--transition-base);
 }
 
 .upload-area:hover {
-    border-color: var(--color-primary);
-    background: rgba(201, 169, 98, 0.05);
+ border-color: var(--color-primary);
+ background: rgba(201, 169, 98, 0.05);
 }
 
 .upload-area.dragover {
-    border-color: var(--color-primary);
-    background: rgba(201, 169, 98, 0.1);
+ border-color: var(--color-primary);
+ background: rgba(201, 169, 98, 0.1);
 }
 
 .upload-input {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
+ position: absolute;
+ top: 0;
+ left: 0;
+ width: 100%;
+ height: 100%;
+ opacity: 0;
+ cursor: pointer;
 }
 
 .upload-icon {
-    font-size: 3rem;
-    display: block;
-    margin-bottom: var(--space-md);
+ font-size: 3rem;
+ display: block;
+ margin-bottom: var(--space-md);
 }
 
 .upload-text {
-    margin-bottom: var(--space-sm);
-    font-weight: 500;
+ margin-bottom: var(--space-sm);
+ font-weight: 500;
 }
 
 .upload-hint {
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
-    margin: 0;
+ font-size: 0.75rem;
+ color: var(--color-text-muted);
+ margin: 0;
 }
 
 .image-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: var(--space-md);
+ display: grid;
+ grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+ gap: var(--space-md);
 }
 
 .image-item {
-    position: relative;
-    background: var(--color-bg-elevated);
-    border-radius: var(--radius-md);
-    overflow: hidden;
+ position: relative;
+ background: var(--color-bg-elevated);
+ border-radius: var(--radius-md);
+ overflow: hidden;
 }
 
 .image-preview {
-    position: relative;
-    aspect-ratio: 1;
+ position: relative;
+ aspect-ratio: 1;
 }
 
 .image-preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+ width: 100%;
+ height: 100%;
+ object-fit: cover;
 }
 
 .image-main-badge {
-    position: absolute;
-    top: var(--space-sm);
-    left: var(--space-sm);
-    background: var(--color-primary);
-    color: var(--color-bg-dark);
-    padding: 2px 8px;
-    border-radius: var(--radius-sm);
-    font-size: 0.7rem;
-    font-weight: 600;
+ position: absolute;
+ top: var(--space-sm);
+ left: var(--space-sm);
+ background: var(--color-primary);
+ color: var(--color-bg-dark);
+ padding: 2px 8px;
+ border-radius: var(--radius-sm);
+ font-size: 0.7rem;
+ font-weight: 600;
 }
 
 .image-actions {
-    display: flex;
-    justify-content: center;
-    gap: var(--space-sm);
-    padding: var(--space-sm);
+ display: flex;
+ justify-content: center;
+ gap: var(--space-sm);
+ padding: var(--space-sm);
 }
 </style>
 
@@ -187,38 +187,38 @@ const uploadArea = document.getElementById('upload-area');
 const uploadInput = document.getElementById('image');
 
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    uploadArea.addEventListener(eventName, preventDefaults, false);
+ uploadArea.addEventListener(eventName, preventDefaults, false);
 });
 
 function preventDefaults(e) {
-    e.preventDefault();
-    e.stopPropagation();
+ e.preventDefault();
+ e.stopPropagation();
 }
 
 ['dragenter', 'dragover'].forEach(eventName => {
-    uploadArea.addEventListener(eventName, () => {
-        uploadArea.classList.add('dragover');
-    }, false);
+ uploadArea.addEventListener(eventName, () => {
+ uploadArea.classList.add('dragover');
+ }, false);
 });
 
 ['dragleave', 'drop'].forEach(eventName => {
-    uploadArea.addEventListener(eventName, () => {
-        uploadArea.classList.remove('dragover');
-    }, false);
+ uploadArea.addEventListener(eventName, () => {
+ uploadArea.classList.remove('dragover');
+ }, false);
 });
 
 uploadArea.addEventListener('drop', (e) => {
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-        uploadInput.files = files;
-    }
+ const files = e.dataTransfer.files;
+ if (files.length > 0) {
+ uploadInput.files = files;
+ }
 }, false);
 
 // Preview filename
 uploadInput.addEventListener('change', function() {
-    if (this.files.length > 0) {
-        document.querySelector('.upload-text').textContent = this.files[0].name;
-    }
+ if (this.files.length > 0) {
+ document.querySelector('.upload-text').textContent = this.files[0].name;
+ }
 });
 </script>
 {% endblock %}

@@ -1280,7 +1280,7 @@ def save_ranks():
             continue
         
         color = colors[i].strip() if i < len(colors) else '#6366f1'
-        icon = icons[i].strip() if i < len(icons) else '⭐'
+        icon = icons[i].strip() if i < len(icons) else ''
         desc = descriptions[i].strip() if i < len(descriptions) else ''
         
         rid = rank_ids[i] if i < len(rank_ids) else ''

@@ -1,119 +1,119 @@
 {# Shop Card Partial - expects 'shop' variable, optional 'badge' for ad badge info #}
 <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}" class="shop-card {{ 'has-badge' if badge }} {{ 'badge-' + badge.type if badge }}" data-shop-id="{{ shop.id }}">
-    {# バッジ表示（広告権利ベース） #}
-    {% if badge %}
-    <div class="shop-card-top-badge badge-{{ badge.color }}">
-        {% if badge.type == 'top1' %}👑{% elif badge.type in ['top2', 'top3', 'top10'] %}🏅{% else %}⭐{% endif %}
-        {{ badge.label }}
-    </div>
-    {% endif %}
-    
-    {% if shop.main_image_url %}
-    <img src="{{ shop.main_image_url }}" alt="{{ shop.name }}" class="shop-card-image">
-    {% else %}
-    <div class="shop-card-image shop-card-placeholder">
-        <span>🌙</span>
-    </div>
-    {% endif %}
-    
-    <div class="shop-card-body">
-        <div class="shop-card-header">
-            <div>
-                <h3 class="shop-card-name">{{ shop.name }}</h3>
-                <span class="shop-card-area">📍 {{ shop.area }}</span>
-                {% if shop.category_label %}
-                <span class="shop-card-category">{{ shop.category_label }}</span>
-                {% endif %}
-            </div>
-            <span class="vacancy-badge vacancy-{{ vacancy_colors.get(shop.current_vacancy, 'secondary') }}">
-                {{ vacancy_labels.get(shop.current_vacancy, '−') }}
-            </span>
-        </div>
-        
-        <div class="shop-card-info">
-            {% if shop.business_hours %}
-            <span>🕐 {{ shop.business_hours }}</span>
-            {% endif %}
-            {% if shop.price_range %}
-            <span>💰 {{ shop.price_range }}</span>
-            {% endif %}
-        </div>
-        
-        <div class="shop-card-badges">
-            {% if shop.is_featured %}
-            <span class="badge badge-warning">おすすめ</span>
-            {% endif %}
-            
-            {% if is_premium %}
-            <span class="badge badge-premium">優良店</span>
-            {% endif %}
-            
-            {% if shop.active_job %}
-            <span class="badge badge-danger">求人あり</span>
-            {% endif %}
-        </div>
-    </div>
+ {# バッジ表示（広告権利ベース） #}
+ {% if badge %}
+ <div class="shop-card-top-badge badge-{{ badge.color }}">
+ {% if badge.type == 'top1' %}{% elif badge.type in ['top2', 'top3', 'top10'] %}{% endif %}
+ {{ badge.label }}
+ </div>
+ {% endif %}
+ 
+ {% if shop.main_image_url %}
+ <img src="{{ shop.main_image_url }}" alt="{{ shop.name }}" class="shop-card-image">
+ {% else %}
+ <div class="shop-card-image shop-card-placeholder">
+ <span></span>
+ </div>
+ {% endif %}
+ 
+ <div class="shop-card-body">
+ <div class="shop-card-header">
+ <div>
+ <h3 class="shop-card-name">{{ shop.name }}</h3>
+ <span class="shop-card-area"> {{ shop.area }}</span>
+ {% if shop.category_label %}
+ <span class="shop-card-category">{{ shop.category_label }}</span>
+ {% endif %}
+ </div>
+ <span class="vacancy-badge vacancy-{{ vacancy_colors.get(shop.current_vacancy, 'secondary') }}">
+ {{ vacancy_labels.get(shop.current_vacancy, '−') }}
+ </span>
+ </div>
+ 
+ <div class="shop-card-info">
+ {% if shop.business_hours %}
+ <span> {{ shop.business_hours }}</span>
+ {% endif %}
+ {% if shop.price_range %}
+ <span> {{ shop.price_range }}</span>
+ {% endif %}
+ </div>
+ 
+ <div class="shop-card-badges">
+ {% if shop.is_featured %}
+ <span class="badge badge-warning">おすすめ</span>
+ {% endif %}
+ 
+ {% if is_premium %}
+ <span class="badge badge-premium">優良店</span>
+ {% endif %}
+ 
+ {% if shop.active_job %}
+ <span class="badge badge-danger">求人あり</span>
+ {% endif %}
+ </div>
+ </div>
 </a>
 
 <style>
 .shop-card {
-    position: relative;
+ position: relative;
 }
 .shop-card.has-badge {
-    border: 2px solid transparent;
+ border: 2px solid transparent;
 }
 .shop-card.badge-gold {
-    border-color: #ffd700;
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+ border-color: #ffd700;
+ box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
 }
 .shop-card.badge-silver {
-    border-color: #c0c0c0;
+ border-color: #c0c0c0;
 }
 .shop-card.badge-bronze {
-    border-color: #cd7f32;
+ border-color: #cd7f32;
 }
 .shop-card.badge-premium {
-    border-color: var(--color-primary);
+ border-color: var(--color-primary);
 }
 
 .shop-card-top-badge {
-    position: absolute;
-    top: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    z-index: 10;
-    white-space: nowrap;
+ position: absolute;
+ top: -8px;
+ left: 50%;
+ transform: translateX(-50%);
+ padding: 0.25rem 0.75rem;
+ border-radius: 1rem;
+ font-size: 0.75rem;
+ font-weight: 700;
+ z-index: 10;
+ white-space: nowrap;
 }
 .shop-card-top-badge.badge-gold {
-    background: linear-gradient(135deg, #ffd700, #ff8c00);
-    color: #000;
+ background: linear-gradient(135deg, #ffd700, #ff8c00);
+ color: #000;
 }
 .shop-card-top-badge.badge-silver {
-    background: linear-gradient(135deg, #e0e0e0, #a0a0a0);
-    color: #000;
+ background: linear-gradient(135deg, #e0e0e0, #a0a0a0);
+ color: #000;
 }
 .shop-card-top-badge.badge-bronze {
-    background: linear-gradient(135deg, #cd7f32, #8b4513);
-    color: #fff;
+ background: linear-gradient(135deg, #cd7f32, #8b4513);
+ color: #fff;
 }
 .shop-card-top-badge.badge-premium {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-    color: #fff;
+ background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+ color: #fff;
 }
 
 .shop-card-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    margin-top: 0.5rem;
+ display: flex;
+ flex-wrap: wrap;
+ gap: 0.25rem;
+ margin-top: 0.5rem;
 }
 
 .badge-premium {
-    background: linear-gradient(135deg, #4a90d9, #357abd);
-    color: #fff;
+ background: linear-gradient(135deg, #4a90d9, #357abd);
+ color: #fff;
 }
 </style>

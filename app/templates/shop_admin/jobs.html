@@ -4,116 +4,116 @@
 
 {% block content %}
 <div class="container container-md">
-    <p class="mb-3">
-        <a href="{{ url_for('shop_admin.dashboard') }}">← ダッシュボードに戻る</a>
-    </p>
-    
-    <div class="card">
-        <div class="card-header">
-            <div class="d-flex justify-between align-center">
-                <h1 class="card-title mb-0">求人管理</h1>
-                {% if job.is_active %}
-                <span class="badge badge-success">掲載中</span>
-                {% else %}
-                <span class="badge badge-secondary" style="background: var(--color-bg-elevated); color: var(--color-text-muted);">非掲載</span>
-                {% endif %}
-            </div>
-        </div>
-        
-        <form method="POST" action="{{ url_for('shop_admin.jobs') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            
-            <div class="form-group">
-                <label class="form-check">
-                    <input type="checkbox" 
-                           name="is_active" 
-                           class="form-check-input"
-                           {% if job.is_active %}checked{% endif %}>
-                    <span>求人を掲載する</span>
-                </label>
-            </div>
-            
-            <hr style="border-color: var(--color-border); margin: var(--space-lg) 0;">
-            
-            <div class="form-group">
-                <label class="form-label" for="hourly_wage">時給</label>
-                <input type="text" 
-                       id="hourly_wage" 
-                       name="hourly_wage" 
-                       class="form-control" 
-                       value="{{ job.hourly_wage or '' }}"
-                       placeholder="3,000円〜">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label" for="benefits">待遇・備考</label>
-                <textarea id="benefits" 
-                          name="benefits" 
-                          class="form-control" 
-                          rows="4"
-                          placeholder="送迎あり、日払い可、制服貸与...">{{ job.benefits or '' }}</textarea>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-check">
-                    <input type="checkbox" 
-                           name="trial_available" 
-                           class="form-check-input"
-                           {% if job.trial_available %}checked{% endif %}>
-                    <span>体験入店可</span>
-                </label>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label" for="expires_at">掲載期限</label>
-                <input type="date" 
-                       id="expires_at" 
-                       name="expires_at" 
-                       class="form-control" 
-                       value="{{ job.expires_at.strftime('%Y-%m-%d') if job.expires_at else '' }}">
-                <p class="text-muted" style="font-size: 0.75rem; margin-top: var(--space-xs);">
-                    ※ 空欄の場合、期限なしで掲載されます
-                </p>
-            </div>
-            
-            <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
-            
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">
-                    保存する
-                </button>
-                <a href="{{ url_for('shop_admin.dashboard') }}" class="btn btn-secondary">
-                    キャンセル
-                </a>
-            </div>
-        </form>
-    </div>
-    
-    <!-- Preview -->
-    {% if job.is_active %}
-    <div class="card mt-4">
-        <h3 class="mb-3">プレビュー</h3>
-        <div class="card" style="border-color: var(--color-accent-pink); background: var(--color-bg-elevated);">
-            <div class="d-flex align-center gap-2 mb-2">
-                <span style="font-size: 1.5rem;">💼</span>
-                <span class="badge badge-danger">急募</span>
-            </div>
-            
-            {% if job.hourly_wage %}
-            <p class="mb-1"><strong>時給:</strong> {{ job.hourly_wage }}</p>
-            {% endif %}
-            
-            {% if job.benefits %}
-            <p class="mb-1"><strong>待遇:</strong> {{ job.benefits }}</p>
-            {% endif %}
-            
-            {% if job.trial_available %}
-            <p class="mb-0">
-                <span class="badge badge-success">体験入店OK</span>
-            </p>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
+ <p class="mb-3">
+ <a href="{{ url_for('shop_admin.dashboard') }}">← ダッシュボードに戻る</a>
+ </p>
+ 
+ <div class="card">
+ <div class="card-header">
+ <div class="d-flex justify-between align-center">
+ <h1 class="card-title mb-0">求人管理</h1>
+ {% if job.is_active %}
+ <span class="badge badge-success">掲載中</span>
+ {% else %}
+ <span class="badge badge-secondary" style="background: var(--color-bg-elevated); color: var(--color-text-muted);">非掲載</span>
+ {% endif %}
+ </div>
+ </div>
+ 
+ <form method="POST" action="{{ url_for('shop_admin.jobs') }}">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ 
+ <div class="form-group">
+ <label class="form-check">
+ <input type="checkbox" 
+ name="is_active" 
+ class="form-check-input"
+ {% if job.is_active %}checked{% endif %}>
+ <span>求人を掲載する</span>
+ </label>
+ </div>
+ 
+ <hr style="border-color: var(--color-border); margin: var(--space-lg) 0;">
+ 
+ <div class="form-group">
+ <label class="form-label" for="hourly_wage">時給</label>
+ <input type="text" 
+ id="hourly_wage" 
+ name="hourly_wage" 
+ class="form-control" 
+ value="{{ job.hourly_wage or '' }}"
+ placeholder="3,000円〜">
+ </div>
+ 
+ <div class="form-group">
+ <label class="form-label" for="benefits">待遇備考</label>
+ <textarea id="benefits" 
+ name="benefits" 
+ class="form-control" 
+ rows="4"
+ placeholder="送迎あり、日払い可、制服貸与...">{{ job.benefits or '' }}</textarea>
+ </div>
+ 
+ <div class="form-group">
+ <label class="form-check">
+ <input type="checkbox" 
+ name="trial_available" 
+ class="form-check-input"
+ {% if job.trial_available %}checked{% endif %}>
+ <span>体験入店可</span>
+ </label>
+ </div>
+ 
+ <div class="form-group">
+ <label class="form-label" for="expires_at">掲載期限</label>
+ <input type="date" 
+ id="expires_at" 
+ name="expires_at" 
+ class="form-control" 
+ value="{{ job.expires_at.strftime('%Y-%m-%d') if job.expires_at else '' }}">
+ <p class="text-muted" style="font-size: 0.75rem; margin-top: var(--space-xs);">
+ ※ 空欄の場合、期限なしで掲載されます
+ </p>
+ </div>
+ 
+ <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+ 
+ <div class="d-flex gap-2">
+ <button type="submit" class="btn btn-primary">
+ 保存する
+ </button>
+ <a href="{{ url_for('shop_admin.dashboard') }}" class="btn btn-secondary">
+ キャンセル
+ </a>
+ </div>
+ </form>
+ </div>
+ 
+ <!-- Preview -->
+ {% if job.is_active %}
+ <div class="card mt-4">
+ <h3 class="mb-3">プレビュー</h3>
+ <div class="card" style="border-color: var(--color-accent-pink); background: var(--color-bg-elevated);">
+ <div class="d-flex align-center gap-2 mb-2">
+ <span style="font-size: 1.5rem;"></span>
+ <span class="badge badge-danger">急募</span>
+ </div>
+ 
+ {% if job.hourly_wage %}
+ <p class="mb-1"><strong>時給:</strong> {{ job.hourly_wage }}</p>
+ {% endif %}
+ 
+ {% if job.benefits %}
+ <p class="mb-1"><strong>待遇:</strong> {{ job.benefits }}</p>
+ {% endif %}
+ 
+ {% if job.trial_available %}
+ <p class="mb-0">
+ <span class="badge badge-success">体験入店OK</span>
+ </p>
+ {% endif %}
+ </div>
+ </div>
+ {% endif %}
 </div>
 {% endblock %}

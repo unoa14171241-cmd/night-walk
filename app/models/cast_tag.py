@@ -27,11 +27,11 @@ class CastTag(db.Model):
     }
     
     CATEGORY_ICONS = {
-        CATEGORY_SERVICE: '🍸',
-        CATEGORY_HOBBY: '🎮',
-        CATEGORY_SKILL: '⭐',
-        CATEGORY_PERSONALITY: '💎',
-        CATEGORY_OTHER: '🏷️',
+        CATEGORY_SERVICE: '',
+        CATEGORY_HOBBY: '',
+        CATEGORY_SKILL: '',
+        CATEGORY_PERSONALITY: '',
+        CATEGORY_OTHER: '',
     }
     
     # よく使われるタグのプリセット
@@ -75,7 +75,7 @@ class CastTag(db.Model):
     
     @property
     def category_icon(self):
-        return self.CATEGORY_ICONS.get(self.category, '🏷️')
+        return self.CATEGORY_ICONS.get(self.category, '')
     
     @classmethod
     def get_tags_by_cast(cls, cast_id):

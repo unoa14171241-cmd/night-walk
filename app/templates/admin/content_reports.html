@@ -4,117 +4,117 @@
 
 {% block content %}
 <div class="admin-container">
-    <div class="page-header">
-        <div>
-            <h1>🚨 不適切コンテンツ管理</h1>
-            <p class="text-muted">
-                未対応: <span class="badge badge-danger">{{ pending_count }}</span>件
-            </p>
-        </div>
-    </div>
-    
-    <!-- フィルタ -->
-    <div class="card mb-4">
-        <div class="d-flex gap-2">
-            <a href="{{ url_for('admin.content_reports', status='pending') }}" 
-               class="btn btn-sm {% if status_filter == 'pending' %}btn-primary{% else %}btn-outline{% endif %}">
-                未対応
-            </a>
-            <a href="{{ url_for('admin.content_reports', status='reviewing') }}" 
-               class="btn btn-sm {% if status_filter == 'reviewing' %}btn-primary{% else %}btn-outline{% endif %}">
-                確認中
-            </a>
-            <a href="{{ url_for('admin.content_reports', status='hidden') }}" 
-               class="btn btn-sm {% if status_filter == 'hidden' %}btn-primary{% else %}btn-outline{% endif %}">
-                非表示済み
-            </a>
-            <a href="{{ url_for('admin.content_reports', status='deleted') }}" 
-               class="btn btn-sm {% if status_filter == 'deleted' %}btn-primary{% else %}btn-outline{% endif %}">
-                削除済み
-            </a>
-            <a href="{{ url_for('admin.content_reports', status='all') }}" 
-               class="btn btn-sm {% if status_filter == 'all' %}btn-primary{% else %}btn-outline{% endif %}">
-                すべて
-            </a>
-        </div>
-    </div>
-    
-    {% if reports %}
-    <div class="card">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>報告日時</th>
-                    <th>コンテンツ</th>
-                    <th>報告理由</th>
-                    <th>ステータス</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for report in reports %}
-                <tr>
-                    <td>{{ report.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
-                    <td>
-                        <span class="badge badge-secondary">{{ report.content_type }}</span>
-                        ID: {{ report.content_id }}
-                        {% if report.shop_id %}
-                        <br><small><a href="{{ url_for('admin.shop_detail', shop_id=report.shop_id) }}">店舗を見る</a></small>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <strong>{{ report.reason_label }}</strong>
-                        {% if report.description %}
-                        <br><small class="text-muted">{{ report.description[:50] }}{% if report.description|length > 50 %}...{% endif %}</small>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <span class="badge badge-{% if report.status == 'pending' %}danger{% elif report.status == 'hidden' %}warning{% elif report.status == 'deleted' %}dark{% else %}secondary{% endif %}">
-                            {{ report.status_label }}
-                        </span>
-                    </td>
-                    <td>
-                        {% if report.status == 'pending' %}
-                        <div class="d-flex gap-1">
-                            <form action="{{ url_for('admin.handle_content_report', report_id=report.id) }}" method="POST" style="display: inline;">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="action" value="hide">
-                                <button type="submit" class="btn btn-sm btn-warning">非表示</button>
-                            </form>
-                            <form action="{{ url_for('admin.handle_content_report', report_id=report.id) }}" method="POST" style="display: inline;">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="action" value="delete">
-                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('削除しますか？')">削除</button>
-                            </form>
-                            <form action="{{ url_for('admin.handle_content_report', report_id=report.id) }}" method="POST" style="display: inline;">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="action" value="dismiss">
-                                <button type="submit" class="btn btn-sm btn-secondary">問題なし</button>
-                            </form>
-                        </div>
-                        {% else %}
-                        <small class="text-muted">
-                            {% if report.handled_at %}
-                            {{ report.handled_at.strftime('%m/%d %H:%M') }} 対応済み
-                            {% endif %}
-                        </small>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <div class="card text-center" style="padding: 3rem;">
-        <p class="text-muted mb-0">
-            {% if status_filter == 'pending' %}
-            未対応の報告はありません 🎉
-            {% else %}
-            該当する報告がありません
-            {% endif %}
-        </p>
-    </div>
-    {% endif %}
+ <div class="page-header">
+ <div>
+ <h1> 不適切コンテンツ管理</h1>
+ <p class="text-muted">
+ 未対応: <span class="badge badge-danger">{{ pending_count }}</span>件
+ </p>
+ </div>
+ </div>
+ 
+ <!-- フィルタ -->
+ <div class="card mb-4">
+ <div class="d-flex gap-2">
+ <a href="{{ url_for('admin.content_reports', status='pending') }}" 
+ class="btn btn-sm {% if status_filter == 'pending' %}btn-primary{% else %}btn-outline{% endif %}">
+ 未対応
+ </a>
+ <a href="{{ url_for('admin.content_reports', status='reviewing') }}" 
+ class="btn btn-sm {% if status_filter == 'reviewing' %}btn-primary{% else %}btn-outline{% endif %}">
+ 確認中
+ </a>
+ <a href="{{ url_for('admin.content_reports', status='hidden') }}" 
+ class="btn btn-sm {% if status_filter == 'hidden' %}btn-primary{% else %}btn-outline{% endif %}">
+ 非表示済み
+ </a>
+ <a href="{{ url_for('admin.content_reports', status='deleted') }}" 
+ class="btn btn-sm {% if status_filter == 'deleted' %}btn-primary{% else %}btn-outline{% endif %}">
+ 削除済み
+ </a>
+ <a href="{{ url_for('admin.content_reports', status='all') }}" 
+ class="btn btn-sm {% if status_filter == 'all' %}btn-primary{% else %}btn-outline{% endif %}">
+ すべて
+ </a>
+ </div>
+ </div>
+ 
+ {% if reports %}
+ <div class="card">
+ <table class="table">
+ <thead>
+ <tr>
+ <th>報告日時</th>
+ <th>コンテンツ</th>
+ <th>報告理由</th>
+ <th>ステータス</th>
+ <th>操作</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for report in reports %}
+ <tr>
+ <td>{{ report.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
+ <td>
+ <span class="badge badge-secondary">{{ report.content_type }}</span>
+ ID: {{ report.content_id }}
+ {% if report.shop_id %}
+ <br><small><a href="{{ url_for('admin.shop_detail', shop_id=report.shop_id) }}">店舗を見る</a></small>
+ {% endif %}
+ </td>
+ <td>
+ <strong>{{ report.reason_label }}</strong>
+ {% if report.description %}
+ <br><small class="text-muted">{{ report.description[:50] }}{% if report.description|length > 50 %}...{% endif %}</small>
+ {% endif %}
+ </td>
+ <td>
+ <span class="badge badge-{% if report.status == 'pending' %}danger{% elif report.status == 'hidden' %}warning{% elif report.status == 'deleted' %}dark{% else %}secondary{% endif %}">
+ {{ report.status_label }}
+ </span>
+ </td>
+ <td>
+ {% if report.status == 'pending' %}
+ <div class="d-flex gap-1">
+ <form action="{{ url_for('admin.handle_content_report', report_id=report.id) }}" method="POST" style="display: inline;">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <input type="hidden" name="action" value="hide">
+ <button type="submit" class="btn btn-sm btn-warning">非表示</button>
+ </form>
+ <form action="{{ url_for('admin.handle_content_report', report_id=report.id) }}" method="POST" style="display: inline;">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <input type="hidden" name="action" value="delete">
+ <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('削除しますか？')">削除</button>
+ </form>
+ <form action="{{ url_for('admin.handle_content_report', report_id=report.id) }}" method="POST" style="display: inline;">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <input type="hidden" name="action" value="dismiss">
+ <button type="submit" class="btn btn-sm btn-secondary">問題なし</button>
+ </form>
+ </div>
+ {% else %}
+ <small class="text-muted">
+ {% if report.handled_at %}
+ {{ report.handled_at.strftime('%m/%d %H:%M') }} 対応済み
+ {% endif %}
+ </small>
+ {% endif %}
+ </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ {% else %}
+ <div class="card text-center" style="padding: 3rem;">
+ <p class="text-muted mb-0">
+ {% if status_filter == 'pending' %}
+ 未対応の報告はありません 
+ {% else %}
+ 該当する報告がありません
+ {% endif %}
+ </p>
+ </div>
+ {% endif %}
 </div>
 {% endblock %}

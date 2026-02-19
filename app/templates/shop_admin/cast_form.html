@@ -4,463 +4,463 @@
 
 {% block content %}
 <div class="admin-container">
-    <div class="page-header">
-        <div>
-            <a href="{{ url_for('shop_admin.casts') }}" class="back-link">← キャスト一覧に戻る</a>
-            <h1>{{ 'キャスト編集' if cast else '新規キャスト登録' }}</h1>
-        </div>
-    </div>
-    
-    <div class="card">
-        <div class="card-body">
-            <form method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                
-                <!-- ===== 基本情報（必須） ===== -->
-                <h3 class="section-title">📋 基本情報 <span class="required-badge">必須</span></h3>
-                
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label for="name">名前 <span class="required">*</span></label>
-                        <input type="text" id="name" name="name" class="form-control" 
-                               value="{{ cast.name if cast else '' }}" required maxlength="50">
-                        <small class="form-help">本名または管理用の名前</small>
-                    </div>
-                    <div class="form-group col-md-6">
-                        <label for="age">年齢 <span class="required">*</span></label>
-                        <input type="number" id="age" name="age" class="form-control" 
-                               value="{{ cast.age if cast and cast.age else '' }}" required min="18" max="99"
-                               style="max-width: 120px;">
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="display_name">源氏名（表示名）</label>
-                    <input type="text" id="display_name" name="display_name" class="form-control" 
-                           value="{{ cast.display_name if cast and cast.display_name else '' }}" maxlength="50">
-                    <small class="form-help">お客様に表示される名前（空欄の場合は名前が表示されます）</small>
-                </div>
-                
-                <!-- ===== タグ付け（必須） ===== -->
-                <h3 class="section-title">🏷️ タグ付け <span class="required-badge">必須</span></h3>
-                <p class="text-muted mb-3">接客タイプ、趣味、特技などのタグを設定できます。プリセットから選択するか、自由に入力してください。</p>
-                
-                {% for category in tag_categories %}
-                <div class="form-group tag-section">
-                    <label>{{ tag_category_labels[category] }}</label>
-                    <div class="tag-input-wrapper">
-                        <input type="text" name="tags_{{ category }}" class="form-control tag-input" 
-                               id="tags_{{ category }}"
-                               value="{% if existing_tags is defined and category in existing_tags %}{{ existing_tags[category] | map(attribute='name') | join(', ') }}{% endif %}"
-                               placeholder="カンマ区切りで入力（例: 明るい, 話し上手）">
-                    </div>
-                    {% if category in preset_tags %}
-                    <div class="preset-tags">
-                        {% for tag_name in preset_tags[category] %}
-                        <button type="button" class="preset-tag-btn" 
-                                onclick="addTag('tags_{{ category }}', '{{ tag_name }}')">{{ tag_name }}</button>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-                
-                <!-- ===== プロフィール ===== -->
-                <h3 class="section-title">📝 プロフィール</h3>
-                
-                <div class="form-group">
-                    <label for="profile">自己紹介</label>
-                    <textarea id="profile" name="profile" class="form-control" rows="4">{{ cast.profile if cast else '' }}</textarea>
-                </div>
-                
-                <!-- ===== 写真・動画 ===== -->
-                <h3 class="section-title">📷 写真・動画</h3>
-                
-                <div class="form-group">
-                    <label for="image">メイン写真</label>
-                    {% if cast and cast.image_filename %}
-                    <div class="current-image">
-                        <img src="{{ cast.image_url }}" alt="{{ cast.name_display }}" style="max-width: 200px; border-radius: 8px;">
-                    </div>
-                    {% endif %}
-                    <input type="file" id="image" name="image" class="form-control" accept="image/*">
-                    <small class="form-help">推奨: 正方形、500x500px以上</small>
-                </div>
-                
-                <div class="form-group">
-                    <label>ギャラリー写真（複数枚）</label>
-                    {% if gallery is defined and gallery %}
-                    <div class="gallery-preview">
-                        {% for img in gallery %}
-                        <div class="gallery-item">
-                            <img src="{{ img.url }}" alt="ギャラリー画像">
-                            <label class="gallery-delete">
-                                <input type="checkbox" name="delete_gallery_image" value="{{ img.id }}">
-                                🗑️ 削除
-                            </label>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                    <input type="file" name="gallery_images" class="form-control" accept="image/*" multiple>
-                    <small class="form-help">複数選択可。追加する写真を選んでください。</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="video_url">ショート動画URL</label>
-                    <input type="url" id="video_url" name="video_url" class="form-control" 
-                           value="{{ cast.video_url if cast and cast.video_url else '' }}"
-                           placeholder="https://www.youtube.com/shorts/... or TikTok/Instagram URL">
-                    <small class="form-help">YouTube Shorts、TikTok、Instagram Reels等のURLを貼り付け</small>
-                </div>
-                
-                <!-- ===== SNS連携 ===== -->
-                <h3 class="section-title">📱 SNS連携</h3>
-                
-                <div class="form-row">
-                    <div class="form-group col-md-4">
-                        <label for="twitter_url">X (Twitter)</label>
-                        <input type="url" id="twitter_url" name="twitter_url" class="form-control" 
-                               value="{{ cast.twitter_url if cast and cast.twitter_url else '' }}"
-                               placeholder="https://x.com/username">
-                    </div>
-                    <div class="form-group col-md-4">
-                        <label for="instagram_url">Instagram</label>
-                        <input type="url" id="instagram_url" name="instagram_url" class="form-control" 
-                               value="{{ cast.instagram_url if cast and cast.instagram_url else '' }}"
-                               placeholder="https://instagram.com/username">
-                    </div>
-                    <div class="form-group col-md-4">
-                        <label for="tiktok_url">TikTok</label>
-                        <input type="url" id="tiktok_url" name="tiktok_url" class="form-control" 
-                               value="{{ cast.tiktok_url if cast and cast.tiktok_url else '' }}"
-                               placeholder="https://tiktok.com/@username">
-                    </div>
-                </div>
-                
-                <!-- ===== 誕生日 ===== -->
-                <h3 class="section-title">🎂 誕生日</h3>
-                <p class="text-muted mb-3">複数の記念日を設定できます。</p>
-                
-                <div id="birthday-container">
-                    {% if existing_birthdays is defined and existing_birthdays %}
-                        {% for bd in existing_birthdays %}
-                        <div class="birthday-row d-flex gap-2 mb-2 align-center">
-                            <input type="text" name="birthday_date" class="form-control" 
-                                   value="{{ bd.birthday_month }}-{{ bd.birthday_day }}" 
-                                   placeholder="月-日（例: 3-15）" style="max-width: 140px;">
-                            <input type="text" name="birthday_label" class="form-control" 
-                                   value="{{ bd.label or '' }}" placeholder="ラベル（例: 誕生日）" style="max-width: 200px;">
-                            <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">✕</button>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="birthday-row d-flex gap-2 mb-2 align-center">
-                            <input type="text" name="birthday_date" class="form-control" placeholder="月-日（例: 3-15）" style="max-width: 140px;">
-                            <input type="text" name="birthday_label" class="form-control" placeholder="ラベル（例: 誕生日）" style="max-width: 200px;">
-                            <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">✕</button>
-                        </div>
-                    {% endif %}
-                </div>
-                <button type="button" class="btn btn-sm btn-outline mb-4" onclick="addBirthdayRow()">＋ 誕生日を追加</button>
-                
-                <!-- ===== ギフト設定 ===== -->
-                <h3 class="section-title">🎁 ギフト設定</h3>
-                
-                <div class="form-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="is_accepting_gifts" 
-                               {% if not cast or cast.is_accepting_gifts %}checked{% endif %}>
-                        ギフトを受け付ける
-                    </label>
-                </div>
-                
-                <div class="form-group">
-                    <label for="gift_appeal">ギフトへの意気込み（お客様向け）</label>
-                    <textarea id="gift_appeal" name="gift_appeal" class="form-control" rows="3"
-                              placeholder="例: 皆さまからのギフトが励みになります！目標達成したら特別配信します♪">{{ cast.gift_appeal if cast and cast.gift_appeal else '' }}</textarea>
-                    <small class="form-help">プロフィールのギフトセクションに表示されます</small>
-                </div>
-                
-                {% if cast %}
-                <!-- ギフト進捗メーター設定 -->
-                <div class="card mt-4 mb-4" style="background: var(--color-bg-elevated);">
-                    <h4 class="mb-3">🎯 ギフト目標設定</h4>
-                    <p class="text-muted mb-3">
-                        今月のギフト目標を設定すると、プロフィールに進捗メーターが表示されます。
-                    </p>
-                    
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label for="monthly_gift_goal">今月のギフト目標（ポイント）</label>
-                            <input type="number" id="monthly_gift_goal" name="monthly_gift_goal" 
-                                   class="form-control" min="0" step="1000"
-                                   value="{{ cast.monthly_gift_goal or 0 }}"
-                                   placeholder="例: 10000">
-                            <small class="form-help">0の場合は目標なし</small>
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label>現在の進捗</label>
-                            <div class="progress-display">
-                                <div class="progress-bar-bg">
-                                    <div class="progress-bar-fill" style="width: {{ cast.gift_progress_percent }}%;"></div>
-                                </div>
-                                <div class="progress-text">
-                                    <span>{{ '{:,}'.format(cast.monthly_gift_received) }}pt</span>
-                                    <span>/ {{ '{:,}'.format(cast.monthly_gift_goal or 0) }}pt</span>
-                                    <span class="progress-percent">({{ cast.gift_progress_percent }}%)</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="monthly_gift_goal_message">目標メッセージ（お客様向け）</label>
-                        <input type="text" id="monthly_gift_goal_message" name="monthly_gift_goal_message" 
-                               class="form-control" maxlength="200"
-                               value="{{ cast.monthly_gift_goal_message or '' }}"
-                               placeholder="例: 目標達成で特別配信します！">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="show_gift_progress" 
-                                   {% if cast.show_gift_progress %}checked{% endif %}>
-                            進捗メーターをプロフィールに公開する
-                        </label>
-                    </div>
-                </div>
-                {% endif %}
-                
-                {% if cast %}
-                <!-- キャストログイン設定 -->
-                <div class="card mt-4 mb-4" style="background: var(--color-bg-elevated);">
-                    <h4 class="mb-3">📱 キャストログイン設定</h4>
-                    <p class="text-muted mb-3">
-                        キャスト本人がスマホから出勤状況やコメントを更新できるようになります。
-                    </p>
-                    
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label>ログインコード</label>
-                            {% if cast.login_code %}
-                            <div class="d-flex gap-2 align-center">
-                                <input type="text" class="form-control" value="{{ cast.login_code }}" readonly 
-                                       style="font-family: monospace; font-size: 1.25rem; letter-spacing: 2px;">
-                                <button type="button" class="btn btn-sm btn-outline" onclick="copyCode('{{ cast.login_code }}')">コピー</button>
-                            </div>
-                            {% else %}
-                            <p class="text-muted">（未発行）</p>
-                            {% endif %}
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label>ログインURL</label>
-                            <input type="text" class="form-control" value="{{ url_for('cast.login', _external=True) }}" readonly 
-                                   style="font-size: 0.8rem;">
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" name="enable_cast_login" 
-                                   {% if cast.has_login_enabled %}checked{% endif %}>
-                            キャストログインを有効にする
-                        </label>
-                    </div>
-                    
-                    <div class="form-group" id="pin-section" {% if not cast.has_login_enabled %}style="display: none;"{% endif %}>
-                        <label for="cast_pin">新しいPIN（4桁数字）</label>
-                        <input type="text" id="cast_pin" name="cast_pin" class="form-control" 
-                               pattern="[0-9]{4}" maxlength="4" inputmode="numeric"
-                               placeholder="変更する場合のみ入力" style="max-width: 150px;">
-                        <small class="form-help">キャストに伝えるPINを設定します</small>
-                    </div>
-                    
-                    {% if cast.last_login_at %}
-                    <p class="text-muted" style="font-size: 0.8rem;">
-                        最終ログイン: {{ cast.last_login_at.strftime('%Y/%m/%d %H:%M') }}
-                    </p>
-                    {% endif %}
-                </div>
-                
-                <!-- 表示設定 -->
-                <h3 class="section-title">⚙️ 表示設定</h3>
-                
-                <div class="form-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="is_visible" 
-                               {% if cast.is_visible %}checked{% endif %}>
-                        プロフィールページを公開する
-                    </label>
-                </div>
-                
-                <div class="form-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="is_active" 
-                               {% if cast.is_active %}checked{% endif %}>
-                        有効（一覧に表示）
-                    </label>
-                </div>
-                
-                <div class="form-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="is_featured" 
-                               {% if cast.is_featured %}checked{% endif %}>
-                        注目キャストとして表示
-                    </label>
-                </div>
-                {% endif %}
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">{{ '更新' if cast else '登録' }}</button>
-                    <a href="{{ url_for('shop_admin.casts') }}" class="btn btn-secondary">キャンセル</a>
-                </div>
-            </form>
-        </div>
-    </div>
+ <div class="page-header">
+ <div>
+ <a href="{{ url_for('shop_admin.casts') }}" class="back-link">← キャスト一覧に戻る</a>
+ <h1>{{ 'キャスト編集' if cast else '新規キャスト登録' }}</h1>
+ </div>
+ </div>
+ 
+ <div class="card">
+ <div class="card-body">
+ <form method="POST" enctype="multipart/form-data">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ 
+ <!-- ===== 基本情報（必須） ===== -->
+ <h3 class="section-title"> 基本情報 <span class="required-badge">必須</span></h3>
+ 
+ <div class="form-row">
+ <div class="form-group col-md-6">
+ <label for="name">名前 <span class="required">*</span></label>
+ <input type="text" id="name" name="name" class="form-control" 
+ value="{{ cast.name if cast else '' }}" required maxlength="50">
+ <small class="form-help">本名または管理用の名前</small>
+ </div>
+ <div class="form-group col-md-6">
+ <label for="age">年齢 <span class="required">*</span></label>
+ <input type="number" id="age" name="age" class="form-control" 
+ value="{{ cast.age if cast and cast.age else '' }}" required min="18" max="99"
+ style="max-width: 120px;">
+ </div>
+ </div>
+ 
+ <div class="form-group">
+ <label for="display_name">源氏名（表示名）</label>
+ <input type="text" id="display_name" name="display_name" class="form-control" 
+ value="{{ cast.display_name if cast and cast.display_name else '' }}" maxlength="50">
+ <small class="form-help">お客様に表示される名前（空欄の場合は名前が表示されます）</small>
+ </div>
+ 
+ <!-- ===== タグ付け（必須） ===== -->
+ <h3 class="section-title"> タグ付け <span class="required-badge">必須</span></h3>
+ <p class="text-muted mb-3">接客タイプ、趣味、特技などのタグを設定できます。プリセットから選択するか、自由に入力してください。</p>
+ 
+ {% for category in tag_categories %}
+ <div class="form-group tag-section">
+ <label>{{ tag_category_labels[category] }}</label>
+ <div class="tag-input-wrapper">
+ <input type="text" name="tags_{{ category }}" class="form-control tag-input" 
+ id="tags_{{ category }}"
+ value="{% if existing_tags is defined and category in existing_tags %}{{ existing_tags[category] | map(attribute='name') | join(', ') }}{% endif %}"
+ placeholder="カンマ区切りで入力（例: 明るい, 話し上手）">
+ </div>
+ {% if category in preset_tags %}
+ <div class="preset-tags">
+ {% for tag_name in preset_tags[category] %}
+ <button type="button" class="preset-tag-btn" 
+ onclick="addTag('tags_{{ category }}', '{{ tag_name }}')">{{ tag_name }}</button>
+ {% endfor %}
+ </div>
+ {% endif %}
+ </div>
+ {% endfor %}
+ 
+ <!-- ===== プロフィール ===== -->
+ <h3 class="section-title"> プロフィール</h3>
+ 
+ <div class="form-group">
+ <label for="profile">自己紹介</label>
+ <textarea id="profile" name="profile" class="form-control" rows="4">{{ cast.profile if cast else '' }}</textarea>
+ </div>
+ 
+ <!-- ===== 写真動画 ===== -->
+ <h3 class="section-title"> 写真動画</h3>
+ 
+ <div class="form-group">
+ <label for="image">メイン写真</label>
+ {% if cast and cast.image_filename %}
+ <div class="current-image">
+ <img src="{{ cast.image_url }}" alt="{{ cast.name_display }}" style="max-width: 200px; border-radius: 8px;">
+ </div>
+ {% endif %}
+ <input type="file" id="image" name="image" class="form-control" accept="image/*">
+ <small class="form-help">推奨: 正方形、500x500px以上</small>
+ </div>
+ 
+ <div class="form-group">
+ <label>ギャラリー写真（複数枚）</label>
+ {% if gallery is defined and gallery %}
+ <div class="gallery-preview">
+ {% for img in gallery %}
+ <div class="gallery-item">
+ <img src="{{ img.url }}" alt="ギャラリー画像">
+ <label class="gallery-delete">
+ <input type="checkbox" name="delete_gallery_image" value="{{ img.id }}">
+ 削除
+ </label>
+ </div>
+ {% endfor %}
+ </div>
+ {% endif %}
+ <input type="file" name="gallery_images" class="form-control" accept="image/*" multiple>
+ <small class="form-help">複数選択可。追加する写真を選んでください。</small>
+ </div>
+ 
+ <div class="form-group">
+ <label for="video_url">ショート動画URL</label>
+ <input type="url" id="video_url" name="video_url" class="form-control" 
+ value="{{ cast.video_url if cast and cast.video_url else '' }}"
+ placeholder="https://www.youtube.com/shorts/... or TikTok/Instagram URL">
+ <small class="form-help">YouTube Shorts、TikTok、Instagram Reels等のURLを貼り付け</small>
+ </div>
+ 
+ <!-- ===== SNS連携 ===== -->
+ <h3 class="section-title"> SNS連携</h3>
+ 
+ <div class="form-row">
+ <div class="form-group col-md-4">
+ <label for="twitter_url">X (Twitter)</label>
+ <input type="url" id="twitter_url" name="twitter_url" class="form-control" 
+ value="{{ cast.twitter_url if cast and cast.twitter_url else '' }}"
+ placeholder="https://x.com/username">
+ </div>
+ <div class="form-group col-md-4">
+ <label for="instagram_url">Instagram</label>
+ <input type="url" id="instagram_url" name="instagram_url" class="form-control" 
+ value="{{ cast.instagram_url if cast and cast.instagram_url else '' }}"
+ placeholder="https://instagram.com/username">
+ </div>
+ <div class="form-group col-md-4">
+ <label for="tiktok_url">TikTok</label>
+ <input type="url" id="tiktok_url" name="tiktok_url" class="form-control" 
+ value="{{ cast.tiktok_url if cast and cast.tiktok_url else '' }}"
+ placeholder="https://tiktok.com/@username">
+ </div>
+ </div>
+ 
+ <!-- ===== 誕生日 ===== -->
+ <h3 class="section-title"> 誕生日</h3>
+ <p class="text-muted mb-3">複数の記念日を設定できます。</p>
+ 
+ <div id="birthday-container">
+ {% if existing_birthdays is defined and existing_birthdays %}
+ {% for bd in existing_birthdays %}
+ <div class="birthday-row d-flex gap-2 mb-2 align-center">
+ <input type="text" name="birthday_date" class="form-control" 
+ value="{{ bd.birthday_month }}-{{ bd.birthday_day }}" 
+ placeholder="月-日（例: 3-15）" style="max-width: 140px;">
+ <input type="text" name="birthday_label" class="form-control" 
+ value="{{ bd.label or '' }}" placeholder="ラベル（例: 誕生日）" style="max-width: 200px;">
+ <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()"></button>
+ </div>
+ {% endfor %}
+ {% else %}
+ <div class="birthday-row d-flex gap-2 mb-2 align-center">
+ <input type="text" name="birthday_date" class="form-control" placeholder="月-日（例: 3-15）" style="max-width: 140px;">
+ <input type="text" name="birthday_label" class="form-control" placeholder="ラベル（例: 誕生日）" style="max-width: 200px;">
+ <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()"></button>
+ </div>
+ {% endif %}
+ </div>
+ <button type="button" class="btn btn-sm btn-outline mb-4" onclick="addBirthdayRow()">＋ 誕生日を追加</button>
+ 
+ <!-- ===== ギフト設定 ===== -->
+ <h3 class="section-title"> ギフト設定</h3>
+ 
+ <div class="form-group">
+ <label class="checkbox-label">
+ <input type="checkbox" name="is_accepting_gifts" 
+ {% if not cast or cast.is_accepting_gifts %}checked{% endif %}>
+ ギフトを受け付ける
+ </label>
+ </div>
+ 
+ <div class="form-group">
+ <label for="gift_appeal">ギフトへの意気込み（お客様向け）</label>
+ <textarea id="gift_appeal" name="gift_appeal" class="form-control" rows="3"
+ placeholder="例: 皆さまからのギフトが励みになります！目標達成したら特別配信します">{{ cast.gift_appeal if cast and cast.gift_appeal else '' }}</textarea>
+ <small class="form-help">プロフィールのギフトセクションに表示されます</small>
+ </div>
+ 
+ {% if cast %}
+ <!-- ギフト進捗メーター設定 -->
+ <div class="card mt-4 mb-4" style="background: var(--color-bg-elevated);">
+ <h4 class="mb-3"> ギフト目標設定</h4>
+ <p class="text-muted mb-3">
+ 今月のギフト目標を設定すると、プロフィールに進捗メーターが表示されます。
+ </p>
+ 
+ <div class="form-row">
+ <div class="form-group col-md-6">
+ <label for="monthly_gift_goal">今月のギフト目標（ポイント）</label>
+ <input type="number" id="monthly_gift_goal" name="monthly_gift_goal" 
+ class="form-control" min="0" step="1000"
+ value="{{ cast.monthly_gift_goal or 0 }}"
+ placeholder="例: 10000">
+ <small class="form-help">0の場合は目標なし</small>
+ </div>
+ <div class="form-group col-md-6">
+ <label>現在の進捗</label>
+ <div class="progress-display">
+ <div class="progress-bar-bg">
+ <div class="progress-bar-fill" style="width: {{ cast.gift_progress_percent }}%;"></div>
+ </div>
+ <div class="progress-text">
+ <span>{{ '{:,}'.format(cast.monthly_gift_received) }}pt</span>
+ <span>/ {{ '{:,}'.format(cast.monthly_gift_goal or 0) }}pt</span>
+ <span class="progress-percent">({{ cast.gift_progress_percent }}%)</span>
+ </div>
+ </div>
+ </div>
+ </div>
+ 
+ <div class="form-group">
+ <label for="monthly_gift_goal_message">目標メッセージ（お客様向け）</label>
+ <input type="text" id="monthly_gift_goal_message" name="monthly_gift_goal_message" 
+ class="form-control" maxlength="200"
+ value="{{ cast.monthly_gift_goal_message or '' }}"
+ placeholder="例: 目標達成で特別配信します！">
+ </div>
+ 
+ <div class="form-group">
+ <label class="checkbox-label">
+ <input type="checkbox" name="show_gift_progress" 
+ {% if cast.show_gift_progress %}checked{% endif %}>
+ 進捗メーターをプロフィールに公開する
+ </label>
+ </div>
+ </div>
+ {% endif %}
+ 
+ {% if cast %}
+ <!-- キャストログイン設定 -->
+ <div class="card mt-4 mb-4" style="background: var(--color-bg-elevated);">
+ <h4 class="mb-3"> キャストログイン設定</h4>
+ <p class="text-muted mb-3">
+ キャスト本人がスマホから出勤状況やコメントを更新できるようになります。
+ </p>
+ 
+ <div class="form-row">
+ <div class="form-group col-md-6">
+ <label>ログインコード</label>
+ {% if cast.login_code %}
+ <div class="d-flex gap-2 align-center">
+ <input type="text" class="form-control" value="{{ cast.login_code }}" readonly 
+ style="font-family: monospace; font-size: 1.25rem; letter-spacing: 2px;">
+ <button type="button" class="btn btn-sm btn-outline" onclick="copyCode('{{ cast.login_code }}')">コピー</button>
+ </div>
+ {% else %}
+ <p class="text-muted">（未発行）</p>
+ {% endif %}
+ </div>
+ <div class="form-group col-md-6">
+ <label>ログインURL</label>
+ <input type="text" class="form-control" value="{{ url_for('cast.login', _external=True) }}" readonly 
+ style="font-size: 0.8rem;">
+ </div>
+ </div>
+ 
+ <div class="form-group">
+ <label class="checkbox-label">
+ <input type="checkbox" name="enable_cast_login" 
+ {% if cast.has_login_enabled %}checked{% endif %}>
+ キャストログインを有効にする
+ </label>
+ </div>
+ 
+ <div class="form-group" id="pin-section" {% if not cast.has_login_enabled %}style="display: none;"{% endif %}>
+ <label for="cast_pin">新しいPIN（4桁数字）</label>
+ <input type="text" id="cast_pin" name="cast_pin" class="form-control" 
+ pattern="[0-9]{4}" maxlength="4" inputmode="numeric"
+ placeholder="変更する場合のみ入力" style="max-width: 150px;">
+ <small class="form-help">キャストに伝えるPINを設定します</small>
+ </div>
+ 
+ {% if cast.last_login_at %}
+ <p class="text-muted" style="font-size: 0.8rem;">
+ 最終ログイン: {{ cast.last_login_at.strftime('%Y/%m/%d %H:%M') }}
+ </p>
+ {% endif %}
+ </div>
+ 
+ <!-- 表示設定 -->
+ <h3 class="section-title"> 表示設定</h3>
+ 
+ <div class="form-group">
+ <label class="checkbox-label">
+ <input type="checkbox" name="is_visible" 
+ {% if cast.is_visible %}checked{% endif %}>
+ プロフィールページを公開する
+ </label>
+ </div>
+ 
+ <div class="form-group">
+ <label class="checkbox-label">
+ <input type="checkbox" name="is_active" 
+ {% if cast.is_active %}checked{% endif %}>
+ 有効（一覧に表示）
+ </label>
+ </div>
+ 
+ <div class="form-group">
+ <label class="checkbox-label">
+ <input type="checkbox" name="is_featured" 
+ {% if cast.is_featured %}checked{% endif %}>
+ 注目キャストとして表示
+ </label>
+ </div>
+ {% endif %}
+ 
+ <div class="form-actions">
+ <button type="submit" class="btn btn-primary">{{ '更新' if cast else '登録' }}</button>
+ <a href="{{ url_for('shop_admin.casts') }}" class="btn btn-secondary">キャンセル</a>
+ </div>
+ </form>
+ </div>
+ </div>
 </div>
 
 <style>
 .section-title {
-    margin-top: var(--space-xl);
-    margin-bottom: var(--space-md);
-    padding-bottom: var(--space-sm);
-    border-bottom: 2px solid var(--color-border);
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
+ margin-top: var(--space-xl);
+ margin-bottom: var(--space-md);
+ padding-bottom: var(--space-sm);
+ border-bottom: 2px solid var(--color-border);
+ display: flex;
+ align-items: center;
+ gap: var(--space-sm);
 }
 .required-badge {
-    font-size: 0.7rem;
-    padding: 2px 8px;
-    background: var(--color-danger);
-    color: #fff;
-    border-radius: 4px;
-    font-weight: normal;
+ font-size: 0.7rem;
+ padding: 2px 8px;
+ background: var(--color-danger);
+ color: #fff;
+ border-radius: 4px;
+ font-weight: normal;
 }
 .tag-section {
-    margin-bottom: var(--space-md);
+ margin-bottom: var(--space-md);
 }
 .preset-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 8px;
+ display: flex;
+ flex-wrap: wrap;
+ gap: 6px;
+ margin-top: 8px;
 }
 .preset-tag-btn {
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border);
-    border-radius: 20px;
-    padding: 4px 12px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: var(--color-text);
+ background: var(--color-bg-elevated);
+ border: 1px solid var(--color-border);
+ border-radius: 20px;
+ padding: 4px 12px;
+ font-size: 0.8rem;
+ cursor: pointer;
+ transition: all 0.2s;
+ color: var(--color-text);
 }
 .preset-tag-btn:hover {
-    background: var(--color-primary);
-    color: #fff;
-    border-color: var(--color-primary);
+ background: var(--color-primary);
+ color: #fff;
+ border-color: var(--color-primary);
 }
 .gallery-preview {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: var(--space-md);
+ display: flex;
+ flex-wrap: wrap;
+ gap: 12px;
+ margin-bottom: var(--space-md);
 }
 .gallery-item {
-    position: relative;
-    width: 120px;
+ position: relative;
+ width: 120px;
 }
 .gallery-item img {
-    width: 120px;
-    height: 120px;
-    object-fit: cover;
-    border-radius: 8px;
-    border: 1px solid var(--color-border);
+ width: 120px;
+ height: 120px;
+ object-fit: cover;
+ border-radius: 8px;
+ border: 1px solid var(--color-border);
 }
 .gallery-delete {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.75rem;
-    margin-top: 4px;
-    cursor: pointer;
-    color: var(--color-danger);
+ display: flex;
+ align-items: center;
+ gap: 4px;
+ font-size: 0.75rem;
+ margin-top: 4px;
+ cursor: pointer;
+ color: var(--color-danger);
 }
 .birthday-row {
-    display: flex;
-    gap: var(--space-sm);
-    align-items: center;
+ display: flex;
+ gap: var(--space-sm);
+ align-items: center;
 }
 .progress-display {
-    margin-top: 0.5rem;
+ margin-top: 0.5rem;
 }
 .progress-bar-bg {
-    height: 20px;
-    background: var(--color-bg);
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 0.5rem;
+ height: 20px;
+ background: var(--color-bg);
+ border-radius: 10px;
+ overflow: hidden;
+ margin-bottom: 0.5rem;
 }
 .progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--color-primary), #f59e0b);
-    border-radius: 10px;
-    transition: width 0.5s ease;
+ height: 100%;
+ background: linear-gradient(90deg, var(--color-primary), #f59e0b);
+ border-radius: 10px;
+ transition: width 0.5s ease;
 }
 .progress-text {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
+ display: flex;
+ justify-content: space-between;
+ font-size: 0.875rem;
+ color: var(--color-text-muted);
 }
 .progress-percent {
-    font-weight: 600;
-    color: var(--color-primary);
+ font-weight: 600;
+ color: var(--color-primary);
 }
 </style>
 
 <script>
 // タグ追加
 function addTag(inputId, tagName) {
-    const input = document.getElementById(inputId);
-    const current = input.value.split(',').map(t => t.trim()).filter(t => t);
-    if (!current.includes(tagName)) {
-        current.push(tagName);
-        input.value = current.join(', ');
-    }
+ const input = document.getElementById(inputId);
+ const current = input.value.split(',').map(t => t.trim()).filter(t => t);
+ if (!current.includes(tagName)) {
+ current.push(tagName);
+ input.value = current.join(', ');
+ }
 }
 
 // 誕生日行追加
 function addBirthdayRow() {
-    const container = document.getElementById('birthday-container');
-    const row = document.createElement('div');
-    row.className = 'birthday-row d-flex gap-2 mb-2 align-center';
-    row.innerHTML = `
-        <input type="text" name="birthday_date" class="form-control" placeholder="月-日（例: 3-15）" style="max-width: 140px;">
-        <input type="text" name="birthday_label" class="form-control" placeholder="ラベル（例: 記念日）" style="max-width: 200px;">
-        <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">✕</button>
-    `;
-    container.appendChild(row);
+ const container = document.getElementById('birthday-container');
+ const row = document.createElement('div');
+ row.className = 'birthday-row d-flex gap-2 mb-2 align-center';
+ row.innerHTML = `
+ <input type="text" name="birthday_date" class="form-control" placeholder="月-日（例: 3-15）" style="max-width: 140px;">
+ <input type="text" name="birthday_label" class="form-control" placeholder="ラベル（例: 記念日）" style="max-width: 200px;">
+ <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()"></button>
+ `;
+ container.appendChild(row);
 }
 
 // キャストログイン設定のUI連動
 document.addEventListener('DOMContentLoaded', function() {
-    const checkbox = document.querySelector('input[name="enable_cast_login"]');
-    const pinSection = document.getElementById('pin-section');
-    
-    if (checkbox && pinSection) {
-        checkbox.addEventListener('change', function() {
-            pinSection.style.display = this.checked ? 'block' : 'none';
-        });
-    }
+ const checkbox = document.querySelector('input[name="enable_cast_login"]');
+ const pinSection = document.getElementById('pin-section');
+ 
+ if (checkbox && pinSection) {
+ checkbox.addEventListener('change', function() {
+ pinSection.style.display = this.checked ? 'block' : 'none';
+ });
+ }
 });
 
 function copyCode(code) {
-    navigator.clipboard.writeText(code).then(function() {
-        alert('ログインコードをコピーしました: ' + code);
-    });
+ navigator.clipboard.writeText(code).then(function() {
+ alert('ログインコードをコピーしました: ' + code);
+ });
 }
 </script>
 {% endblock %}

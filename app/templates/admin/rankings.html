@@ -4,227 +4,227 @@
 
 {% block content %}
 <div class="admin-layout">
-    {% include "admin/_sidebar.html" %}
-    
-    <div class="admin-content">
-        <div class="d-flex justify-between align-center mb-4">
-            <h1 class="mb-0">キャストランキング管理</h1>
-            <div class="d-flex gap-2">
-                <a href="{{ url_for('admin.ranking_config') }}" class="btn btn-secondary">
-                    ⚙️ 係数設定
-                </a>
-                <a href="{{ url_for('admin.ranking_badges') }}" class="btn btn-secondary">
-                    🏆 バッジ管理
-                </a>
-            </div>
-        </div>
-        
-        <!-- フィルター -->
-        <div class="card mb-4">
-            <form method="GET" class="d-flex gap-3" style="flex-wrap: wrap; align-items: flex-end;">
-                <div class="form-group mb-0">
-                    <label class="form-label">年</label>
-                    <select name="year" class="form-control" style="width: auto;">
-                        {% for y in range(2024, 2030) %}
-                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}年</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group mb-0">
-                    <label class="form-label">月</label>
-                    <select name="month" class="form-control" style="width: auto;">
-                        {% for m in range(1, 13) %}
-                        <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}月</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group mb-0">
-                    <label class="form-label">エリア</label>
-                    <select name="area" class="form-control" style="width: auto;">
-                        {% for key, def in areas.items() %}
-                        <option value="{{ key }}" {% if key == area %}selected{% endif %}>
-                            {{ def.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary">表示</button>
-            </form>
-        </div>
-        
-        <!-- 統計サマリー -->
-        <div class="d-flex gap-3 mb-4">
-            <div class="card" style="flex: 1; text-align: center;">
-                <div class="text-muted mb-1">ランキング件数</div>
-                <div style="font-size: 1.5rem; font-weight: bold;">{{ rankings|length }}</div>
-                <div class="text-muted" style="font-size: 0.85rem;">確定: {{ finalized_count }}件</div>
-            </div>
-            <div class="card" style="flex: 1; text-align: center;">
-                <div class="text-muted mb-1">総PV</div>
-                <div style="font-size: 1.5rem; font-weight: bold;">{{ '{:,}'.format(total_pv) }}</div>
-            </div>
-            <div class="card" style="flex: 1; text-align: center;">
-                <div class="text-muted mb-1">総ギフトpt</div>
-                <div style="font-size: 1.5rem; font-weight: bold;">{{ '{:,}'.format(total_gifts) }}</div>
-            </div>
-        </div>
-        
-        <!-- 計算・確定ボタン -->
-        <div class="card mb-4">
-            <div class="d-flex gap-3" style="flex-wrap: wrap;">
-                <form method="POST" action="{{ url_for('admin.calculate_rankings') }}" class="d-flex gap-2">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="year" value="{{ year }}">
-                    <input type="hidden" name="month" value="{{ month }}">
-                    <input type="hidden" name="area" value="{{ area }}">
-                    <button type="submit" class="btn btn-secondary">🔄 再計算（プレビュー）</button>
-                </form>
-                
-                <form method="POST" action="{{ url_for('admin.calculate_rankings') }}" class="d-flex gap-2"
-                      onsubmit="return confirm('このエリアのランキングを確定しますか？');">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="year" value="{{ year }}">
-                    <input type="hidden" name="month" value="{{ month }}">
-                    <input type="hidden" name="area" value="{{ area }}">
-                    <input type="hidden" name="finalize" value="on">
-                    <button type="submit" class="btn btn-primary">✅ このエリアを確定</button>
-                </form>
-                
-                <form method="POST" action="{{ url_for('admin.finalize_month_rankings') }}" 
-                      onsubmit="return confirm('全エリアの{{ year }}年{{ month }}月ランキングを確定し、TOP10にバッジを付与しますか？');">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="year" value="{{ year }}">
-                    <input type="hidden" name="month" value="{{ month }}">
-                    <button type="submit" class="btn btn-warning">🏆 全エリア確定＋バッジ付与</button>
-                </form>
-            </div>
-        </div>
-        
-        <!-- ランキングテーブル -->
-        <div class="card">
-            <h3 class="mb-3">{{ area_definitions[area].name if area in area_definitions else area }} ランキング - {{ year }}年{{ month }}月</h3>
-            
-            {% if rankings %}
-            <div style="overflow-x: auto;">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th style="width: 60px;">順位</th>
-                            <th>キャスト</th>
-                            <th>店舗</th>
-                            <th style="text-align: right;">PV</th>
-                            <th style="text-align: right;">ギフトpt</th>
-                            <th style="text-align: right;">スコア</th>
-                            <th>状態</th>
-                            <th style="width: 100px;"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for ranking in rankings %}
-                        <tr {% if ranking.rank and ranking.rank <= 3 %}style="background: rgba(255, 215, 0, 0.1);"{% endif %}>
-                            <td>
-                                {% if ranking.rank %}
-                                    {% if ranking.rank == 1 %}
-                                    <span style="font-size: 1.2rem;">🥇</span>
-                                    {% elif ranking.rank == 2 %}
-                                    <span style="font-size: 1.2rem;">🥈</span>
-                                    {% elif ranking.rank == 3 %}
-                                    <span style="font-size: 1.2rem;">🥉</span>
-                                    {% else %}
-                                    <strong>{{ ranking.rank }}</strong>
-                                    {% endif %}
-                                    {% if ranking.rank_change %}
-                                    <span style="font-size: 0.8rem; color: {% if '↑' in ranking.rank_change %}#4CAF50{% elif '↓' in ranking.rank_change %}#f44336{% else %}#999{% endif %};">
-                                        {{ ranking.rank_change }}
-                                    </span>
-                                    {% endif %}
-                                {% else %}
-                                <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <strong>{{ ranking.cast.name_display }}</strong>
-                                {% if ranking.is_overridden %}
-                                <span class="badge badge-warning" title="{{ ranking.override_reason }}">変更</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ ranking.cast.shop.name if ranking.cast.shop else '—' }}</td>
-                            <td style="text-align: right;">{{ '{:,}'.format(ranking.pv_count) }}</td>
-                            <td style="text-align: right;">{{ '{:,}'.format(ranking.gift_points) }}</td>
-                            <td style="text-align: right;"><strong>{{ '{:,.1f}'.format(ranking.total_score) }}</strong></td>
-                            <td>
-                                {% if ranking.is_finalized %}
-                                <span class="badge badge-success">確定</span>
-                                {% else %}
-                                <span class="badge" style="background: var(--color-bg-elevated);">未確定</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <button type="button" class="btn btn-sm btn-secondary" 
-                                        onclick="showOverrideModal({{ ranking.id }}, '{{ ranking.cast.name_display }}', {{ ranking.rank or 0 }})">
-                                    編集
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <p class="text-muted text-center">ランキングデータがありません</p>
-            {% endif %}
-        </div>
-    </div>
+ {% include "admin/_sidebar.html" %}
+ 
+ <div class="admin-content">
+ <div class="d-flex justify-between align-center mb-4">
+ <h1 class="mb-0">キャストランキング管理</h1>
+ <div class="d-flex gap-2">
+ <a href="{{ url_for('admin.ranking_config') }}" class="btn btn-secondary">
+ 係数設定
+ </a>
+ <a href="{{ url_for('admin.ranking_badges') }}" class="btn btn-secondary">
+ バッジ管理
+ </a>
+ </div>
+ </div>
+ 
+ <!-- フィルター -->
+ <div class="card mb-4">
+ <form method="GET" class="d-flex gap-3" style="flex-wrap: wrap; align-items: flex-end;">
+ <div class="form-group mb-0">
+ <label class="form-label">年</label>
+ <select name="year" class="form-control" style="width: auto;">
+ {% for y in range(2024, 2030) %}
+ <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}年</option>
+ {% endfor %}
+ </select>
+ </div>
+ <div class="form-group mb-0">
+ <label class="form-label">月</label>
+ <select name="month" class="form-control" style="width: auto;">
+ {% for m in range(1, 13) %}
+ <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}月</option>
+ {% endfor %}
+ </select>
+ </div>
+ <div class="form-group mb-0">
+ <label class="form-label">エリア</label>
+ <select name="area" class="form-control" style="width: auto;">
+ {% for key, def in areas.items() %}
+ <option value="{{ key }}" {% if key == area %}selected{% endif %}>
+ {{ def.name }}
+ </option>
+ {% endfor %}
+ </select>
+ </div>
+ <button type="submit" class="btn btn-primary">表示</button>
+ </form>
+ </div>
+ 
+ <!-- 統計サマリー -->
+ <div class="d-flex gap-3 mb-4">
+ <div class="card" style="flex: 1; text-align: center;">
+ <div class="text-muted mb-1">ランキング件数</div>
+ <div style="font-size: 1.5rem; font-weight: bold;">{{ rankings|length }}</div>
+ <div class="text-muted" style="font-size: 0.85rem;">確定: {{ finalized_count }}件</div>
+ </div>
+ <div class="card" style="flex: 1; text-align: center;">
+ <div class="text-muted mb-1">総PV</div>
+ <div style="font-size: 1.5rem; font-weight: bold;">{{ '{:,}'.format(total_pv) }}</div>
+ </div>
+ <div class="card" style="flex: 1; text-align: center;">
+ <div class="text-muted mb-1">総ギフトpt</div>
+ <div style="font-size: 1.5rem; font-weight: bold;">{{ '{:,}'.format(total_gifts) }}</div>
+ </div>
+ </div>
+ 
+ <!-- 計算確定ボタン -->
+ <div class="card mb-4">
+ <div class="d-flex gap-3" style="flex-wrap: wrap;">
+ <form method="POST" action="{{ url_for('admin.calculate_rankings') }}" class="d-flex gap-2">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <input type="hidden" name="year" value="{{ year }}">
+ <input type="hidden" name="month" value="{{ month }}">
+ <input type="hidden" name="area" value="{{ area }}">
+ <button type="submit" class="btn btn-secondary"> 再計算（プレビュー）</button>
+ </form>
+ 
+ <form method="POST" action="{{ url_for('admin.calculate_rankings') }}" class="d-flex gap-2"
+ onsubmit="return confirm('このエリアのランキングを確定しますか？');">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <input type="hidden" name="year" value="{{ year }}">
+ <input type="hidden" name="month" value="{{ month }}">
+ <input type="hidden" name="area" value="{{ area }}">
+ <input type="hidden" name="finalize" value="on">
+ <button type="submit" class="btn btn-primary"> このエリアを確定</button>
+ </form>
+ 
+ <form method="POST" action="{{ url_for('admin.finalize_month_rankings') }}" 
+ onsubmit="return confirm('全エリアの{{ year }}年{{ month }}月ランキングを確定し、TOP10にバッジを付与しますか？');">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <input type="hidden" name="year" value="{{ year }}">
+ <input type="hidden" name="month" value="{{ month }}">
+ <button type="submit" class="btn btn-warning"> 全エリア確定＋バッジ付与</button>
+ </form>
+ </div>
+ </div>
+ 
+ <!-- ランキングテーブル -->
+ <div class="card">
+ <h3 class="mb-3">{{ area_definitions[area].name if area in area_definitions else area }} ランキング - {{ year }}年{{ month }}月</h3>
+ 
+ {% if rankings %}
+ <div style="overflow-x: auto;">
+ <table class="table">
+ <thead>
+ <tr>
+ <th style="width: 60px;">順位</th>
+ <th>キャスト</th>
+ <th>店舗</th>
+ <th style="text-align: right;">PV</th>
+ <th style="text-align: right;">ギフトpt</th>
+ <th style="text-align: right;">スコア</th>
+ <th>状態</th>
+ <th style="width: 100px;"></th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for ranking in rankings %}
+ <tr {% if ranking.rank and ranking.rank <= 3 %}style="background: rgba(255, 215, 0, 0.1);"{% endif %}>
+ <td>
+ {% if ranking.rank %}
+ {% if ranking.rank == 1 %}
+ <span style="font-size: 1.2rem;"></span>
+ {% elif ranking.rank == 2 %}
+ <span style="font-size: 1.2rem;"></span>
+ {% elif ranking.rank == 3 %}
+ <span style="font-size: 1.2rem;"></span>
+ {% else %}
+ <strong>{{ ranking.rank }}</strong>
+ {% endif %}
+ {% if ranking.rank_change %}
+ <span style="font-size: 0.8rem; color: {% if '↑' in ranking.rank_change %}#4CAF50{% elif '↓' in ranking.rank_change %}#f44336{% else %}#999{% endif %};">
+ {{ ranking.rank_change }}
+ </span>
+ {% endif %}
+ {% else %}
+ <span class="text-muted">—</span>
+ {% endif %}
+ </td>
+ <td>
+ <strong>{{ ranking.cast.name_display }}</strong>
+ {% if ranking.is_overridden %}
+ <span class="badge badge-warning" title="{{ ranking.override_reason }}">変更</span>
+ {% endif %}
+ </td>
+ <td>{{ ranking.cast.shop.name if ranking.cast.shop else '—' }}</td>
+ <td style="text-align: right;">{{ '{:,}'.format(ranking.pv_count) }}</td>
+ <td style="text-align: right;">{{ '{:,}'.format(ranking.gift_points) }}</td>
+ <td style="text-align: right;"><strong>{{ '{:,.1f}'.format(ranking.total_score) }}</strong></td>
+ <td>
+ {% if ranking.is_finalized %}
+ <span class="badge badge-success">確定</span>
+ {% else %}
+ <span class="badge" style="background: var(--color-bg-elevated);">未確定</span>
+ {% endif %}
+ </td>
+ <td>
+ <button type="button" class="btn btn-sm btn-secondary" 
+ onclick="showOverrideModal({{ ranking.id }}, '{{ ranking.cast.name_display }}', {{ ranking.rank or 0 }})">
+ 編集
+ </button>
+ </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ {% else %}
+ <p class="text-muted text-center">ランキングデータがありません</p>
+ {% endif %}
+ </div>
+ </div>
 </div>
 
 <!-- 順位変更モーダル -->
 <div id="overrideModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-    <div class="card" style="max-width: 400px; margin: auto;">
-        <h3 class="mb-3">順位変更</h3>
-        <form method="POST" id="overrideForm">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <p id="overrideCastName" style="font-weight: bold;"></p>
-            
-            <div class="form-group">
-                <label class="form-label">新しい順位</label>
-                <input type="number" name="new_rank" id="newRank" class="form-control" min="1" required>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">変更理由 *</label>
-                <input type="text" name="reason" class="form-control" placeholder="不正行為、誤集計など" required>
-            </div>
-            
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">変更</button>
-                <button type="button" class="btn btn-secondary" onclick="closeOverrideModal()">キャンセル</button>
-            </div>
-        </form>
-        
-        <hr style="margin: var(--space-lg) 0; border-color: var(--color-border);">
-        
-        <form method="POST" id="disqualifyForm" onsubmit="return confirm('このキャストを失格にしますか？');">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="form-group">
-                <label class="form-label">失格理由</label>
-                <input type="text" name="reason" class="form-control" placeholder="不正行為など">
-            </div>
-            <button type="submit" class="btn btn-danger">失格にする</button>
-        </form>
-    </div>
+ <div class="card" style="max-width: 400px; margin: auto;">
+ <h3 class="mb-3">順位変更</h3>
+ <form method="POST" id="overrideForm">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <p id="overrideCastName" style="font-weight: bold;"></p>
+ 
+ <div class="form-group">
+ <label class="form-label">新しい順位</label>
+ <input type="number" name="new_rank" id="newRank" class="form-control" min="1" required>
+ </div>
+ 
+ <div class="form-group">
+ <label class="form-label">変更理由 *</label>
+ <input type="text" name="reason" class="form-control" placeholder="不正行為、誤集計など" required>
+ </div>
+ 
+ <div class="d-flex gap-2">
+ <button type="submit" class="btn btn-primary">変更</button>
+ <button type="button" class="btn btn-secondary" onclick="closeOverrideModal()">キャンセル</button>
+ </div>
+ </form>
+ 
+ <hr style="margin: var(--space-lg) 0; border-color: var(--color-border);">
+ 
+ <form method="POST" id="disqualifyForm" onsubmit="return confirm('このキャストを失格にしますか？');">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <div class="form-group">
+ <label class="form-label">失格理由</label>
+ <input type="text" name="reason" class="form-control" placeholder="不正行為など">
+ </div>
+ <button type="submit" class="btn btn-danger">失格にする</button>
+ </form>
+ </div>
 </div>
 
 <script>
 function showOverrideModal(id, name, currentRank) {
-    document.getElementById('overrideModal').style.display = 'flex';
-    document.getElementById('overrideCastName').textContent = name;
-    document.getElementById('newRank').value = currentRank;
-    document.getElementById('overrideForm').action = '/admin/rankings/' + id + '/override';
-    document.getElementById('disqualifyForm').action = '/admin/rankings/' + id + '/disqualify';
+ document.getElementById('overrideModal').style.display = 'flex';
+ document.getElementById('overrideCastName').textContent = name;
+ document.getElementById('newRank').value = currentRank;
+ document.getElementById('overrideForm').action = '/admin/rankings/' + id + '/override';
+ document.getElementById('disqualifyForm').action = '/admin/rankings/' + id + '/disqualify';
 }
 
 function closeOverrideModal() {
-    document.getElementById('overrideModal').style.display = 'none';
+ document.getElementById('overrideModal').style.display = 'none';
 }
 </script>
 {% endblock %}

@@ -4,163 +4,163 @@
 
 {% block content %}
 <div class="admin-container">
-    <div class="page-header">
-        <div>
-            <h1>🔧 システムステータス</h1>
-            <p class="text-muted">障害対応・メンテナンス管理</p>
-        </div>
-    </div>
-    
-    <!-- 現在のステータス -->
-    <div class="card mb-4" style="border-left: 4px solid var(--color-{% if current_status.status == 'normal' %}success{% elif current_status.status == 'degraded' %}warning{% elif current_status.status == 'maintenance' %}info{% else %}danger{% endif %});">
-        <div class="d-flex justify-between align-center">
-            <div>
-                <h3 class="mb-1">
-                    現在のステータス: 
-                    <span class="badge badge-{{ current_status.status_color }}">{{ current_status.status_label }}</span>
-                </h3>
-                {% if current_status.title %}
-                <p class="mb-0">{{ current_status.title }}</p>
-                {% endif %}
-            </div>
-            {% if current_status.started_at and not current_status.is_resolved %}
-            <form action="{{ url_for('admin.resolve_incident', incident_id=current_status.id) }}" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-success">✅ 解決済みにする</button>
-            </form>
-            {% endif %}
-        </div>
-        {% if current_status.message %}
-        <p class="text-muted mt-2 mb-0" style="white-space: pre-wrap;">{{ current_status.message }}</p>
-        {% endif %}
-        {% if current_status.started_at %}
-        <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
-            開始: {{ current_status.started_at.strftime('%Y/%m/%d %H:%M') }}
-            {% if current_status.duration_minutes > 0 %}
-            （{{ current_status.duration_minutes }}分経過）
-            {% endif %}
-        </p>
-        {% endif %}
-    </div>
-    
-    <!-- インシデント登録 -->
-    <div class="card mb-4">
-        <h3 class="mb-3">🚨 インシデント登録</h3>
-        <form method="POST" action="{{ url_for('admin.create_incident') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            
-            <div class="form-row">
-                <div class="form-group col-md-4">
-                    <label>ステータス</label>
-                    <select name="status" class="form-control">
-                        <option value="degraded">⚠️ 一部障害</option>
-                        <option value="maintenance">🔧 メンテナンス中</option>
-                        <option value="outage">🔴 全面障害</option>
-                    </select>
-                </div>
-                <div class="form-group col-md-8">
-                    <label>タイトル <span class="required">*</span></label>
-                    <input type="text" name="title" class="form-control" required
-                           placeholder="例: データベース接続障害">
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label>詳細メッセージ</label>
-                <textarea name="message" class="form-control" rows="2"
-                          placeholder="例: 現在、一部のユーザーでログインできない事象が発生しています。"></textarea>
-            </div>
-            
-            <div class="form-group">
-                <label>影響を受けるサービス</label>
-                <input type="text" name="affected_services" class="form-control"
-                       placeholder="例: ログイン, 店舗検索, 予約">
-            </div>
-            
-            <div class="form-group">
-                <label class="checkbox-label">
-                    <input type="checkbox" name="notify_users">
-                    ユーザーに通知を表示する
-                </label>
-            </div>
-            
-            <button type="submit" class="btn btn-warning">インシデント登録</button>
-        </form>
-    </div>
-    
-    <!-- 過去のインシデント -->
-    {% if incidents %}
-    <div class="card mb-4">
-        <h3 class="mb-3">📋 過去のインシデント</h3>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>日時</th>
-                    <th>ステータス</th>
-                    <th>タイトル</th>
-                    <th>継続時間</th>
-                    <th>状態</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for incident in incidents %}
-                <tr>
-                    <td>{{ incident.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
-                    <td><span class="badge badge-{{ incident.status_color }}">{{ incident.status_label }}</span></td>
-                    <td>{{ incident.title }}</td>
-                    <td>{{ incident.duration_minutes }}分</td>
-                    <td>
-                        {% if incident.is_resolved %}
-                        <span class="badge badge-success">解決済み</span>
-                        {% else %}
-                        <span class="badge badge-warning">対応中</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
-    
-    <!-- 最近のエラーログ -->
-    {% if recent_errors %}
-    <div class="card">
-        <div class="d-flex justify-between align-center mb-3">
-            <h3 class="mb-0">📝 最近のエラーログ</h3>
-            <a href="{{ url_for('admin.system_logs') }}" class="btn btn-sm btn-outline">すべてのログ</a>
-        </div>
-        <div style="max-height: 400px; overflow-y: auto;">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>日時</th>
-                        <th>レベル</th>
-                        <th>カテゴリ</th>
-                        <th>メッセージ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for log in recent_errors %}
-                    <tr>
-                        <td style="white-space: nowrap;">{{ log.created_at.strftime('%m/%d %H:%M') }}</td>
-                        <td>
-                            <span class="badge badge-{% if log.level == 'critical' %}danger{% else %}warning{% endif %}">
-                                {{ log.level }}
-                            </span>
-                        </td>
-                        <td>{{ log.category or '-' }}</td>
-                        <td style="font-size: 0.8rem;">{{ log.message[:100] }}{% if log.message|length > 100 %}...{% endif %}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% else %}
-    <div class="card text-center" style="padding: 2rem;">
-        <p class="text-muted mb-0">最近のエラーログはありません ✅</p>
-    </div>
-    {% endif %}
+ <div class="page-header">
+ <div>
+ <h1> システムステータス</h1>
+ <p class="text-muted">障害対応メンテナンス管理</p>
+ </div>
+ </div>
+ 
+ <!-- 現在のステータス -->
+ <div class="card mb-4" style="border-left: 4px solid var(--color-{% if current_status.status == 'normal' %}success{% elif current_status.status == 'degraded' %}warning{% elif current_status.status == 'maintenance' %}info{% else %}danger{% endif %});">
+ <div class="d-flex justify-between align-center">
+ <div>
+ <h3 class="mb-1">
+ 現在のステータス: 
+ <span class="badge badge-{{ current_status.status_color }}">{{ current_status.status_label }}</span>
+ </h3>
+ {% if current_status.title %}
+ <p class="mb-0">{{ current_status.title }}</p>
+ {% endif %}
+ </div>
+ {% if current_status.started_at and not current_status.is_resolved %}
+ <form action="{{ url_for('admin.resolve_incident', incident_id=current_status.id) }}" method="POST">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <button type="submit" class="btn btn-success"> 解決済みにする</button>
+ </form>
+ {% endif %}
+ </div>
+ {% if current_status.message %}
+ <p class="text-muted mt-2 mb-0" style="white-space: pre-wrap;">{{ current_status.message }}</p>
+ {% endif %}
+ {% if current_status.started_at %}
+ <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem;">
+ 開始: {{ current_status.started_at.strftime('%Y/%m/%d %H:%M') }}
+ {% if current_status.duration_minutes > 0 %}
+ （{{ current_status.duration_minutes }}分経過）
+ {% endif %}
+ </p>
+ {% endif %}
+ </div>
+ 
+ <!-- インシデント登録 -->
+ <div class="card mb-4">
+ <h3 class="mb-3"> インシデント登録</h3>
+ <form method="POST" action="{{ url_for('admin.create_incident') }}">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ 
+ <div class="form-row">
+ <div class="form-group col-md-4">
+ <label>ステータス</label>
+ <select name="status" class="form-control">
+ <option value="degraded"> 一部障害</option>
+ <option value="maintenance"> メンテナンス中</option>
+ <option value="outage"> 全面障害</option>
+ </select>
+ </div>
+ <div class="form-group col-md-8">
+ <label>タイトル <span class="required">*</span></label>
+ <input type="text" name="title" class="form-control" required
+ placeholder="例: データベース接続障害">
+ </div>
+ </div>
+ 
+ <div class="form-group">
+ <label>詳細メッセージ</label>
+ <textarea name="message" class="form-control" rows="2"
+ placeholder="例: 現在、一部のユーザーでログインできない事象が発生しています。"></textarea>
+ </div>
+ 
+ <div class="form-group">
+ <label>影響を受けるサービス</label>
+ <input type="text" name="affected_services" class="form-control"
+ placeholder="例: ログイン, 店舗検索, 予約">
+ </div>
+ 
+ <div class="form-group">
+ <label class="checkbox-label">
+ <input type="checkbox" name="notify_users">
+ ユーザーに通知を表示する
+ </label>
+ </div>
+ 
+ <button type="submit" class="btn btn-warning">インシデント登録</button>
+ </form>
+ </div>
+ 
+ <!-- 過去のインシデント -->
+ {% if incidents %}
+ <div class="card mb-4">
+ <h3 class="mb-3"> 過去のインシデント</h3>
+ <table class="table">
+ <thead>
+ <tr>
+ <th>日時</th>
+ <th>ステータス</th>
+ <th>タイトル</th>
+ <th>継続時間</th>
+ <th>状態</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for incident in incidents %}
+ <tr>
+ <td>{{ incident.created_at.strftime('%Y/%m/%d %H:%M') }}</td>
+ <td><span class="badge badge-{{ incident.status_color }}">{{ incident.status_label }}</span></td>
+ <td>{{ incident.title }}</td>
+ <td>{{ incident.duration_minutes }}分</td>
+ <td>
+ {% if incident.is_resolved %}
+ <span class="badge badge-success">解決済み</span>
+ {% else %}
+ <span class="badge badge-warning">対応中</span>
+ {% endif %}
+ </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ {% endif %}
+ 
+ <!-- 最近のエラーログ -->
+ {% if recent_errors %}
+ <div class="card">
+ <div class="d-flex justify-between align-center mb-3">
+ <h3 class="mb-0"> 最近のエラーログ</h3>
+ <a href="{{ url_for('admin.system_logs') }}" class="btn btn-sm btn-outline">すべてのログ</a>
+ </div>
+ <div style="max-height: 400px; overflow-y: auto;">
+ <table class="table">
+ <thead>
+ <tr>
+ <th>日時</th>
+ <th>レベル</th>
+ <th>カテゴリ</th>
+ <th>メッセージ</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for log in recent_errors %}
+ <tr>
+ <td style="white-space: nowrap;">{{ log.created_at.strftime('%m/%d %H:%M') }}</td>
+ <td>
+ <span class="badge badge-{% if log.level == 'critical' %}danger{% else %}warning{% endif %}">
+ {{ log.level }}
+ </span>
+ </td>
+ <td>{{ log.category or '-' }}</td>
+ <td style="font-size: 0.8rem;">{{ log.message[:100] }}{% if log.message|length > 100 %}...{% endif %}</td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ </div>
+ {% else %}
+ <div class="card text-center" style="padding: 2rem;">
+ <p class="text-muted mb-0">最近のエラーログはありません </p>
+ </div>
+ {% endif %}
 </div>
 {% endblock %}

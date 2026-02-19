@@ -4,257 +4,257 @@
 
 {% block content %}
 <div class="shop-admin-layout">
-    <div class="shop-admin-content">
-        <div class="d-flex justify-between align-center mb-4">
-            <h1 class="mb-0">出勤管理</h1>
-            <span class="text-muted">{{ shop.name }}</span>
-        </div>
-        
-        <!-- 今日の出勤状況 -->
-        <div class="card mb-4">
-            <h3 class="mb-3">🔴 本日の出勤状況</h3>
-            <div class="d-flex gap-3 flex-wrap">
-                {% set today_shifts = [] %}
-                {% for cast_id, date_shifts in shift_matrix.items() %}
-                    {% if date_shifts[today] %}
-                        {% set shift = date_shifts[today] %}
-                        {% if shift.status in ['confirmed', 'working'] %}
-                            <div class="cast-status-card {{ 'working' if shift.status == 'working' else '' }}">
-                                <div class="cast-name">{{ shift.cast.name_display }}</div>
-                                <div class="cast-time">{{ shift.time_display }}</div>
-                                {% if shift.status == 'working' %}
-                                <span class="badge badge-success">出勤中</span>
-                                {% else %}
-                                <span class="badge badge-info">予定</span>
-                                {% endif %}
-                                <div class="mt-2">
-                                    {% if shift.status == 'confirmed' %}
-                                    <form method="POST" action="{{ url_for('shop_admin.start_shift', shift_id=shift.id) }}" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm btn-primary">出勤開始</button>
-                                    </form>
-                                    {% elif shift.status == 'working' %}
-                                    <form method="POST" action="{{ url_for('shop_admin.finish_shift', shift_id=shift.id) }}" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm btn-warning">退勤</button>
-                                    </form>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% endif %}
-                    {% endif %}
-                {% endfor %}
-                {% if not today_shifts %}
-                <p class="text-muted">本日の出勤予定はありません</p>
-                {% endif %}
-            </div>
-        </div>
-        
-        <!-- 週間シフト表 -->
-        <div class="card">
-            <h3 class="mb-3">📅 週間シフト</h3>
-            <div class="table-responsive">
-                <table class="table shift-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 120px;">キャスト</th>
-                            {% for d in dates %}
-                            <th class="{{ 'today' if d == today }}">
-                                {{ d.strftime('%m/%d') }}<br>
-                                <small>{{ ['月','火','水','木','金','土','日'][d.weekday()] }}</small>
-                            </th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for cast in casts %}
-                        <tr>
-                            <td class="cast-name-cell">{{ cast.name_display }}</td>
-                            {% for d in dates %}
-                            {% set shift = shift_matrix[cast.id][d] %}
-                            <td class="shift-cell {{ 'today' if d == today }} {{ 'has-shift' if shift and shift.status != 'canceled' }}"
-                                data-cast-id="{{ cast.id }}" data-date="{{ d.strftime('%Y-%m-%d') }}">
-                                {% if shift and shift.status != 'canceled' %}
-                                <div class="shift-info">
-                                    <small>{{ shift.time_display }}</small>
-                                    {% if shift.status == 'working' %}
-                                    <span class="badge badge-success">出勤中</span>
-                                    {% endif %}
-                                </div>
-                                {% else %}
-                                <button class="btn btn-sm btn-outline add-shift-btn" 
-                                        onclick="openShiftModal('{{ cast.id }}', '{{ d.strftime('%Y-%m-%d') }}', '{{ cast.name_display }}')">
-                                    +
-                                </button>
-                                {% endif %}
-                            </td>
-                            {% endfor %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+ <div class="shop-admin-content">
+ <div class="d-flex justify-between align-center mb-4">
+ <h1 class="mb-0">出勤管理</h1>
+ <span class="text-muted">{{ shop.name }}</span>
+ </div>
+ 
+ <!-- 今日の出勤状況 -->
+ <div class="card mb-4">
+ <h3 class="mb-3"> 本日の出勤状況</h3>
+ <div class="d-flex gap-3 flex-wrap">
+ {% set today_shifts = [] %}
+ {% for cast_id, date_shifts in shift_matrix.items() %}
+ {% if date_shifts[today] %}
+ {% set shift = date_shifts[today] %}
+ {% if shift.status in ['confirmed', 'working'] %}
+ <div class="cast-status-card {{ 'working' if shift.status == 'working' else '' }}">
+ <div class="cast-name">{{ shift.cast.name_display }}</div>
+ <div class="cast-time">{{ shift.time_display }}</div>
+ {% if shift.status == 'working' %}
+ <span class="badge badge-success">出勤中</span>
+ {% else %}
+ <span class="badge badge-info">予定</span>
+ {% endif %}
+ <div class="mt-2">
+ {% if shift.status == 'confirmed' %}
+ <form method="POST" action="{{ url_for('shop_admin.start_shift', shift_id=shift.id) }}" style="display: inline;">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <button type="submit" class="btn btn-sm btn-primary">出勤開始</button>
+ </form>
+ {% elif shift.status == 'working' %}
+ <form method="POST" action="{{ url_for('shop_admin.finish_shift', shift_id=shift.id) }}" style="display: inline;">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <button type="submit" class="btn btn-sm btn-warning">退勤</button>
+ </form>
+ {% endif %}
+ </div>
+ </div>
+ {% endif %}
+ {% endif %}
+ {% endfor %}
+ {% if not today_shifts %}
+ <p class="text-muted">本日の出勤予定はありません</p>
+ {% endif %}
+ </div>
+ </div>
+ 
+ <!-- 週間シフト表 -->
+ <div class="card">
+ <h3 class="mb-3"> 週間シフト</h3>
+ <div class="table-responsive">
+ <table class="table shift-table">
+ <thead>
+ <tr>
+ <th style="width: 120px;">キャスト</th>
+ {% for d in dates %}
+ <th class="{{ 'today' if d == today }}">
+ {{ d.strftime('%m/%d') }}<br>
+ <small>{{ ['月','火','水','木','金','土','日'][d.weekday()] }}</small>
+ </th>
+ {% endfor %}
+ </tr>
+ </thead>
+ <tbody>
+ {% for cast in casts %}
+ <tr>
+ <td class="cast-name-cell">{{ cast.name_display }}</td>
+ {% for d in dates %}
+ {% set shift = shift_matrix[cast.id][d] %}
+ <td class="shift-cell {{ 'today' if d == today }} {{ 'has-shift' if shift and shift.status != 'canceled' }}"
+ data-cast-id="{{ cast.id }}" data-date="{{ d.strftime('%Y-%m-%d') }}">
+ {% if shift and shift.status != 'canceled' %}
+ <div class="shift-info">
+ <small>{{ shift.time_display }}</small>
+ {% if shift.status == 'working' %}
+ <span class="badge badge-success">出勤中</span>
+ {% endif %}
+ </div>
+ {% else %}
+ <button class="btn btn-sm btn-outline add-shift-btn" 
+ onclick="openShiftModal('{{ cast.id }}', '{{ d.strftime('%Y-%m-%d') }}', '{{ cast.name_display }}')">
+ +
+ </button>
+ {% endif %}
+ </td>
+ {% endfor %}
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
 </div>
 
 <!-- シフト追加モーダル -->
 <div id="shiftModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <h3 id="modalTitle">シフトを追加</h3>
-        <form id="shiftForm">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" id="modal_cast_id" name="cast_id">
-            <input type="hidden" id="modal_shift_date" name="shift_date">
-            
-            <div class="form-group">
-                <label class="form-label">開始時間</label>
-                <input type="time" id="modal_start_time" name="start_time" class="form-control">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">終了時間</label>
-                <input type="time" id="modal_end_time" name="end_time" class="form-control">
-            </div>
-            
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">登録</button>
-                <button type="button" class="btn btn-secondary" onclick="closeShiftModal()">キャンセル</button>
-            </div>
-        </form>
-    </div>
+ <div class="modal-content">
+ <h3 id="modalTitle">シフトを追加</h3>
+ <form id="shiftForm">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <input type="hidden" id="modal_cast_id" name="cast_id">
+ <input type="hidden" id="modal_shift_date" name="shift_date">
+ 
+ <div class="form-group">
+ <label class="form-label">開始時間</label>
+ <input type="time" id="modal_start_time" name="start_time" class="form-control">
+ </div>
+ 
+ <div class="form-group">
+ <label class="form-label">終了時間</label>
+ <input type="time" id="modal_end_time" name="end_time" class="form-control">
+ </div>
+ 
+ <div class="form-actions">
+ <button type="submit" class="btn btn-primary">登録</button>
+ <button type="button" class="btn btn-secondary" onclick="closeShiftModal()">キャンセル</button>
+ </div>
+ </form>
+ </div>
 </div>
 
 <style>
 .cast-status-card {
-    padding: 1rem;
-    background: var(--color-bg-elevated);
-    border-radius: var(--radius);
-    text-align: center;
-    min-width: 120px;
+ padding: 1rem;
+ background: var(--color-bg-elevated);
+ border-radius: var(--radius);
+ text-align: center;
+ min-width: 120px;
 }
 .cast-status-card.working {
-    border: 2px solid var(--color-success);
-    animation: pulse 2s infinite;
+ border: 2px solid var(--color-success);
+ animation: pulse 2s infinite;
 }
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.8; }
+ 0%, 100% { opacity: 1; }
+ 50% { opacity: 0.8; }
 }
 .cast-name {
-    font-weight: 600;
-    margin-bottom: 0.25rem;
+ font-weight: 600;
+ margin-bottom: 0.25rem;
 }
 .cast-time {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
+ font-size: 0.875rem;
+ color: var(--color-text-muted);
 }
 
 .shift-table {
-    table-layout: fixed;
+ table-layout: fixed;
 }
 .shift-table th, .shift-table td {
-    text-align: center;
-    vertical-align: middle;
+ text-align: center;
+ vertical-align: middle;
 }
 .shift-table th.today, .shift-table td.today {
-    background: var(--color-primary-bg);
+ background: var(--color-primary-bg);
 }
 .cast-name-cell {
-    text-align: left;
-    font-weight: 500;
+ text-align: left;
+ font-weight: 500;
 }
 .shift-cell {
-    padding: 0.5rem;
-    min-height: 60px;
+ padding: 0.5rem;
+ min-height: 60px;
 }
 .shift-cell.has-shift {
-    background: var(--color-bg-elevated);
+ background: var(--color-bg-elevated);
 }
 .shift-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ gap: 0.25rem;
 }
 .add-shift-btn {
-    opacity: 0.5;
+ opacity: 0.5;
 }
 .shift-cell:hover .add-shift-btn {
-    opacity: 1;
+ opacity: 1;
 }
 
 .modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+ position: fixed;
+ top: 0;
+ left: 0;
+ right: 0;
+ bottom: 0;
+ background: rgba(0,0,0,0.5);
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ z-index: 1000;
 }
 .modal-content {
-    background: var(--color-bg-card);
-    padding: 2rem;
-    border-radius: var(--radius-lg);
-    min-width: 320px;
-    max-width: 90%;
+ background: var(--color-bg-card);
+ padding: 2rem;
+ border-radius: var(--radius-lg);
+ min-width: 320px;
+ max-width: 90%;
 }
 </style>
 
 <script>
 function openShiftModal(castId, shiftDate, castName) {
-    document.getElementById('modal_cast_id').value = castId;
-    document.getElementById('modal_shift_date').value = shiftDate;
-    document.getElementById('modalTitle').textContent = castName + ' のシフトを追加';
-    document.getElementById('shiftModal').style.display = 'flex';
+ document.getElementById('modal_cast_id').value = castId;
+ document.getElementById('modal_shift_date').value = shiftDate;
+ document.getElementById('modalTitle').textContent = castName + ' のシフトを追加';
+ document.getElementById('shiftModal').style.display = 'flex';
 }
 
 function closeShiftModal() {
-    document.getElementById('shiftModal').style.display = 'none';
+ document.getElementById('shiftModal').style.display = 'none';
 }
 
 document.getElementById('shiftForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const data = {
-        cast_id: parseInt(formData.get('cast_id')),
-        shift_date: formData.get('shift_date'),
-        start_time: formData.get('start_time') || null,
-        end_time: formData.get('end_time') || null,
-        status: 'confirmed'
-    };
-    
-    try {
-        const response = await fetch('{{ url_for("shop_admin.update_shift") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': formData.get('csrf_token')
-            },
-            body: JSON.stringify(data)
-        });
-        
-        if (response.ok) {
-            location.reload();
-        } else {
-            const result = await response.json();
-            alert(result.error || 'エラーが発生しました');
-        }
-    } catch (error) {
-        alert('通信エラーが発生しました');
-    }
+ e.preventDefault();
+ 
+ const formData = new FormData(this);
+ const data = {
+ cast_id: parseInt(formData.get('cast_id')),
+ shift_date: formData.get('shift_date'),
+ start_time: formData.get('start_time') || null,
+ end_time: formData.get('end_time') || null,
+ status: 'confirmed'
+ };
+ 
+ try {
+ const response = await fetch('{{ url_for("shop_admin.update_shift") }}', {
+ method: 'POST',
+ headers: {
+ 'Content-Type': 'application/json',
+ 'X-CSRFToken': formData.get('csrf_token')
+ },
+ body: JSON.stringify(data)
+ });
+ 
+ if (response.ok) {
+ location.reload();
+ } else {
+ const result = await response.json();
+ alert(result.error || 'エラーが発生しました');
+ }
+ } catch (error) {
+ alert('通信エラーが発生しました');
+ }
 });
 
 // モーダル外クリックで閉じる
 document.getElementById('shiftModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeShiftModal();
-    }
+ if (e.target === this) {
+ closeShiftModal();
+ }
 });
 </script>
 {% endblock %}

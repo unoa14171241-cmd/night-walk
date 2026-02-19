@@ -144,7 +144,7 @@ class EmailService:
         </head>
         <body>
             <div class="header">
-                <h1>🌙 Night-Walk</h1>
+                <h1>Night-Walk</h1>
             </div>
             <div class="content">
                 <h2>{user.name} 様</h2>
@@ -155,7 +155,7 @@ class EmailService:
                 </p>
                 
                 <div class="login-box">
-                    <h3>📋 ログイン情報</h3>
+                    <h3>ログイン情報</h3>
                     <p><strong>メールアドレス（ID）:</strong></p>
                     <div class="credential">{user.email}</div>
                     
@@ -168,10 +168,10 @@ class EmailService:
                 </div>
                 
                 <p style="text-align: center;">
-                    <a href="{login_url}" class="btn">🔐 管理画面にログイン</a>
+                    <a href="{login_url}" class="btn">管理画面にログイン</a>
                 </p>
                 
-                <h3>📝 ログイン後の初期設定</h3>
+                <h3>ログイン後の初期設定</h3>
                 <ol>
                     <li>店舗情報の詳細入力（営業時間、料金、紹介文など）</li>
                     <li>店舗画像のアップロード</li>
@@ -258,7 +258,7 @@ class EmailService:
         </head>
         <body>
             <div class="header">
-                <h1>🌙 Night-Walk</h1>
+                <h1>Night-Walk</h1>
             </div>
             <div class="content">
                 <h2>{user.name} 様</h2>

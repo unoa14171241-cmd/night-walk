@@ -4,119 +4,119 @@
 
 {% block content %}
 <div class="complete-page">
-    <div class="container">
-        <div class="complete-card">
-            <div class="complete-icon">✅</div>
-            <h1>お申し込みありがとうございます</h1>
-            
-            <div class="complete-message">
-                <p>
-                    店舗掲載のお申し込みを受け付けました。<br>
-                    審査完了後、ご登録いただいたメールアドレスに<br>
-                    ログイン情報をお送りいたします。
-                </p>
-            </div>
-            
-            <div class="complete-info">
-                <h3>審査について</h3>
-                <ul>
-                    <li>審査には通常<strong>1〜3営業日</strong>かかります</li>
-                    <li>審査完了後、メールにてご連絡いたします</li>
-                    <li>ご不明点がございましたら、下記までお問い合わせください</li>
-                </ul>
-            </div>
-            
-            <div class="complete-contact">
-                <p>
-                    <strong>お問い合わせ:</strong><br>
-                    <a href="mailto:yorutabi2025@gmail.com">yorutabi2025@gmail.com</a>
-                </p>
-            </div>
-            
-            <div class="complete-actions">
-                <a href="{{ url_for('public.index') }}" class="btn btn-primary">
-                    🏠 トップページへ
-                </a>
-            </div>
-        </div>
-    </div>
+ <div class="container">
+ <div class="complete-card">
+ <div class="complete-icon"></div>
+ <h1>お申し込みありがとうございます</h1>
+ 
+ <div class="complete-message">
+ <p>
+ 店舗掲載のお申し込みを受け付けました。<br>
+ 審査完了後、ご登録いただいたメールアドレスに<br>
+ ログイン情報をお送りいたします。
+ </p>
+ </div>
+ 
+ <div class="complete-info">
+ <h3>審査について</h3>
+ <ul>
+ <li>審査には通常<strong>1〜3営業日</strong>かかります</li>
+ <li>審査完了後、メールにてご連絡いたします</li>
+ <li>ご不明点がございましたら、下記までお問い合わせください</li>
+ </ul>
+ </div>
+ 
+ <div class="complete-contact">
+ <p>
+ <strong>お問い合わせ:</strong><br>
+ <a href="mailto:yorutabi2025@gmail.com">yorutabi2025@gmail.com</a>
+ </p>
+ </div>
+ 
+ <div class="complete-actions">
+ <a href="{{ url_for('public.index') }}" class="btn btn-primary">
+ トップページへ
+ </a>
+ </div>
+ </div>
+ </div>
 </div>
 
 <style>
 .complete-page {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-xl);
+ min-height: 100vh;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ padding: var(--space-xl);
 }
 
 .complete-card {
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-xxl);
-    text-align: center;
-    max-width: 500px;
-    width: 100%;
+ background: var(--color-bg-elevated);
+ border: 1px solid var(--color-border);
+ border-radius: var(--radius-lg);
+ padding: var(--space-xxl);
+ text-align: center;
+ max-width: 500px;
+ width: 100%;
 }
 
 .complete-icon {
-    font-size: 4rem;
-    margin-bottom: var(--space-lg);
+ font-size: 4rem;
+ margin-bottom: var(--space-lg);
 }
 
 .complete-card h1 {
-    font-size: 1.5rem;
-    margin-bottom: var(--space-lg);
-    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+ font-size: 1.5rem;
+ margin-bottom: var(--space-lg);
+ background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+ -webkit-background-clip: text;
+ -webkit-text-fill-color: transparent;
+ background-clip: text;
 }
 
 .complete-message {
-    margin-bottom: var(--space-lg);
-    color: var(--color-text-muted);
-    line-height: 1.8;
+ margin-bottom: var(--space-lg);
+ color: var(--color-text-muted);
+ line-height: 1.8;
 }
 
 .complete-info {
-    background: var(--color-bg);
-    border-radius: var(--radius);
-    padding: var(--space-lg);
-    margin-bottom: var(--space-lg);
-    text-align: left;
+ background: var(--color-bg);
+ border-radius: var(--radius);
+ padding: var(--space-lg);
+ margin-bottom: var(--space-lg);
+ text-align: left;
 }
 
 .complete-info h3 {
-    font-size: 0.9rem;
-    margin-bottom: var(--space-md);
-    color: var(--color-primary);
+ font-size: 0.9rem;
+ margin-bottom: var(--space-md);
+ color: var(--color-primary);
 }
 
 .complete-info ul {
-    margin: 0;
-    padding-left: var(--space-lg);
+ margin: 0;
+ padding-left: var(--space-lg);
 }
 
 .complete-info li {
-    margin-bottom: var(--space-sm);
-    font-size: 0.9rem;
-    color: var(--color-text-muted);
+ margin-bottom: var(--space-sm);
+ font-size: 0.9rem;
+ color: var(--color-text-muted);
 }
 
 .complete-contact {
-    margin-bottom: var(--space-lg);
-    font-size: 0.9rem;
+ margin-bottom: var(--space-lg);
+ font-size: 0.9rem;
 }
 
 .complete-contact a {
-    color: var(--color-primary);
+ color: var(--color-primary);
 }
 
 .complete-actions .btn {
-    min-width: 200px;
+ min-width: 200px;
 }
 </style>
 {% endblock %}

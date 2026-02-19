@@ -4,85 +4,85 @@
 
 {% block content %}
 <div class="container">
-    <div class="d-flex justify-between align-center mb-4">
-        <div>
-            <h1 class="mb-1">📱 QRコード発行</h1>
-            <p class="text-muted mb-0">店舗ページへ直接アクセスできるQRコードです</p>
-        </div>
-        <a href="{{ url_for('shop_admin.dashboard') }}" class="btn btn-secondary">← ダッシュボードへ</a>
-    </div>
-    
-    <div class="card mb-4">
-        <h3 class="mb-3">{{ shop.name }} のQRコード</h3>
-        
-        <!-- QRコードプレビュー -->
-        <div class="text-center mb-4" style="padding: 2rem; background: #fff; border-radius: 12px;">
-            {% if qr_png_base64 %}
-            <img src="data:image/png;base64,{{ qr_png_base64 }}" 
-                 alt="店舗QRコード" 
-                 style="max-width: 280px; width: 100%; border-radius: 8px;">
-            {% endif %}
-        </div>
-        
-        <!-- 店舗URL -->
-        <div class="mb-4">
-            <label class="form-label">店舗ページURL</label>
-            <div class="d-flex gap-2">
-                <input type="text" value="{{ shop_url }}" readonly class="form-control" id="shop-url"
-                       style="font-family: monospace; font-size: 0.875rem;">
-                <button type="button" class="btn btn-outline" onclick="copyToClipboard('shop-url')">
-                    コピー
-                </button>
-            </div>
-        </div>
-        
-        <!-- ダウンロードボタン -->
-        <div class="d-flex gap-2" style="flex-wrap: wrap;">
-            <a href="data:image/png;base64,{{ qr_png_base64 }}" 
-               download="{{ shop.name }}_QRコード.png"
-               class="btn btn-primary">
-                📥 PNG形式でダウンロード
-            </a>
-            <a href="data:image/png;base64,{{ qr_png_high_res }}" 
-               download="{{ shop.name }}_QRコード_高解像度.png"
-               class="btn btn-secondary">
-                📥 高解像度PNG（印刷用）
-            </a>
-            <button type="button" class="btn btn-outline" onclick="downloadSVG()">
-                📥 SVG形式でダウンロード
-            </button>
-        </div>
-    </div>
-    
-    <!-- 使い方ガイド -->
-    <div class="card">
-        <h3 class="mb-3">📋 QRコードの活用方法</h3>
-        
-        <div class="mb-3">
-            <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">🏪 店内掲示</h4>
-            <p class="text-muted" style="font-size: 0.875rem;">
-                店内のテーブルやカウンターにQRコードを掲示して、お客様がスマホで簡単に店舗ページへアクセスできるようにしましょう。
-            </p>
-        </div>
-        
-        <div class="mb-3">
-            <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">📇 名刺・チラシ</h4>
-            <p class="text-muted" style="font-size: 0.875rem;">
-                名刺やチラシに印刷する場合は「高解像度PNG」をご利用ください。印刷品質が向上します。
-            </p>
-        </div>
-        
-        <div class="mb-3">
-            <h4 style="font-size: 1rem; margin-bottom: 0.5rem;">📱 SNS共有</h4>
-            <p class="text-muted" style="font-size: 0.875rem;">
-                SNSやメッセージアプリで画像として共有できます。URLと一緒に送ると便利です。
-            </p>
-        </div>
-        
-        <div class="alert alert-info mb-0">
-            <strong>💡 ヒント:</strong> SVG形式は拡大しても画質が劣化しないため、大きなサイズで印刷する場合に最適です。
-        </div>
-    </div>
+ <div class="d-flex justify-between align-center mb-4">
+ <div>
+ <h1 class="mb-1"> QRコード発行</h1>
+ <p class="text-muted mb-0">店舗ページへ直接アクセスできるQRコードです</p>
+ </div>
+ <a href="{{ url_for('shop_admin.dashboard') }}" class="btn btn-secondary">← ダッシュボードへ</a>
+ </div>
+ 
+ <div class="card mb-4">
+ <h3 class="mb-3">{{ shop.name }} のQRコード</h3>
+ 
+ <!-- QRコードプレビュー -->
+ <div class="text-center mb-4" style="padding: 2rem; background: #fff; border-radius: 12px;">
+ {% if qr_png_base64 %}
+ <img src="data:image/png;base64,{{ qr_png_base64 }}" 
+ alt="店舗QRコード" 
+ style="max-width: 280px; width: 100%; border-radius: 8px;">
+ {% endif %}
+ </div>
+ 
+ <!-- 店舗URL -->
+ <div class="mb-4">
+ <label class="form-label">店舗ページURL</label>
+ <div class="d-flex gap-2">
+ <input type="text" value="{{ shop_url }}" readonly class="form-control" id="shop-url"
+ style="font-family: monospace; font-size: 0.875rem;">
+ <button type="button" class="btn btn-outline" onclick="copyToClipboard('shop-url')">
+ コピー
+ </button>
+ </div>
+ </div>
+ 
+ <!-- ダウンロードボタン -->
+ <div class="d-flex gap-2" style="flex-wrap: wrap;">
+ <a href="data:image/png;base64,{{ qr_png_base64 }}" 
+ download="{{ shop.name }}_QRコード.png"
+ class="btn btn-primary">
+ PNG形式でダウンロード
+ </a>
+ <a href="data:image/png;base64,{{ qr_png_high_res }}" 
+ download="{{ shop.name }}_QRコード_高解像度.png"
+ class="btn btn-secondary">
+ 高解像度PNG（印刷用）
+ </a>
+ <button type="button" class="btn btn-outline" onclick="downloadSVG()">
+ SVG形式でダウンロード
+ </button>
+ </div>
+ </div>
+ 
+ <!-- 使い方ガイド -->
+ <div class="card">
+ <h3 class="mb-3"> QRコードの活用方法</h3>
+ 
+ <div class="mb-3">
+ <h4 style="font-size: 1rem; margin-bottom: 0.5rem;"> 店内掲示</h4>
+ <p class="text-muted" style="font-size: 0.875rem;">
+ 店内のテーブルやカウンターにQRコードを掲示して、お客様がスマホで簡単に店舗ページへアクセスできるようにしましょう。
+ </p>
+ </div>
+ 
+ <div class="mb-3">
+ <h4 style="font-size: 1rem; margin-bottom: 0.5rem;"> 名刺チラシ</h4>
+ <p class="text-muted" style="font-size: 0.875rem;">
+ 名刺やチラシに印刷する場合は「高解像度PNG」をご利用ください。印刷品質が向上します。
+ </p>
+ </div>
+ 
+ <div class="mb-3">
+ <h4 style="font-size: 1rem; margin-bottom: 0.5rem;"> SNS共有</h4>
+ <p class="text-muted" style="font-size: 0.875rem;">
+ SNSやメッセージアプリで画像として共有できます。URLと一緒に送ると便利です。
+ </p>
+ </div>
+ 
+ <div class="alert alert-info mb-0">
+ <strong> ヒント:</strong> SVG形式は拡大しても画質が劣化しないため、大きなサイズで印刷する場合に最適です。
+ </div>
+ </div>
 </div>
 
 <!-- SVGデータ（非表示） -->
@@ -90,33 +90,33 @@
 
 <script>
 function copyToClipboard(elementId) {
-    const element = document.getElementById(elementId);
-    element.select();
-    document.execCommand('copy');
-    
-    // フィードバック
-    const btn = element.nextElementSibling;
-    const originalText = btn.textContent;
-    btn.textContent = 'コピーしました！';
-    btn.classList.add('btn-success');
-    setTimeout(() => {
-        btn.textContent = originalText;
-        btn.classList.remove('btn-success');
-    }, 2000);
+ const element = document.getElementById(elementId);
+ element.select();
+ document.execCommand('copy');
+ 
+ // フィードバック
+ const btn = element.nextElementSibling;
+ const originalText = btn.textContent;
+ btn.textContent = 'コピーしました！';
+ btn.classList.add('btn-success');
+ setTimeout(() => {
+ btn.textContent = originalText;
+ btn.classList.remove('btn-success');
+ }, 2000);
 }
 
 function downloadSVG() {
-    const svgData = document.getElementById('svg-data').innerHTML;
-    const blob = new Blob([svgData], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = '{{ shop.name }}_QRコード.svg';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+ const svgData = document.getElementById('svg-data').innerHTML;
+ const blob = new Blob([svgData], { type: 'image/svg+xml' });
+ const url = URL.createObjectURL(blob);
+ 
+ const a = document.createElement('a');
+ a.href = url;
+ a.download = '{{ shop.name }}_QRコード.svg';
+ document.body.appendChild(a);
+ a.click();
+ document.body.removeChild(a);
+ URL.revokeObjectURL(url);
 }
 </script>
 {% endblock %}

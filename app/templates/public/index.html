@@ -1,255 +1,255 @@
 {% extends "customer/base.html" %}
 
-{% block title %}Night-Walk - 岡山・倉敷のナイトスポット検索{% endblock %}
+{% block title %}Night-Walk - 岡山倉敷のナイトスポット検索{% endblock %}
 
-{% block meta_description %}岡山・倉敷のスナック、キャバクラ、ガールズバーなどナイトレジャー情報を検索。空席状況のリアルタイム確認、直前予約、キャストへのギフトなど便利な機能が満載。{% endblock %}
+{% block meta_description %}岡山倉敷のスナック、キャバクラ、ガールズバーなどナイトレジャー情報を検索。空席状況のリアルタイム確認、直前予約、キャストへのギフトなど便利な機能が満載。{% endblock %}
 
 {% block content %}
 <div class="container">
-    <!-- Top Banner Ads (Carousel) -->
-    {% if top_ads %}
-    <div class="banner-carousel mb-4">
-        {% for ad in top_ads %}
-        <a href="{{ url_for('public.ad_click', ad_id=ad.id) }}" class="banner-item {% if loop.first %}active{% endif %}"
-            target="_blank" rel="noopener">
-            {% if ad.display_image_url %}
-            <img src="{{ ad.display_image_url }}" alt="{{ ad.title }}">
-            {% else %}
-            <div class="banner-placeholder">
-                <span>{{ ad.title }}</span>
-            </div>
-            {% endif %}
-        </a>
-        {% endfor %}
-        {% if top_ads | length > 1 %}
-        <div class="banner-dots">
-            {% for ad in top_ads %}
-            <span class="dot {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}"></span>
-            {% endfor %}
-        </div>
-        {% endif %}
-    </div>
-    {% endif %}
+ <!-- Top Banner Ads (Carousel) -->
+ {% if top_ads %}
+ <div class="banner-carousel mb-4">
+ {% for ad in top_ads %}
+ <a href="{{ url_for('public.ad_click', ad_id=ad.id) }}" class="banner-item {% if loop.first %}active{% endif %}"
+ target="_blank" rel="noopener">
+ {% if ad.display_image_url %}
+ <img src="{{ ad.display_image_url }}" alt="{{ ad.title }}">
+ {% else %}
+ <div class="banner-placeholder">
+ <span>{{ ad.title }}</span>
+ </div>
+ {% endif %}
+ </a>
+ {% endfor %}
+ {% if top_ads | length > 1 %}
+ <div class="banner-dots">
+ {% for ad in top_ads %}
+ <span class="dot {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}"></span>
+ {% endfor %}
+ </div>
+ {% endif %}
+ </div>
+ {% endif %}
 
-    <!-- Search Section -->
-    <div class="search-section">
-        <div class="search-hero">
-            <h1 class="search-title">
-                岡山・倉敷ナイトスポット
-            </h1>
-        </div>
+ <!-- Search Section -->
+ <div class="search-section">
+ <div class="search-hero">
+ <h1 class="search-title">
+ 岡山倉敷ナイトスポット
+ </h1>
+ </div>
 
-        <!-- 目的別選択（シーン選択） -->
-        <div class="scene-selection">
-            <div class="scene-cards">
-                {% for scene_key in scenes %}
-                {% set scene = scene_groups[scene_key] %}
-                <a href="{{ url_for('public.search', scene=scene_key) }}" class="scene-card"
-                    style="--scene-color: {{ scene.color }}">
-                    <div class="scene-indicator" style="background: {{ scene.color }}"></div>
-                    <div class="scene-content">
-                        <div class="scene-name">{{ scene.name }}</div>
-                        <div class="scene-categories">{{ scene.categories_display }}</div>
-                    </div>
-                    <div class="scene-arrow">→</div>
-                </a>
-                {% endfor %}
-            </div>
-        </div>
+ <!-- 目的別選択（シーン選択） -->
+ <div class="scene-selection">
+ <div class="scene-cards">
+ {% for scene_key in scenes %}
+ {% set scene = scene_groups[scene_key] %}
+ <a href="{{ url_for('public.search', scene=scene_key) }}" class="scene-card"
+ style="--scene-color: {{ scene.color }}">
+ <div class="scene-indicator" style="background: {{ scene.color }}"></div>
+ <div class="scene-content">
+ <div class="scene-name">{{ scene.name }}</div>
+ <div class="scene-categories">{{ scene.categories_display }}</div>
+ </div>
+ <div class="scene-arrow">→</div>
+ </a>
+ {% endfor %}
+ </div>
+ </div>
 
-        <!-- Feature Ribbons -->
-        <div class="feature-ribbons feature-ribbons-inline">
-            <span class="ribbon">★高待遇のお仕事</span>
-            <span class="ribbon">★体入歓迎</span>
-            <span class="ribbon">★送迎あり</span>
-        </div>
+ <!-- Feature Ribbons -->
+ <div class="feature-ribbons feature-ribbons-inline">
+ <span class="ribbon">高待遇のお仕事</span>
+ <span class="ribbon">体入歓迎</span>
+ <span class="ribbon">送迎あり</span>
+ </div>
 
-        <!-- Keyword Search -->
-        <form action="{{ url_for('public.search') }}" method="GET" class="search-form">
-            <div class="keyword-search">
-                <div class="search-input-wrapper">
-                    <span class="search-icon">🔍</span>
-                    <input type="text" name="q" class="search-input" placeholder="店舗名、エリア、キーワードで検索..."
-                        autocomplete="off">
-                </div>
-                <button type="submit" class="btn btn-primary btn-lg">検索</button>
-            </div>
-        </form>
+ <!-- Keyword Search -->
+ <form action="{{ url_for('public.search') }}" method="GET" class="search-form">
+ <div class="keyword-search">
+ <div class="search-input-wrapper">
+ <span class="search-icon"></span>
+ <input type="text" name="q" class="search-input" placeholder="店舗名、エリア、キーワードで検索..."
+ autocomplete="off">
+ </div>
+ <button type="submit" class="btn btn-primary btn-lg">検索</button>
+ </div>
+ </form>
 
-        <!-- Condition Search -->
-        <div class="condition-search">
-            <div class="condition-header" onclick="toggleConditions()">
-                <span>🎯 条件を指定して探す</span>
-                <span class="condition-toggle" id="condition-toggle">▼</span>
-            </div>
-            <form action="{{ url_for('public.search') }}" method="GET" class="condition-form" id="condition-form">
-                <div class="condition-grid">
-                    <div class="condition-item">
-                        <label>エリア</label>
-                        <select name="area" class="form-control">
-                            <option value="">すべて</option>
-                            {% for area in areas %}
-                            <option value="{{ area }}">{{ area }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
+ <!-- Condition Search -->
+ <div class="condition-search">
+ <div class="condition-header" onclick="toggleConditions()">
+ <span> 条件を指定して探す</span>
+ <span class="condition-toggle" id="condition-toggle">▼</span>
+ </div>
+ <form action="{{ url_for('public.search') }}" method="GET" class="condition-form" id="condition-form">
+ <div class="condition-grid">
+ <div class="condition-item">
+ <label>エリア</label>
+ <select name="area" class="form-control">
+ <option value="">すべて</option>
+ {% for area in areas %}
+ <option value="{{ area }}">{{ area }}</option>
+ {% endfor %}
+ </select>
+ </div>
 
-                    <div class="condition-item">
-                        <label>業態</label>
-                        <select name="category" class="form-control">
-                            <option value="">すべて</option>
-                            {% for cat in categories %}
-                            <option value="{{ cat }}">{{ category_labels[cat] }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
+ <div class="condition-item">
+ <label>業態</label>
+ <select name="category" class="form-control">
+ <option value="">すべて</option>
+ {% for cat in categories %}
+ <option value="{{ cat }}">{{ category_labels[cat] }}</option>
+ {% endfor %}
+ </select>
+ </div>
 
-                    <div class="condition-item">
-                        <label>料金帯</label>
-                        <select name="price" class="form-control">
-                            <option value="">すべて</option>
-                            {% for price_range in price_ranges %}
-                            <option value="{{ loop.index0 }}">{{ price_range[2] }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
+ <div class="condition-item">
+ <label>料金帯</label>
+ <select name="price" class="form-control">
+ <option value="">すべて</option>
+ {% for price_range in price_ranges %}
+ <option value="{{ loop.index0 }}">{{ price_range[2] }}</option>
+ {% endfor %}
+ </select>
+ </div>
 
-                    <div class="condition-item">
-                        <label>空席状況</label>
-                        <select name="vacancy" class="form-control">
-                            <option value="">すべて</option>
-                            <option value="empty">空席あり</option>
-                            <option value="busy">混雑</option>
-                        </select>
-                    </div>
-                </div>
+ <div class="condition-item">
+ <label>空席状況</label>
+ <select name="vacancy" class="form-control">
+ <option value="">すべて</option>
+ <option value="empty">空席あり</option>
+ <option value="busy">混雑</option>
+ </select>
+ </div>
+ </div>
 
-                <div class="condition-options">
-                    <label class="form-check">
-                        <input type="checkbox" name="has_job" value="1" class="form-check-input">
-                        <span>求人募集中のみ</span>
-                    </label>
-                </div>
+ <div class="condition-options">
+ <label class="form-check">
+ <input type="checkbox" name="has_job" value="1" class="form-check-input">
+ <span>求人募集中のみ</span>
+ </label>
+ </div>
 
-                <button type="submit" class="btn btn-gold btn-block">✨ この条件で検索</button>
-            </form>
-        </div>
-    </div>
+ <button type="submit" class="btn btn-gold btn-block"> この条件で検索</button>
+ </form>
+ </div>
+ </div>
 
-    <!-- Announcements -->
-    {% if announcements %}
-    <div class="announcements-section mb-4">
-        <div class="announcements-header">
-            <span class="announcements-icon">📢</span>
-            <span class="announcements-title">お知らせ</span>
-        </div>
-        <div class="announcements-list">
-            {% for announcement in announcements %}
-            <div class="announcement-item">
-                <span class="announcement-date">{{ announcement.created_at.strftime('%m/%d') }}</span>
-                <span class="announcement-text">{{ announcement.title }}</span>
-                {% if announcement.link_url %}
-                <a href="{{ announcement.link_url }}" class="announcement-link">
-                    {{ announcement.link_text or '詳細' }} →
-                </a>
-                {% endif %}
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
+ <!-- Announcements -->
+ {% if announcements %}
+ <div class="announcements-section mb-4">
+ <div class="announcements-header">
+ <span class="announcements-icon"></span>
+ <span class="announcements-title">お知らせ</span>
+ </div>
+ <div class="announcements-list">
+ {% for announcement in announcements %}
+ <div class="announcement-item">
+ <span class="announcement-date">{{ announcement.created_at.strftime('%m/%d') }}</span>
+ <span class="announcement-text">{{ announcement.title }}</span>
+ {% if announcement.link_url %}
+ <a href="{{ announcement.link_url }}" class="announcement-link">
+ {{ announcement.link_text or '詳細' }} →
+ </a>
+ {% endif %}
+ </div>
+ {% endfor %}
+ </div>
+ </div>
+ {% endif %}
 
-    <!-- Quick Area Links -->
-    <div class="quick-links mb-4">
-        <h3 class="section-title">📍 エリアから探す</h3>
-        <div class="area-buttons">
-            {% for area in areas %}
-            <a href="{{ url_for('public.search', area=area) }}" class="area-btn">
-                {{ area }}
-            </a>
-            {% endfor %}
-        </div>
-    </div>
+ <!-- Quick Area Links -->
+ <div class="quick-links mb-4">
+ <h3 class="section-title"> エリアから探す</h3>
+ <div class="area-buttons">
+ {% for area in areas %}
+ <a href="{{ url_for('public.search', area=area) }}" class="area-btn">
+ {{ area }}
+ </a>
+ {% endfor %}
+ </div>
+ </div>
 
-    <!-- Featured Shops -->
-    {% if featured_shops %}
-    <div class="featured-section mb-4">
-        <h3 class="section-title">
-            ⭐ おすすめ店舗
-        </h3>
-        <div class="shop-grid">
-            {% for shop in featured_shops %}
-            {% include "public/_shop_card.html" %}
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
+ <!-- Featured Shops -->
+ {% if featured_shops %}
+ <div class="featured-section mb-4">
+ <h3 class="section-title">
+ おすすめ店舗
+ </h3>
+ <div class="shop-grid">
+ {% for shop in featured_shops %}
+ {% include "public/_shop_card.html" %}
+ {% endfor %}
+ </div>
+ </div>
+ {% endif %}
 
-    <!-- Recent Shops -->
-    {% if recent_shops %}
-    <div class="recent-section mb-4">
-        <h3 class="section-title">
-            🆕 新着店舗
-        </h3>
-        <div class="shop-grid">
-            {% for shop in recent_shops %}
-            {% include "public/_shop_card.html" %}
-            {% endfor %}
-        </div>
+ <!-- Recent Shops -->
+ {% if recent_shops %}
+ <div class="recent-section mb-4">
+ <h3 class="section-title">
+ 🆕 新着店舗
+ </h3>
+ <div class="shop-grid">
+ {% for shop in recent_shops %}
+ {% include "public/_shop_card.html" %}
+ {% endfor %}
+ </div>
 
-        <div class="text-center mt-3">
-            <a href="{{ url_for('public.search') }}" class="btn btn-gold">
-                ✨ すべての店舗を見る →
-            </a>
-        </div>
-    </div>
-    {% endif %}
+ <div class="text-center mt-3">
+ <a href="{{ url_for('public.search') }}" class="btn btn-gold">
+ すべての店舗を見る →
+ </a>
+ </div>
+ </div>
+ {% endif %}
 </div>
 
 {% block extra_js %}
 <script>
-    // Condition search toggle
-    function toggleConditions() {
-        const form = document.getElementById('condition-form');
-        const toggle = document.getElementById('condition-toggle');
+ // Condition search toggle
+ function toggleConditions() {
+ const form = document.getElementById('condition-form');
+ const toggle = document.getElementById('condition-toggle');
 
-        if (form.style.display === 'none' || form.style.display === '') {
-            form.style.display = 'block';
-            toggle.textContent = '▲';
-        } else {
-            form.style.display = 'none';
-            toggle.textContent = '▼';
-        }
-    }
+ if (form.style.display === 'none' || form.style.display === '') {
+ form.style.display = 'block';
+ toggle.textContent = '▲';
+ } else {
+ form.style.display = 'none';
+ toggle.textContent = '▼';
+ }
+ }
 
-    // Banner carousel
-    const bannerItems = document.querySelectorAll('.banner-item');
-    const dots = document.querySelectorAll('.banner-dots .dot');
-    let currentBanner = 0;
+ // Banner carousel
+ const bannerItems = document.querySelectorAll('.banner-item');
+ const dots = document.querySelectorAll('.banner-dots .dot');
+ let currentBanner = 0;
 
-    if (bannerItems.length > 1) {
-        setInterval(() => {
-            bannerItems[currentBanner].classList.remove('active');
-            if (dots[currentBanner]) dots[currentBanner].classList.remove('active');
+ if (bannerItems.length > 1) {
+ setInterval(() => {
+ bannerItems[currentBanner].classList.remove('active');
+ if (dots[currentBanner]) dots[currentBanner].classList.remove('active');
 
-            currentBanner = (currentBanner + 1) % bannerItems.length;
+ currentBanner = (currentBanner + 1) % bannerItems.length;
 
-            bannerItems[currentBanner].classList.add('active');
-            if (dots[currentBanner]) dots[currentBanner].classList.add('active');
-        }, 5000);
+ bannerItems[currentBanner].classList.add('active');
+ if (dots[currentBanner]) dots[currentBanner].classList.add('active');
+ }, 5000);
 
-        dots.forEach((dot, index) => {
-            dot.addEventListener('click', () => {
-                bannerItems[currentBanner].classList.remove('active');
-                dots[currentBanner].classList.remove('active');
+ dots.forEach((dot, index) => {
+ dot.addEventListener('click', () => {
+ bannerItems[currentBanner].classList.remove('active');
+ dots[currentBanner].classList.remove('active');
 
-                currentBanner = index;
+ currentBanner = index;
 
-                bannerItems[currentBanner].classList.add('active');
-                dots[currentBanner].classList.add('active');
-            });
-        });
-    }
+ bannerItems[currentBanner].classList.add('active');
+ dots[currentBanner].classList.add('active');
+ });
+ });
+ }
 </script>
 {% endblock %}
 {% endblock %}

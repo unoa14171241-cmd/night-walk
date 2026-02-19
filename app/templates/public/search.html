@@ -4,248 +4,248 @@
 {% if keyword %}「{{ keyword }}」の検索結果{% else %}店舗検索{% endif %} - Night-Walk
 {% endblock %}
 
-{% block meta_description %}{% if keyword %}「{{ keyword }}」に関連する{% endif %}{% if selected_area %}{{ selected_area }}エリアの{% endif %}スナック・キャバクラ・ガールズバーを検索。空席状況をリアルタイムで確認できます。{% endblock %}
+{% block meta_description %}{% if keyword %}「{{ keyword }}」に関連する{% endif %}{% if selected_area %}{{ selected_area }}エリアの{% endif %}スナックキャバクラガールズバーを検索。空席状況をリアルタイムで確認できます。{% endblock %}
 
 {% block content %}
 <div class="container">
-    <div class="search-results-layout">
-        <!-- Main Content -->
-        <div class="search-main">
-            <!-- Scene Filter (目的選択中の場合) -->
-            {% if selected_scene and scene_groups[selected_scene] %}
-            <div class="scene-filter-section">
-                <div class="scene-filter-header">
-                    <span class="scene-filter-name">{{ scene_groups[selected_scene].name }}</span>
-                    <span class="scene-filter-desc">- {{ scene_groups[selected_scene].description }}</span>
-                    <a href="{{ url_for('public.search', q=keyword, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}" 
-                       class="scene-clear-btn">✕ 解除</a>
-                </div>
-                <div class="scene-category-tags">
-                    <a href="{{ url_for('public.search', scene=selected_scene, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}" 
-                       class="scene-category-tag {% if not selected_category %}active{% endif %}">すべて</a>
-                    {% for cat in scene_categories %}
-                    <a href="{{ url_for('public.search', scene=selected_scene, category=cat, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}" 
-                       class="scene-category-tag {% if selected_category == cat %}active{% endif %}">
-                        {{ category_labels[cat] }}
-                    </a>
-                    {% endfor %}
-                </div>
-            </div>
-            {% else %}
-            <!-- Scene Quick Select (目的未選択の場合) -->
-            <div class="scene-quick-select mb-3">
-                <span class="scene-quick-label">目的で探す:</span>
-                {% for scene_key in scenes %}
-                {% set scene = scene_groups[scene_key] %}
-                <a href="{{ url_for('public.search', scene=scene_key, q=keyword, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}" 
-                   class="scene-quick-btn" style="--scene-color: {{ scene.color }}">
-                    {{ scene.name }}
-                </a>
-                {% endfor %}
-            </div>
-            {% endif %}
-            
-            <!-- Search Form -->
-            <div class="search-form-compact mb-4">
-                <form action="{{ url_for('public.search') }}" method="GET">
-                    <!-- Hidden scene parameter -->
-                    {% if selected_scene %}
-                    <input type="hidden" name="scene" value="{{ selected_scene }}">
-                    {% endif %}
-                    
-                    <div class="keyword-search">
-                        <div class="search-input-wrapper">
-                            <span class="search-icon"></span>
-                            <input type="text" 
-                                   name="q" 
-                                   class="search-input" 
-                                   placeholder="店舗名、エリア、キーワードで検索..."
-                                   value="{{ keyword }}"
-                                   autocomplete="off">
-                        </div>
-                        <button type="submit" class="btn btn-primary">検索</button>
-                    </div>
-                    
-                    <!-- Condition Filters (Expanded) -->
-                    <div class="filter-bar">
-                        <select name="area" class="filter-select" onchange="this.form.submit()">
-                            <option value="">エリア: すべて</option>
-                            {% for area in areas %}
-                            <option value="{{ area }}" {% if selected_area == area %}selected{% endif %}>
-                                {{ area }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                        
-                        {% if not selected_scene %}
-                        <select name="category" class="filter-select" onchange="this.form.submit()">
-                            <option value="">業態: すべて</option>
-                            {% for cat in categories %}
-                            <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>
-                                {{ category_labels[cat] }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                        {% else %}
-                        <select name="category" class="filter-select" onchange="this.form.submit()">
-                            <option value="">業態: すべて</option>
-                            {% for cat in scene_categories %}
-                            <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>
-                                {{ category_labels[cat] }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                        {% endif %}
-                        
-                        <select name="price" class="filter-select" onchange="this.form.submit()">
-                            <option value="">料金: すべて</option>
-                            {% for idx in range(price_ranges | length) %}
-                            <option value="{{ idx }}" {% if selected_price == idx | string %}selected{% endif %}>
-                                {{ price_ranges[idx][2] }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                        
-                        <select name="vacancy" class="filter-select" onchange="this.form.submit()">
-                            <option value="">空席: すべて</option>
-                            {% for status in vacancy_statuses %}
-                            <option value="{{ status }}" {% if selected_vacancy == status %}selected{% endif %}>
-                                {{ vacancy_labels[status] }}席
-                            </option>
-                            {% endfor %}
-                        </select>
-                        
-                        <label class="filter-checkbox">
-                            <input type="checkbox" 
-                                   name="has_job" 
-                                   value="1" 
-                                   {% if has_job %}checked{% endif %}
-                                   onchange="this.form.submit()">
-                            <span>求人あり</span>
-                        </label>
-                    </div>
-                </form>
-            </div>
-            
-            <!-- Results Header -->
-            <div class="results-header mb-3">
-                <h1 class="results-title">
-                    {% if keyword %}
-                    「{{ keyword }}」の検索結果
-                    {% else %}
-                    店舗一覧
-                    {% endif %}
-                </h1>
-                <span class="results-count">{{ shops | length }}件</span>
-            </div>
-            
-            <!-- Active Filters -->
-            {% if selected_scene or selected_area or selected_category or selected_price or selected_vacancy or has_job %}
-            <div class="active-filters mb-3">
-                <span class="active-filters-label">絞り込み:</span>
-                {% if selected_scene and scene_groups[selected_scene] %}
-                <span class="filter-tag filter-tag-scene" style="--scene-color: {{ scene_groups[selected_scene].color }}">
-                    {{ scene_groups[selected_scene].name }}
-                    <a href="{{ url_for('public.search', q=keyword, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
-                </span>
-                {% endif %}
-                {% if selected_area %}
-                <span class="filter-tag">
-                    {{ selected_area }}
-                    <a href="{{ url_for('public.search', q=keyword, scene=selected_scene, category=selected_category, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
-                </span>
-                {% endif %}
-                {% if selected_category %}
-                <span class="filter-tag">
-                    {{ category_labels[selected_category] }}
-                    <a href="{{ url_for('public.search', q=keyword, scene=selected_scene, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
-                </span>
-                {% endif %}
-                {% if selected_price %}
-                <span class="filter-tag">
-                    {{ price_ranges[selected_price | int][2] }}
-                    <a href="{{ url_for('public.search', q=keyword, scene=selected_scene, area=selected_area, category=selected_category, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
-                </span>
-                {% endif %}
-                {% if selected_vacancy %}
-                <span class="filter-tag">
-                    {{ vacancy_labels[selected_vacancy] }}席
-                    <a href="{{ url_for('public.search', q=keyword, scene=selected_scene, area=selected_area, category=selected_category, price=selected_price, has_job='1' if has_job else '') }}">&times;</a>
-                </span>
-                {% endif %}
-                {% if has_job %}
-                <span class="filter-tag">
-                    求人あり
-                    <a href="{{ url_for('public.search', q=keyword, scene=selected_scene, area=selected_area, category=selected_category, price=selected_price, vacancy=selected_vacancy) }}">&times;</a>
-                </span>
-                {% endif %}
-                <a href="{{ url_for('public.search', q=keyword) }}" class="clear-filters">すべてクリア</a>
-            </div>
-            {% endif %}
-            
-            <!-- Shop Grid -->
-            {% if shops %}
-            <div class="shop-grid">
-                {% for shop in shops %}
-                {% include "public/_shop_card.html" %}
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="no-results">
-                <div class="no-results-icon"></div>
-                <h3>検索結果がありません</h3>
-                <p class="text-muted">条件を変更して再度お試しください</p>
-                <a href="{{ url_for('public.index') }}" class="btn btn-primary mt-3">
-                    トップに戻る
-                </a>
-            </div>
-            {% endif %}
-        </div>
-        
-        <!-- Sidebar -->
-        <aside class="search-sidebar">
-            {% if sidebar_ads %}
-            <div class="sidebar-ads">
-                {% for ad in sidebar_ads %}
-                <a href="{{ url_for('public.ad_click', ad_id=ad.id) }}" 
-                   class="sidebar-ad"
-                   target="_blank"
-                   rel="noopener">
-                    {% if ad.display_image_url %}
-                    <img src="{{ ad.display_image_url }}" alt="{{ ad.title }}">
-                    {% else %}
-                    <div class="sidebar-ad-placeholder">{{ ad.title }}</div>
-                    {% endif %}
-                </a>
-                {% endfor %}
-            </div>
-            {% endif %}
-            
-            <!-- Quick Links -->
-            <div class="sidebar-section">
-                <h4>エリアから探す</h4>
-                <div class="sidebar-links">
-                    {% for area in areas %}
-                    <a href="{{ url_for('public.search', area=area) }}" 
-                       class="sidebar-link {% if selected_area == area %}active{% endif %}">
-                        📍 {{ area }}
-                    </a>
-                    {% endfor %}
-                </div>
-            </div>
-            
-            <div class="sidebar-section">
-                <h4>業態から探す</h4>
-                <div class="sidebar-links">
-                    {% for cat in categories %}
-                    <a href="{{ url_for('public.search', category=cat) }}" 
-                       class="sidebar-link {% if selected_category == cat %}active{% endif %}">
-                        {{ category_labels[cat] }}
-                    </a>
-                    {% endfor %}
-                </div>
-            </div>
-        </aside>
-    </div>
+ <div class="search-results-layout">
+ <!-- Main Content -->
+ <div class="search-main">
+ <!-- Scene Filter (目的選択中の場合) -->
+ {% if selected_scene and scene_groups[selected_scene] %}
+ <div class="scene-filter-section">
+ <div class="scene-filter-header">
+ <span class="scene-filter-name">{{ scene_groups[selected_scene].name }}</span>
+ <span class="scene-filter-desc">- {{ scene_groups[selected_scene].description }}</span>
+ <a href="{{ url_for('public.search', q=keyword, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}" 
+ class="scene-clear-btn"> 解除</a>
+ </div>
+ <div class="scene-category-tags">
+ <a href="{{ url_for('public.search', scene=selected_scene, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}" 
+ class="scene-category-tag {% if not selected_category %}active{% endif %}">すべて</a>
+ {% for cat in scene_categories %}
+ <a href="{{ url_for('public.search', scene=selected_scene, category=cat, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}" 
+ class="scene-category-tag {% if selected_category == cat %}active{% endif %}">
+ {{ category_labels[cat] }}
+ </a>
+ {% endfor %}
+ </div>
+ </div>
+ {% else %}
+ <!-- Scene Quick Select (目的未選択の場合) -->
+ <div class="scene-quick-select mb-3">
+ <span class="scene-quick-label">目的で探す:</span>
+ {% for scene_key in scenes %}
+ {% set scene = scene_groups[scene_key] %}
+ <a href="{{ url_for('public.search', scene=scene_key, q=keyword, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}" 
+ class="scene-quick-btn" style="--scene-color: {{ scene.color }}">
+ {{ scene.name }}
+ </a>
+ {% endfor %}
+ </div>
+ {% endif %}
+ 
+ <!-- Search Form -->
+ <div class="search-form-compact mb-4">
+ <form action="{{ url_for('public.search') }}" method="GET">
+ <!-- Hidden scene parameter -->
+ {% if selected_scene %}
+ <input type="hidden" name="scene" value="{{ selected_scene }}">
+ {% endif %}
+ 
+ <div class="keyword-search">
+ <div class="search-input-wrapper">
+ <span class="search-icon"></span>
+ <input type="text" 
+ name="q" 
+ class="search-input" 
+ placeholder="店舗名、エリア、キーワードで検索..."
+ value="{{ keyword }}"
+ autocomplete="off">
+ </div>
+ <button type="submit" class="btn btn-primary">検索</button>
+ </div>
+ 
+ <!-- Condition Filters (Expanded) -->
+ <div class="filter-bar">
+ <select name="area" class="filter-select" onchange="this.form.submit()">
+ <option value="">エリア: すべて</option>
+ {% for area in areas %}
+ <option value="{{ area }}" {% if selected_area == area %}selected{% endif %}>
+ {{ area }}
+ </option>
+ {% endfor %}
+ </select>
+ 
+ {% if not selected_scene %}
+ <select name="category" class="filter-select" onchange="this.form.submit()">
+ <option value="">業態: すべて</option>
+ {% for cat in categories %}
+ <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>
+ {{ category_labels[cat] }}
+ </option>
+ {% endfor %}
+ </select>
+ {% else %}
+ <select name="category" class="filter-select" onchange="this.form.submit()">
+ <option value="">業態: すべて</option>
+ {% for cat in scene_categories %}
+ <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>
+ {{ category_labels[cat] }}
+ </option>
+ {% endfor %}
+ </select>
+ {% endif %}
+ 
+ <select name="price" class="filter-select" onchange="this.form.submit()">
+ <option value="">料金: すべて</option>
+ {% for idx in range(price_ranges | length) %}
+ <option value="{{ idx }}" {% if selected_price == idx | string %}selected{% endif %}>
+ {{ price_ranges[idx][2] }}
+ </option>
+ {% endfor %}
+ </select>
+ 
+ <select name="vacancy" class="filter-select" onchange="this.form.submit()">
+ <option value="">空席: すべて</option>
+ {% for status in vacancy_statuses %}
+ <option value="{{ status }}" {% if selected_vacancy == status %}selected{% endif %}>
+ {{ vacancy_labels[status] }}席
+ </option>
+ {% endfor %}
+ </select>
+ 
+ <label class="filter-checkbox">
+ <input type="checkbox" 
+ name="has_job" 
+ value="1" 
+ {% if has_job %}checked{% endif %}
+ onchange="this.form.submit()">
+ <span>求人あり</span>
+ </label>
+ </div>
+ </form>
+ </div>
+ 
+ <!-- Results Header -->
+ <div class="results-header mb-3">
+ <h1 class="results-title">
+ {% if keyword %}
+ 「{{ keyword }}」の検索結果
+ {% else %}
+ 店舗一覧
+ {% endif %}
+ </h1>
+ <span class="results-count">{{ shops | length }}件</span>
+ </div>
+ 
+ <!-- Active Filters -->
+ {% if selected_scene or selected_area or selected_category or selected_price or selected_vacancy or has_job %}
+ <div class="active-filters mb-3">
+ <span class="active-filters-label">絞り込み:</span>
+ {% if selected_scene and scene_groups[selected_scene] %}
+ <span class="filter-tag filter-tag-scene" style="--scene-color: {{ scene_groups[selected_scene].color }}">
+ {{ scene_groups[selected_scene].name }}
+ <a href="{{ url_for('public.search', q=keyword, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
+ </span>
+ {% endif %}
+ {% if selected_area %}
+ <span class="filter-tag">
+ {{ selected_area }}
+ <a href="{{ url_for('public.search', q=keyword, scene=selected_scene, category=selected_category, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
+ </span>
+ {% endif %}
+ {% if selected_category %}
+ <span class="filter-tag">
+ {{ category_labels[selected_category] }}
+ <a href="{{ url_for('public.search', q=keyword, scene=selected_scene, area=selected_area, price=selected_price, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
+ </span>
+ {% endif %}
+ {% if selected_price %}
+ <span class="filter-tag">
+ {{ price_ranges[selected_price | int][2] }}
+ <a href="{{ url_for('public.search', q=keyword, scene=selected_scene, area=selected_area, category=selected_category, vacancy=selected_vacancy, has_job='1' if has_job else '') }}">&times;</a>
+ </span>
+ {% endif %}
+ {% if selected_vacancy %}
+ <span class="filter-tag">
+ {{ vacancy_labels[selected_vacancy] }}席
+ <a href="{{ url_for('public.search', q=keyword, scene=selected_scene, area=selected_area, category=selected_category, price=selected_price, has_job='1' if has_job else '') }}">&times;</a>
+ </span>
+ {% endif %}
+ {% if has_job %}
+ <span class="filter-tag">
+ 求人あり
+ <a href="{{ url_for('public.search', q=keyword, scene=selected_scene, area=selected_area, category=selected_category, price=selected_price, vacancy=selected_vacancy) }}">&times;</a>
+ </span>
+ {% endif %}
+ <a href="{{ url_for('public.search', q=keyword) }}" class="clear-filters">すべてクリア</a>
+ </div>
+ {% endif %}
+ 
+ <!-- Shop Grid -->
+ {% if shops %}
+ <div class="shop-grid">
+ {% for shop in shops %}
+ {% include "public/_shop_card.html" %}
+ {% endfor %}
+ </div>
+ {% else %}
+ <div class="no-results">
+ <div class="no-results-icon"></div>
+ <h3>検索結果がありません</h3>
+ <p class="text-muted">条件を変更して再度お試しください</p>
+ <a href="{{ url_for('public.index') }}" class="btn btn-primary mt-3">
+ トップに戻る
+ </a>
+ </div>
+ {% endif %}
+ </div>
+ 
+ <!-- Sidebar -->
+ <aside class="search-sidebar">
+ {% if sidebar_ads %}
+ <div class="sidebar-ads">
+ {% for ad in sidebar_ads %}
+ <a href="{{ url_for('public.ad_click', ad_id=ad.id) }}" 
+ class="sidebar-ad"
+ target="_blank"
+ rel="noopener">
+ {% if ad.display_image_url %}
+ <img src="{{ ad.display_image_url }}" alt="{{ ad.title }}">
+ {% else %}
+ <div class="sidebar-ad-placeholder">{{ ad.title }}</div>
+ {% endif %}
+ </a>
+ {% endfor %}
+ </div>
+ {% endif %}
+ 
+ <!-- Quick Links -->
+ <div class="sidebar-section">
+ <h4>エリアから探す</h4>
+ <div class="sidebar-links">
+ {% for area in areas %}
+ <a href="{{ url_for('public.search', area=area) }}" 
+ class="sidebar-link {% if selected_area == area %}active{% endif %}">
+ {{ area }}
+ </a>
+ {% endfor %}
+ </div>
+ </div>
+ 
+ <div class="sidebar-section">
+ <h4>業態から探す</h4>
+ <div class="sidebar-links">
+ {% for cat in categories %}
+ <a href="{{ url_for('public.search', category=cat) }}" 
+ class="sidebar-link {% if selected_category == cat %}active{% endif %}">
+ {{ category_labels[cat] }}
+ </a>
+ {% endfor %}
+ </div>
+ </div>
+ </aside>
+ </div>
 </div>
 {% endblock %}

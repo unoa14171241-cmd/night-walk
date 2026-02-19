@@ -4,83 +4,83 @@
 
 {% block content %}
 <div class="admin-container">
-    <div class="page-header">
-        <div>
-            <a href="{{ url_for('admin.system_status') }}" class="back-link">← システムステータス</a>
-            <h1>📝 システムログ</h1>
-        </div>
-    </div>
-    
-    <!-- フィルタ -->
-    <div class="card mb-4">
-        <form method="GET" class="d-flex gap-2 align-center">
-            <div>
-                <select name="level" class="form-control form-control-sm">
-                    <option value="">すべてのレベル</option>
-                    <option value="debug" {% if level_filter == 'debug' %}selected{% endif %}>Debug</option>
-                    <option value="info" {% if level_filter == 'info' %}selected{% endif %}>Info</option>
-                    <option value="warning" {% if level_filter == 'warning' %}selected{% endif %}>Warning</option>
-                    <option value="error" {% if level_filter == 'error' %}selected{% endif %}>Error</option>
-                    <option value="critical" {% if level_filter == 'critical' %}selected{% endif %}>Critical</option>
-                </select>
-            </div>
-            <div>
-                <input type="text" name="category" class="form-control form-control-sm" 
-                       placeholder="カテゴリ" value="{{ category_filter }}">
-            </div>
-            <button type="submit" class="btn btn-sm btn-primary">フィルタ</button>
-            <a href="{{ url_for('admin.system_logs') }}" class="btn btn-sm btn-outline">リセット</a>
-        </form>
-    </div>
-    
-    {% if logs %}
-    <div class="card">
-        <div style="overflow-x: auto;">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th style="width: 140px;">日時</th>
-                        <th style="width: 80px;">レベル</th>
-                        <th style="width: 100px;">カテゴリ</th>
-                        <th>メッセージ</th>
-                        <th style="width: 120px;">ユーザー/IP</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for log in logs %}
-                    <tr class="{% if log.level in ['error', 'critical'] %}table-danger{% elif log.level == 'warning' %}table-warning{% endif %}">
-                        <td style="white-space: nowrap; font-size: 0.8rem;">
-                            {{ log.created_at.strftime('%Y/%m/%d %H:%M:%S') }}
-                        </td>
-                        <td>
-                            <span class="badge badge-{% if log.level == 'critical' %}danger{% elif log.level == 'error' %}danger{% elif log.level == 'warning' %}warning{% elif log.level == 'info' %}info{% else %}secondary{% endif %}">
-                                {{ log.level }}
-                            </span>
-                        </td>
-                        <td>{{ log.category or '-' }}</td>
-                        <td style="font-size: 0.85rem; word-break: break-all;">
-                            {{ log.message }}
-                            {% if log.details %}
-                            <details style="margin-top: 4px;">
-                                <summary style="font-size: 0.75rem; cursor: pointer;">詳細</summary>
-                                <pre style="font-size: 0.7rem; background: var(--color-bg-secondary); padding: 0.5rem; margin-top: 4px; white-space: pre-wrap;">{{ log.details }}</pre>
-                            </details>
-                            {% endif %}
-                        </td>
-                        <td style="font-size: 0.75rem;">
-                            {% if log.user_id %}User: {{ log.user_id }}{% endif %}
-                            {% if log.ip_address %}<br>{{ log.ip_address }}{% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% else %}
-    <div class="card text-center" style="padding: 3rem;">
-        <p class="text-muted mb-0">該当するログがありません</p>
-    </div>
-    {% endif %}
+ <div class="page-header">
+ <div>
+ <a href="{{ url_for('admin.system_status') }}" class="back-link">← システムステータス</a>
+ <h1> システムログ</h1>
+ </div>
+ </div>
+ 
+ <!-- フィルタ -->
+ <div class="card mb-4">
+ <form method="GET" class="d-flex gap-2 align-center">
+ <div>
+ <select name="level" class="form-control form-control-sm">
+ <option value="">すべてのレベル</option>
+ <option value="debug" {% if level_filter == 'debug' %}selected{% endif %}>Debug</option>
+ <option value="info" {% if level_filter == 'info' %}selected{% endif %}>Info</option>
+ <option value="warning" {% if level_filter == 'warning' %}selected{% endif %}>Warning</option>
+ <option value="error" {% if level_filter == 'error' %}selected{% endif %}>Error</option>
+ <option value="critical" {% if level_filter == 'critical' %}selected{% endif %}>Critical</option>
+ </select>
+ </div>
+ <div>
+ <input type="text" name="category" class="form-control form-control-sm" 
+ placeholder="カテゴリ" value="{{ category_filter }}">
+ </div>
+ <button type="submit" class="btn btn-sm btn-primary">フィルタ</button>
+ <a href="{{ url_for('admin.system_logs') }}" class="btn btn-sm btn-outline">リセット</a>
+ </form>
+ </div>
+ 
+ {% if logs %}
+ <div class="card">
+ <div style="overflow-x: auto;">
+ <table class="table">
+ <thead>
+ <tr>
+ <th style="width: 140px;">日時</th>
+ <th style="width: 80px;">レベル</th>
+ <th style="width: 100px;">カテゴリ</th>
+ <th>メッセージ</th>
+ <th style="width: 120px;">ユーザー/IP</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for log in logs %}
+ <tr class="{% if log.level in ['error', 'critical'] %}table-danger{% elif log.level == 'warning' %}table-warning{% endif %}">
+ <td style="white-space: nowrap; font-size: 0.8rem;">
+ {{ log.created_at.strftime('%Y/%m/%d %H:%M:%S') }}
+ </td>
+ <td>
+ <span class="badge badge-{% if log.level == 'critical' %}danger{% elif log.level == 'error' %}danger{% elif log.level == 'warning' %}warning{% elif log.level == 'info' %}info{% else %}secondary{% endif %}">
+ {{ log.level }}
+ </span>
+ </td>
+ <td>{{ log.category or '-' }}</td>
+ <td style="font-size: 0.85rem; word-break: break-all;">
+ {{ log.message }}
+ {% if log.details %}
+ <details style="margin-top: 4px;">
+ <summary style="font-size: 0.75rem; cursor: pointer;">詳細</summary>
+ <pre style="font-size: 0.7rem; background: var(--color-bg-secondary); padding: 0.5rem; margin-top: 4px; white-space: pre-wrap;">{{ log.details }}</pre>
+ </details>
+ {% endif %}
+ </td>
+ <td style="font-size: 0.75rem;">
+ {% if log.user_id %}User: {{ log.user_id }}{% endif %}
+ {% if log.ip_address %}<br>{{ log.ip_address }}{% endif %}
+ </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ </div>
+ {% else %}
+ <div class="card text-center" style="padding: 3rem;">
+ <p class="text-muted mb-0">該当するログがありません</p>
+ </div>
+ {% endif %}
 </div>
 {% endblock %}

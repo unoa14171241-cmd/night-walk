@@ -2,81 +2,81 @@
 
 {% block title %}キャストランキング - Night-Walk{% endblock %}
 
-{% block meta_description %}岡山・倉敷エリアのナイトスポットで人気のキャストランキング。PVとギフトで毎月決定されるランキングをチェック！{% endblock %}
+{% block meta_description %}岡山倉敷エリアのナイトスポットで人気のキャストランキング。PVとギフトで毎月決定されるランキングをチェック！{% endblock %}
 
 {% block content %}
 <div class="container" style="max-width: 800px; padding: var(--space-lg);">
-    
-    <h1 class="text-center mb-4">🏆 キャストランキング</h1>
-    
-    <p class="text-center text-muted mb-5">
-        各エリアで人気のキャストをチェック！<br>
-        PVとギフトで毎月ランキングが決定します
-    </p>
-    
-    <!-- エリア選択 -->
-    <div class="mb-5">
-        {% for area_key, area_def in areas.items() %}
-        <a href="{{ url_for('public.ranking_area', area=area_key) }}" 
-           class="card mb-3" 
-           style="display: block; text-decoration: none; transition: transform 0.2s;"
-           onmouseover="this.style.transform='translateX(5px)'"
-           onmouseout="this.style.transform='translateX(0)'">
-            <div class="d-flex align-center justify-between">
-                <div>
-                    <h3 style="margin: 0;">📍 {{ area_def.name }}</h3>
-                    <p class="text-muted mb-0" style="font-size: 0.9rem;">{{ area_def.prefecture }}</p>
-                </div>
-                <span style="font-size: 1.5rem;">→</span>
-            </div>
-        </a>
-        {% endfor %}
-    </div>
-    
-    <!-- 各エリアのTOP1 -->
-    {% if top1_list %}
-    <div class="mb-4">
-        <h2 class="text-center mb-4">👑 今月のエリアTOP1</h2>
-        
-        <div class="d-flex gap-3" style="flex-wrap: wrap;">
-            {% for item in top1_list %}
-            <a href="{{ url_for('public.ranking_top1', area=item.area) }}" 
-               class="card" 
-               style="flex: 1; min-width: 250px; text-decoration: none; text-align: center; background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,165,0,0.1));">
-                
-                <div style="margin-bottom: var(--space-md);">
-                    <span style="font-size: 2rem;">🥇</span>
-                </div>
-                
-                {% if item.cast.image_url %}
-                <img src="{{ item.cast.image_url }}" 
-                     alt="{{ item.cast.name_display }}"
-                     style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin: 0 auto var(--space-md); border: 3px solid gold;">
-                {% endif %}
-                
-                <h4 style="margin: 0;">{{ item.cast.name_display }}</h4>
-                <p class="text-muted mb-0" style="font-size: 0.85rem;">
-                    {{ item.area_name }} TOP1
-                </p>
-                <p class="text-muted mb-0" style="font-size: 0.8rem;">
-                    {{ item.cast.shop.name if item.cast.shop else '' }}
-                </p>
-            </a>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-    
-    <!-- 説明 -->
-    <div class="card" style="background: var(--color-bg-elevated);">
-        <h4>ランキングについて</h4>
-        <ul style="margin: 0; padding-left: var(--space-lg);">
-            <li>毎月1日に前月のランキングが確定します</li>
-            <li>PV数とギフトポイントを元にスコアを計算</li>
-            <li>TOP1は「アプリの顔」として特別に紹介されます</li>
-            <li>TOP1〜TOP10には特別バッジが付与されます</li>
-        </ul>
-    </div>
-    
+ 
+ <h1 class="text-center mb-4"> キャストランキング</h1>
+ 
+ <p class="text-center text-muted mb-5">
+ 各エリアで人気のキャストをチェック！<br>
+ PVとギフトで毎月ランキングが決定します
+ </p>
+ 
+ <!-- エリア選択 -->
+ <div class="mb-5">
+ {% for area_key, area_def in areas.items() %}
+ <a href="{{ url_for('public.ranking_area', area=area_key) }}" 
+ class="card mb-3" 
+ style="display: block; text-decoration: none; transition: transform 0.2s;"
+ onmouseover="this.style.transform='translateX(5px)'"
+ onmouseout="this.style.transform='translateX(0)'">
+ <div class="d-flex align-center justify-between">
+ <div>
+ <h3 style="margin: 0;"> {{ area_def.name }}</h3>
+ <p class="text-muted mb-0" style="font-size: 0.9rem;">{{ area_def.prefecture }}</p>
+ </div>
+ <span style="font-size: 1.5rem;">→</span>
+ </div>
+ </a>
+ {% endfor %}
+ </div>
+ 
+ <!-- 各エリアのTOP1 -->
+ {% if top1_list %}
+ <div class="mb-4">
+ <h2 class="text-center mb-4"> 今月のエリアTOP1</h2>
+ 
+ <div class="d-flex gap-3" style="flex-wrap: wrap;">
+ {% for item in top1_list %}
+ <a href="{{ url_for('public.ranking_top1', area=item.area) }}" 
+ class="card" 
+ style="flex: 1; min-width: 250px; text-decoration: none; text-align: center; background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,165,0,0.1));">
+ 
+ <div style="margin-bottom: var(--space-md);">
+ <span style="font-size: 2rem;"></span>
+ </div>
+ 
+ {% if item.cast.image_url %}
+ <img src="{{ item.cast.image_url }}" 
+ alt="{{ item.cast.name_display }}"
+ style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin: 0 auto var(--space-md); border: 3px solid gold;">
+ {% endif %}
+ 
+ <h4 style="margin: 0;">{{ item.cast.name_display }}</h4>
+ <p class="text-muted mb-0" style="font-size: 0.85rem;">
+ {{ item.area_name }} TOP1
+ </p>
+ <p class="text-muted mb-0" style="font-size: 0.8rem;">
+ {{ item.cast.shop.name if item.cast.shop else '' }}
+ </p>
+ </a>
+ {% endfor %}
+ </div>
+ </div>
+ {% endif %}
+ 
+ <!-- 説明 -->
+ <div class="card" style="background: var(--color-bg-elevated);">
+ <h4>ランキングについて</h4>
+ <ul style="margin: 0; padding-left: var(--space-lg);">
+ <li>毎月1日に前月のランキングが確定します</li>
+ <li>PV数とギフトポイントを元にスコアを計算</li>
+ <li>TOP1は「アプリの顔」として特別に紹介されます</li>
+ <li>TOP1〜TOP10には特別バッジが付与されます</li>
+ </ul>
+ </div>
+ 
 </div>
 {% endblock %}

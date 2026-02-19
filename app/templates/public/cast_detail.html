@@ -9,538 +9,538 @@
 {% block structured_data %}
 <script type="application/ld+json">
 {
-  "@context": "https://schema.org",
-  "@type": "Person",
-  "name": "{{ cast.name_display }}",
-  "jobTitle": "キャスト",
-  "worksFor": {
-    "@type": "LocalBusiness",
-    "name": "{{ shop.name }}",
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "{{ shop.area }}",
-      "addressRegion": "岡山県"
-    }
-  }
-  {%- if cast.image_url %},
-  "image": "{{ cast.image_url }}"
-  {%- endif %}
+ "@context": "https://schema.org",
+ "@type": "Person",
+ "name": "{{ cast.name_display }}",
+ "jobTitle": "キャスト",
+ "worksFor": {
+ "@type": "LocalBusiness",
+ "name": "{{ shop.name }}",
+ "address": {
+ "@type": "PostalAddress",
+ "addressLocality": "{{ shop.area }}",
+ "addressRegion": "岡山県"
+ }
+ }
+ {%- if cast.image_url %},
+ "image": "{{ cast.image_url }}"
+ {%- endif %}
 }
 </script>
 {% endblock %}
 
 {% block content %}
 <div class="container cast-detail-page" style="max-width: 600px; padding: var(--space-lg);">
-    
-    <p class="mb-3">
-        <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}">← {{ shop.name }}</a>
-    </p>
-    
-    <!-- ===== ヘッダー ===== -->
-    <div class="card mb-4 cast-header" style="text-align: center; {% if cast.is_top1 %}background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.15));{% endif %}">
-        
-        <!-- バッジ表示 -->
-        {% if cast.best_badge %}
-        <div style="margin-bottom: var(--space-md);">
-            {% if cast.best_badge.badge_type == 'area_top1' %}
-            <span class="badge" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; font-size: 1rem; padding: var(--space-sm) var(--space-md);">
-                👑 {{ cast.best_badge.area_name }} TOP1
-            </span>
-            {% elif cast.best_badge.badge_type == 'area_top3' %}
-            <span class="badge" style="background: linear-gradient(135deg, #C0C0C0, #A0A0A0); color: #000; padding: var(--space-sm) var(--space-md);">
-                🥈 {{ cast.best_badge.area_name }} TOP3
-            </span>
-            {% elif cast.best_badge.badge_type == 'area_top10' %}
-            <span class="badge" style="background: linear-gradient(135deg, #CD7F32, #8B4513); color: #fff; padding: var(--space-sm) var(--space-md);">
-                🏅 {{ cast.best_badge.area_name }} TOP10
-            </span>
-            {% endif %}
-        </div>
-        {% endif %}
-        
-        <!-- メイン画像 -->
-        {% if cast.image_url %}
-        <img src="{{ cast.image_url }}" 
-             alt="{{ cast.name_display }}"
-             class="cast-main-image"
-             style="width: 140px; height: 140px; border-radius: 50%; object-fit: cover; margin-bottom: var(--space-md);
-                    {% if cast.is_top1 %}border: 4px solid gold; box-shadow: 0 0 20px rgba(255,215,0,0.5);{% else %}border: 3px solid var(--color-border);{% endif %}">
-        {% endif %}
-        
-        <h1 style="margin: 0 0 var(--space-xs);">{{ cast.name_display }}</h1>
-        
-        {% if cast.age %}
-        <p style="margin: 0 0 var(--space-sm); font-size: 1.1rem; color: var(--color-text-secondary);">{{ cast.age }}歳</p>
-        {% endif %}
-        
-        <p class="text-muted mb-0">
-            <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}">{{ shop.name }}</a>
-            ・ {{ shop.area }}
-        </p>
-        
-        <!-- 誕生日表示 -->
-        {% if birthdays %}
-        {% for bd in birthdays %}
-        {% if bd.is_today %}
-        <div class="birthday-alert" style="margin-top: var(--space-md); padding: var(--space-sm) var(--space-md); 
-                    background: linear-gradient(135deg, rgba(255,105,180,0.2), rgba(255,182,193,0.2)); 
-                    border-radius: 12px; font-size: 1.1rem;">
-            🎂🎉 今日は{{ cast.name_display }}の{{ bd.label or '誕生日' }}です！ 🎉🎂
-        </div>
-        {% elif bd.is_upcoming %}
-        <div style="margin-top: var(--space-sm); font-size: 0.85rem; color: var(--color-primary);">
-            🎂 {{ bd.display }}は{{ bd.label or '誕生日' }}です
-        </div>
-        {% endif %}
-        {% endfor %}
-        {% endif %}
-        
-        <!-- 出勤状況 -->
-        {% if cast.work_status != 'off' %}
-        <div style="margin-top: var(--space-md); padding: var(--space-sm) var(--space-md); border-radius: 8px; 
-                    background: {% if cast.work_status == 'working' %}rgba(16, 185, 129, 0.15){% else %}rgba(245, 158, 11, 0.15){% endif %};">
-            <span class="badge badge-{{ cast.work_status_color }}" style="font-size: 0.9rem;">
-                {% if cast.work_status == 'working' %}🟢{% else %}🟡{% endif %} {{ cast.work_status_label }}
-            </span>
-            {% if cast.work_time_display %}
-            <span class="text-muted" style="margin-left: 8px;">{{ cast.work_time_display }}</span>
-            {% endif %}
-        </div>
-        {% endif %}
-        
-        <!-- 本日のコメント -->
-        {% if cast.comment %}
-        <div style="margin-top: var(--space-sm); padding: var(--space-sm); background: var(--color-bg-secondary); border-radius: 8px; font-size: 0.9rem;">
-            💬 {{ cast.comment }}
-        </div>
-        {% endif %}
-        
-        <!-- 現在のランキング -->
-        {% if cast.current_rank %}
-        <p style="margin-top: var(--space-sm);">
-            <span class="badge badge-primary">現在 {{ cast.area }}{{ cast.current_rank }}位</span>
-        </p>
-        {% endif %}
-    </div>
-    
-    <!-- ===== タグ ===== -->
-    {% if cast_tags %}
-    <div class="card mb-4">
-        {% for category, tags in cast_tags.items() %}
-        <div class="tag-category" {% if not loop.first %}style="margin-top: var(--space-md);"{% endif %}>
-            <h4 style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: var(--space-sm);">
-                {{ tag_category_icons.get(category, '🏷️') }} {{ tag_category_labels.get(category, category) }}
-            </h4>
-            <div class="d-flex gap-1" style="flex-wrap: wrap;">
-                {% for tag in tags %}
-                <span class="cast-tag">{{ tag.name }}</span>
-                {% endfor %}
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    
-    <!-- ===== ギャラリー ===== -->
-    {% if gallery %}
-    <div class="card mb-4">
-        <h3 class="mb-3">📷 フォトギャラリー</h3>
-        <div class="cast-gallery">
-            {% for img in gallery %}
-            <div class="gallery-thumb" onclick="openGalleryModal({{ loop.index0 }})">
-                <img src="{{ img.url }}" alt="{{ cast.name_display }} 写真{{ loop.index }}" loading="lazy">
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    
-    <!-- ギャラリーモーダル -->
-    <div id="galleryModal" class="gallery-modal" onclick="closeGalleryModal(event)" style="display: none;">
-        <button class="gallery-close" onclick="closeGalleryModal(event)">✕</button>
-        <button class="gallery-nav gallery-prev" onclick="navigateGallery(-1, event)">❮</button>
-        <img id="galleryModalImg" src="" alt="" class="gallery-modal-img">
-        <button class="gallery-nav gallery-next" onclick="navigateGallery(1, event)">❯</button>
-        <div id="galleryModalCaption" class="gallery-modal-caption"></div>
-    </div>
-    {% endif %}
-    
-    <!-- ===== ショート動画 ===== -->
-    {% if cast.video_url %}
-    <div class="card mb-4">
-        <h3 class="mb-3">🎬 ショート動画</h3>
-        <div style="text-align: center;">
-            {% if 'youtube.com' in cast.video_url or 'youtu.be' in cast.video_url %}
-            {% set video_id = cast.video_url.split('/')[-1].split('?')[0] %}
-            <iframe width="100%" height="400" 
-                    src="https://www.youtube.com/embed/{{ video_id }}" 
-                    frameborder="0" allowfullscreen
-                    style="border-radius: 12px; max-width: 340px;"></iframe>
-            {% else %}
-            <a href="{{ cast.video_url }}" target="_blank" class="btn btn-primary" style="width: 100%;">
-                🎬 動画を見る
-            </a>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
-    
-    <!-- ===== プロフィール ===== -->
-    {% if cast.profile %}
-    <div class="card mb-4">
-        <h3 class="mb-3">📝 自己紹介</h3>
-        <p style="margin: 0; white-space: pre-wrap;">{{ cast.profile }}</p>
-    </div>
-    {% endif %}
-    
-    <!-- ===== 出勤カレンダー（今週） ===== -->
-    {% if shifts %}
-    <div class="card mb-4">
-        <h3 class="mb-3">📅 今週の出勤予定</h3>
-        <div class="shift-calendar">
-            {% set day_names = ['月', '火', '水', '木', '金', '土', '日'] %}
-            <div class="shift-week">
-                {% for shift in shifts %}
-                <div class="shift-day">
-                    <div class="shift-day-name">{{ day_names[shift.shift_date.weekday()] }}</div>
-                    <div class="shift-day-date">{{ shift.shift_date.month }}/{{ shift.shift_date.day }}</div>
-                    {% if shift.start_time %}
-                    <div class="shift-time">{{ shift.start_time.strftime('%H:%M') }}〜{{ shift.end_time.strftime('%H:%M') if shift.end_time else '' }}</div>
-                    {% elif shift.status != 'canceled' %}
-                    <div class="shift-time" style="color: var(--color-text-muted);">出勤</div>
-                    {% else %}
-                    <div class="shift-off">休</div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-    
-    <!-- ===== 誕生日一覧 ===== -->
-    {% if birthdays %}
-    <div class="card mb-4">
-        <h3 class="mb-3">🎂 記念日</h3>
-        <div class="d-flex gap-2" style="flex-wrap: wrap;">
-            {% for bd in birthdays %}
-            <div class="birthday-badge {% if bd.is_today %}birthday-today{% endif %}">
-                <span class="birthday-date">{{ bd.display }}</span>
-                {% if bd.label %}<span class="birthday-label">{{ bd.label }}</span>{% endif %}
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-    
-    <!-- ===== SNS ===== -->
-    {% if cast.twitter_url or cast.instagram_url or cast.tiktok_url %}
-    <div class="card mb-4">
-        <h3 class="mb-3">📱 SNS</h3>
-        <div class="d-flex gap-2" style="flex-wrap: wrap;">
-            {% if cast.twitter_url %}
-            <a href="{{ cast.twitter_url }}" target="_blank" class="btn btn-secondary sns-btn">
-                𝕏 Twitter
-            </a>
-            {% endif %}
-            {% if cast.instagram_url %}
-            <a href="{{ cast.instagram_url }}" target="_blank" class="btn btn-secondary sns-btn">
-                📷 Instagram
-            </a>
-            {% endif %}
-            {% if cast.tiktok_url %}
-            <a href="{{ cast.tiktok_url }}" target="_blank" class="btn btn-secondary sns-btn">
-                🎵 TikTok
-            </a>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
-    
-    <!-- ===== 累計情報 ===== -->
-    <div class="card mb-4">
-        <h3 class="mb-3">💝 応援状況</h3>
-        <div class="d-flex gap-3">
-            <div style="flex: 1; text-align: center; padding: var(--space-md); background: var(--color-bg-elevated); border-radius: var(--radius);">
-                <div class="text-muted" style="font-size: 0.85rem;">受け取ったギフト</div>
-                <div style="font-size: 1.5rem; font-weight: bold;">{{ '{:,}'.format(cast.total_gifts_received) }}</div>
-            </div>
-            <div style="flex: 1; text-align: center; padding: var(--space-md); background: var(--color-bg-elevated); border-radius: var(--radius);">
-                <div class="text-muted" style="font-size: 0.85rem;">累計ポイント</div>
-                <div style="font-size: 1.5rem; font-weight: bold;">{{ '{:,}'.format(cast.total_points_received) }}</div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- ===== ギフトを送る ===== -->
-    {% if cast.is_accepting_gifts and gifts %}
-    <div class="card mb-4">
-        <h3 class="mb-3">🎁 ギフトを送る</h3>
-        
-        <!-- ギフトへの意気込み -->
-        {% if cast.gift_appeal %}
-        <div style="margin-bottom: var(--space-md); padding: var(--space-sm) var(--space-md); 
-                    background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(168, 85, 247, 0.1)); 
-                    border-radius: 12px; font-size: 0.9rem;">
-            💌 {{ cast.gift_appeal }}
-        </div>
-        {% endif %}
-        
-        <!-- ギフト進捗メーター -->
-        {% if cast.show_gift_progress and cast.monthly_gift_goal and cast.monthly_gift_goal > 0 %}
-        <div class="gift-progress-section" style="margin-bottom: var(--space-md);">
-            {% if cast.monthly_gift_goal_message %}
-            <p style="font-size: 0.9rem; margin-bottom: var(--space-sm);">🎯 {{ cast.monthly_gift_goal_message }}</p>
-            {% endif %}
-            <div class="progress-bar-bg">
-                <div class="progress-bar-fill" style="width: {{ [cast.gift_progress_percent, 100] | min }}%;"></div>
-            </div>
-            <div class="d-flex" style="justify-content: space-between; font-size: 0.8rem; color: var(--color-text-secondary);">
-                <span>{{ '{:,}'.format(cast.monthly_gift_received) }}pt</span>
-                <span>{{ cast.gift_progress_percent }}%</span>
-                <span>{{ '{:,}'.format(cast.monthly_gift_goal) }}pt</span>
-            </div>
-        </div>
-        {% endif %}
-        
-        {% if current_user.is_authenticated and current_user.is_customer %}
-        <p class="text-muted mb-3">ポイント残高: {{ '{:,}'.format(current_user.point_balance) }}pt</p>
-        
-        <div class="d-flex gap-2" style="flex-wrap: wrap;">
-            {% for gift in gifts[:6] %}
-            <a href="{{ url_for('customer.send_gift', cast_id=cast.id, gift_id=gift.id) }}" 
-               class="card gift-card-item" 
-               style="flex: 1; min-width: 100px; text-align: center; text-decoration: none; padding: var(--space-md);">
-                <div style="font-size: 0.85rem;">{{ gift.name }}</div>
-                <div style="font-weight: bold; color: var(--color-primary);">{{ gift.points }}pt</div>
-            </a>
-            {% endfor %}
-        </div>
-        {% else %}
-        <p class="text-muted text-center">
-            ギフトを送るには<a href="{{ url_for('customer.login') }}">ログイン</a>してください
-        </p>
-        {% endif %}
-    </div>
-    {% endif %}
-    
-    <!-- ===== バッジ履歴 ===== -->
-    {% set badge_history = cast.badges.order_by(None).limit(6).all() %}
-    {% if badge_history %}
-    <div class="card mb-4">
-        <h3 class="mb-3">🏆 獲得バッジ</h3>
-        <div class="d-flex gap-2" style="flex-wrap: wrap;">
-            {% for badge in badge_history %}
-            <div style="text-align: center; padding: var(--space-sm); background: var(--color-bg-elevated); border-radius: var(--radius); min-width: 80px;">
-                {% if badge.badge_type == 'area_top1' %}
-                <div style="font-size: 1.5rem;">🥇</div>
-                {% elif badge.badge_type == 'area_top3' %}
-                <div style="font-size: 1.5rem;">🥈</div>
-                {% else %}
-                <div style="font-size: 1.5rem;">🥉</div>
-                {% endif %}
-                <div style="font-size: 0.75rem;">{{ badge.area_name }}</div>
-                <div style="font-size: 0.7rem; color: var(--color-text-secondary);">{{ badge.year }}/{{ badge.month }}</div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-    
-    <!-- ===== 店舗情報 ===== -->
-    <div class="card">
-        <h3 class="mb-3">🏠 店舗情報</h3>
-        <p style="margin: 0;"><strong>{{ shop.name }}</strong></p>
-        <p class="text-muted mb-2">{{ shop.area }}</p>
-        
-        {% if shop.business_hours %}
-        <p style="margin: 0; font-size: 0.9rem;">🕐 {{ shop.business_hours }}</p>
-        {% endif %}
-        
-        <div style="margin-top: var(--space-md);">
-            <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}" class="btn btn-secondary" style="width: 100%;">
-                店舗詳細を見る
-            </a>
-        </div>
-    </div>
-    
+ 
+ <p class="mb-3">
+ <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}">← {{ shop.name }}</a>
+ </p>
+ 
+ <!-- ===== ヘッダー ===== -->
+ <div class="card mb-4 cast-header" style="text-align: center; {% if cast.is_top1 %}background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.15));{% endif %}">
+ 
+ <!-- バッジ表示 -->
+ {% if cast.best_badge %}
+ <div style="margin-bottom: var(--space-md);">
+ {% if cast.best_badge.badge_type == 'area_top1' %}
+ <span class="badge" style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; font-size: 1rem; padding: var(--space-sm) var(--space-md);">
+ {{ cast.best_badge.area_name }} TOP1
+ </span>
+ {% elif cast.best_badge.badge_type == 'area_top3' %}
+ <span class="badge" style="background: linear-gradient(135deg, #C0C0C0, #A0A0A0); color: #000; padding: var(--space-sm) var(--space-md);">
+ {{ cast.best_badge.area_name }} TOP3
+ </span>
+ {% elif cast.best_badge.badge_type == 'area_top10' %}
+ <span class="badge" style="background: linear-gradient(135deg, #CD7F32, #8B4513); color: #fff; padding: var(--space-sm) var(--space-md);">
+ {{ cast.best_badge.area_name }} TOP10
+ </span>
+ {% endif %}
+ </div>
+ {% endif %}
+ 
+ <!-- メイン画像 -->
+ {% if cast.image_url %}
+ <img src="{{ cast.image_url }}" 
+ alt="{{ cast.name_display }}"
+ class="cast-main-image"
+ style="width: 140px; height: 140px; border-radius: 50%; object-fit: cover; margin-bottom: var(--space-md);
+ {% if cast.is_top1 %}border: 4px solid gold; box-shadow: 0 0 20px rgba(255,215,0,0.5);{% else %}border: 3px solid var(--color-border);{% endif %}">
+ {% endif %}
+ 
+ <h1 style="margin: 0 0 var(--space-xs);">{{ cast.name_display }}</h1>
+ 
+ {% if cast.age %}
+ <p style="margin: 0 0 var(--space-sm); font-size: 1.1rem; color: var(--color-text-secondary);">{{ cast.age }}歳</p>
+ {% endif %}
+ 
+ <p class="text-muted mb-0">
+ <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}">{{ shop.name }}</a>
+ {{ shop.area }}
+ </p>
+ 
+ <!-- 誕生日表示 -->
+ {% if birthdays %}
+ {% for bd in birthdays %}
+ {% if bd.is_today %}
+ <div class="birthday-alert" style="margin-top: var(--space-md); padding: var(--space-sm) var(--space-md); 
+ background: linear-gradient(135deg, rgba(255,105,180,0.2), rgba(255,182,193,0.2)); 
+ border-radius: 12px; font-size: 1.1rem;">
+ 今日は{{ cast.name_display }}の{{ bd.label or '誕生日' }}です！ 
+ </div>
+ {% elif bd.is_upcoming %}
+ <div style="margin-top: var(--space-sm); font-size: 0.85rem; color: var(--color-primary);">
+ {{ bd.display }}は{{ bd.label or '誕生日' }}です
+ </div>
+ {% endif %}
+ {% endfor %}
+ {% endif %}
+ 
+ <!-- 出勤状況 -->
+ {% if cast.work_status != 'off' %}
+ <div style="margin-top: var(--space-md); padding: var(--space-sm) var(--space-md); border-radius: 8px; 
+ background: {% if cast.work_status == 'working' %}rgba(16, 185, 129, 0.15){% else %}rgba(245, 158, 11, 0.15){% endif %};">
+ <span class="badge badge-{{ cast.work_status_color }}" style="font-size: 0.9rem;">
+ {% if cast.work_status == 'working' %}{% else %}{% endif %} {{ cast.work_status_label }}
+ </span>
+ {% if cast.work_time_display %}
+ <span class="text-muted" style="margin-left: 8px;">{{ cast.work_time_display }}</span>
+ {% endif %}
+ </div>
+ {% endif %}
+ 
+ <!-- 本日のコメント -->
+ {% if cast.comment %}
+ <div style="margin-top: var(--space-sm); padding: var(--space-sm); background: var(--color-bg-secondary); border-radius: 8px; font-size: 0.9rem;">
+ {{ cast.comment }}
+ </div>
+ {% endif %}
+ 
+ <!-- 現在のランキング -->
+ {% if cast.current_rank %}
+ <p style="margin-top: var(--space-sm);">
+ <span class="badge badge-primary">現在 {{ cast.area }}{{ cast.current_rank }}位</span>
+ </p>
+ {% endif %}
+ </div>
+ 
+ <!-- ===== タグ ===== -->
+ {% if cast_tags %}
+ <div class="card mb-4">
+ {% for category, tags in cast_tags.items() %}
+ <div class="tag-category" {% if not loop.first %}style="margin-top: var(--space-md);"{% endif %}>
+ <h4 style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: var(--space-sm);">
+ {{ tag_category_icons.get(category, '') }} {{ tag_category_labels.get(category, category) }}
+ </h4>
+ <div class="d-flex gap-1" style="flex-wrap: wrap;">
+ {% for tag in tags %}
+ <span class="cast-tag">{{ tag.name }}</span>
+ {% endfor %}
+ </div>
+ </div>
+ {% endfor %}
+ </div>
+ {% endif %}
+ 
+ <!-- ===== ギャラリー ===== -->
+ {% if gallery %}
+ <div class="card mb-4">
+ <h3 class="mb-3"> フォトギャラリー</h3>
+ <div class="cast-gallery">
+ {% for img in gallery %}
+ <div class="gallery-thumb" onclick="openGalleryModal({{ loop.index0 }})">
+ <img src="{{ img.url }}" alt="{{ cast.name_display }} 写真{{ loop.index }}" loading="lazy">
+ </div>
+ {% endfor %}
+ </div>
+ </div>
+ 
+ <!-- ギャラリーモーダル -->
+ <div id="galleryModal" class="gallery-modal" onclick="closeGalleryModal(event)" style="display: none;">
+ <button class="gallery-close" onclick="closeGalleryModal(event)"></button>
+ <button class="gallery-nav gallery-prev" onclick="navigateGallery(-1, event)"></button>
+ <img id="galleryModalImg" src="" alt="" class="gallery-modal-img">
+ <button class="gallery-nav gallery-next" onclick="navigateGallery(1, event)"></button>
+ <div id="galleryModalCaption" class="gallery-modal-caption"></div>
+ </div>
+ {% endif %}
+ 
+ <!-- ===== ショート動画 ===== -->
+ {% if cast.video_url %}
+ <div class="card mb-4">
+ <h3 class="mb-3"> ショート動画</h3>
+ <div style="text-align: center;">
+ {% if 'youtube.com' in cast.video_url or 'youtu.be' in cast.video_url %}
+ {% set video_id = cast.video_url.split('/')[-1].split('?')[0] %}
+ <iframe width="100%" height="400" 
+ src="https://www.youtube.com/embed/{{ video_id }}" 
+ frameborder="0" allowfullscreen
+ style="border-radius: 12px; max-width: 340px;"></iframe>
+ {% else %}
+ <a href="{{ cast.video_url }}" target="_blank" class="btn btn-primary" style="width: 100%;">
+ 動画を見る
+ </a>
+ {% endif %}
+ </div>
+ </div>
+ {% endif %}
+ 
+ <!-- ===== プロフィール ===== -->
+ {% if cast.profile %}
+ <div class="card mb-4">
+ <h3 class="mb-3"> 自己紹介</h3>
+ <p style="margin: 0; white-space: pre-wrap;">{{ cast.profile }}</p>
+ </div>
+ {% endif %}
+ 
+ <!-- ===== 出勤カレンダー（今週） ===== -->
+ {% if shifts %}
+ <div class="card mb-4">
+ <h3 class="mb-3"> 今週の出勤予定</h3>
+ <div class="shift-calendar">
+ {% set day_names = ['月', '火', '水', '木', '金', '土', '日'] %}
+ <div class="shift-week">
+ {% for shift in shifts %}
+ <div class="shift-day">
+ <div class="shift-day-name">{{ day_names[shift.shift_date.weekday()] }}</div>
+ <div class="shift-day-date">{{ shift.shift_date.month }}/{{ shift.shift_date.day }}</div>
+ {% if shift.start_time %}
+ <div class="shift-time">{{ shift.start_time.strftime('%H:%M') }}〜{{ shift.end_time.strftime('%H:%M') if shift.end_time else '' }}</div>
+ {% elif shift.status != 'canceled' %}
+ <div class="shift-time" style="color: var(--color-text-muted);">出勤</div>
+ {% else %}
+ <div class="shift-off">休</div>
+ {% endif %}
+ </div>
+ {% endfor %}
+ </div>
+ </div>
+ </div>
+ {% endif %}
+ 
+ <!-- ===== 誕生日一覧 ===== -->
+ {% if birthdays %}
+ <div class="card mb-4">
+ <h3 class="mb-3"> 記念日</h3>
+ <div class="d-flex gap-2" style="flex-wrap: wrap;">
+ {% for bd in birthdays %}
+ <div class="birthday-badge {% if bd.is_today %}birthday-today{% endif %}">
+ <span class="birthday-date">{{ bd.display }}</span>
+ {% if bd.label %}<span class="birthday-label">{{ bd.label }}</span>{% endif %}
+ </div>
+ {% endfor %}
+ </div>
+ </div>
+ {% endif %}
+ 
+ <!-- ===== SNS ===== -->
+ {% if cast.twitter_url or cast.instagram_url or cast.tiktok_url %}
+ <div class="card mb-4">
+ <h3 class="mb-3"> SNS</h3>
+ <div class="d-flex gap-2" style="flex-wrap: wrap;">
+ {% if cast.twitter_url %}
+ <a href="{{ cast.twitter_url }}" target="_blank" class="btn btn-secondary sns-btn">
+ 𝕏 Twitter
+ </a>
+ {% endif %}
+ {% if cast.instagram_url %}
+ <a href="{{ cast.instagram_url }}" target="_blank" class="btn btn-secondary sns-btn">
+ Instagram
+ </a>
+ {% endif %}
+ {% if cast.tiktok_url %}
+ <a href="{{ cast.tiktok_url }}" target="_blank" class="btn btn-secondary sns-btn">
+ TikTok
+ </a>
+ {% endif %}
+ </div>
+ </div>
+ {% endif %}
+ 
+ <!-- ===== 累計情報 ===== -->
+ <div class="card mb-4">
+ <h3 class="mb-3"> 応援状況</h3>
+ <div class="d-flex gap-3">
+ <div style="flex: 1; text-align: center; padding: var(--space-md); background: var(--color-bg-elevated); border-radius: var(--radius);">
+ <div class="text-muted" style="font-size: 0.85rem;">受け取ったギフト</div>
+ <div style="font-size: 1.5rem; font-weight: bold;">{{ '{:,}'.format(cast.total_gifts_received) }}</div>
+ </div>
+ <div style="flex: 1; text-align: center; padding: var(--space-md); background: var(--color-bg-elevated); border-radius: var(--radius);">
+ <div class="text-muted" style="font-size: 0.85rem;">累計ポイント</div>
+ <div style="font-size: 1.5rem; font-weight: bold;">{{ '{:,}'.format(cast.total_points_received) }}</div>
+ </div>
+ </div>
+ </div>
+ 
+ <!-- ===== ギフトを送る ===== -->
+ {% if cast.is_accepting_gifts and gifts %}
+ <div class="card mb-4">
+ <h3 class="mb-3"> ギフトを送る</h3>
+ 
+ <!-- ギフトへの意気込み -->
+ {% if cast.gift_appeal %}
+ <div style="margin-bottom: var(--space-md); padding: var(--space-sm) var(--space-md); 
+ background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(168, 85, 247, 0.1)); 
+ border-radius: 12px; font-size: 0.9rem;">
+ {{ cast.gift_appeal }}
+ </div>
+ {% endif %}
+ 
+ <!-- ギフト進捗メーター -->
+ {% if cast.show_gift_progress and cast.monthly_gift_goal and cast.monthly_gift_goal > 0 %}
+ <div class="gift-progress-section" style="margin-bottom: var(--space-md);">
+ {% if cast.monthly_gift_goal_message %}
+ <p style="font-size: 0.9rem; margin-bottom: var(--space-sm);"> {{ cast.monthly_gift_goal_message }}</p>
+ {% endif %}
+ <div class="progress-bar-bg">
+ <div class="progress-bar-fill" style="width: {{ [cast.gift_progress_percent, 100] | min }}%;"></div>
+ </div>
+ <div class="d-flex" style="justify-content: space-between; font-size: 0.8rem; color: var(--color-text-secondary);">
+ <span>{{ '{:,}'.format(cast.monthly_gift_received) }}pt</span>
+ <span>{{ cast.gift_progress_percent }}%</span>
+ <span>{{ '{:,}'.format(cast.monthly_gift_goal) }}pt</span>
+ </div>
+ </div>
+ {% endif %}
+ 
+ {% if current_user.is_authenticated and current_user.is_customer %}
+ <p class="text-muted mb-3">ポイント残高: {{ '{:,}'.format(current_user.point_balance) }}pt</p>
+ 
+ <div class="d-flex gap-2" style="flex-wrap: wrap;">
+ {% for gift in gifts[:6] %}
+ <a href="{{ url_for('customer.send_gift', cast_id=cast.id, gift_id=gift.id) }}" 
+ class="card gift-card-item" 
+ style="flex: 1; min-width: 100px; text-align: center; text-decoration: none; padding: var(--space-md);">
+ <div style="font-size: 0.85rem;">{{ gift.name }}</div>
+ <div style="font-weight: bold; color: var(--color-primary);">{{ gift.points }}pt</div>
+ </a>
+ {% endfor %}
+ </div>
+ {% else %}
+ <p class="text-muted text-center">
+ ギフトを送るには<a href="{{ url_for('customer.login') }}">ログイン</a>してください
+ </p>
+ {% endif %}
+ </div>
+ {% endif %}
+ 
+ <!-- ===== バッジ履歴 ===== -->
+ {% set badge_history = cast.badges.order_by(None).limit(6).all() %}
+ {% if badge_history %}
+ <div class="card mb-4">
+ <h3 class="mb-3"> 獲得バッジ</h3>
+ <div class="d-flex gap-2" style="flex-wrap: wrap;">
+ {% for badge in badge_history %}
+ <div style="text-align: center; padding: var(--space-sm); background: var(--color-bg-elevated); border-radius: var(--radius); min-width: 80px;">
+ {% if badge.badge_type == 'area_top1' %}
+ <div style="font-size: 1.5rem;"></div>
+ {% elif badge.badge_type == 'area_top3' %}
+ <div style="font-size: 1.5rem;"></div>
+ {% else %}
+ <div style="font-size: 1.5rem;"></div>
+ {% endif %}
+ <div style="font-size: 0.75rem;">{{ badge.area_name }}</div>
+ <div style="font-size: 0.7rem; color: var(--color-text-secondary);">{{ badge.year }}/{{ badge.month }}</div>
+ </div>
+ {% endfor %}
+ </div>
+ </div>
+ {% endif %}
+ 
+ <!-- ===== 店舗情報 ===== -->
+ <div class="card">
+ <h3 class="mb-3"> 店舗情報</h3>
+ <p style="margin: 0;"><strong>{{ shop.name }}</strong></p>
+ <p class="text-muted mb-2">{{ shop.area }}</p>
+ 
+ {% if shop.business_hours %}
+ <p style="margin: 0; font-size: 0.9rem;"> {{ shop.business_hours }}</p>
+ {% endif %}
+ 
+ <div style="margin-top: var(--space-md);">
+ <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}" class="btn btn-secondary" style="width: 100%;">
+ 店舗詳細を見る
+ </a>
+ </div>
+ </div>
+ 
 </div>
 
 <style>
 /* タグ */
 .cast-tag {
-    display: inline-block;
-    padding: 4px 14px;
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border);
-    border-radius: 20px;
-    font-size: 0.8rem;
-    color: var(--color-text);
-    white-space: nowrap;
+ display: inline-block;
+ padding: 4px 14px;
+ background: var(--color-bg-elevated);
+ border: 1px solid var(--color-border);
+ border-radius: 20px;
+ font-size: 0.8rem;
+ color: var(--color-text);
+ white-space: nowrap;
 }
 
 /* ギャラリー */
 .cast-gallery {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+ display: grid;
+ grid-template-columns: repeat(3, 1fr);
+ gap: 8px;
 }
 .gallery-thumb {
-    aspect-ratio: 1;
-    overflow: hidden;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: transform 0.2s;
+ aspect-ratio: 1;
+ overflow: hidden;
+ border-radius: 8px;
+ cursor: pointer;
+ transition: transform 0.2s;
 }
 .gallery-thumb:hover {
-    transform: scale(1.03);
+ transform: scale(1.03);
 }
 .gallery-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+ width: 100%;
+ height: 100%;
+ object-fit: cover;
 }
 
 /* ギャラリーモーダル */
 .gallery-modal {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.9);
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+ position: fixed;
+ top: 0; left: 0; right: 0; bottom: 0;
+ background: rgba(0,0,0,0.9);
+ z-index: 10000;
+ display: flex;
+ align-items: center;
+ justify-content: center;
 }
 .gallery-modal-img {
-    max-width: 90vw;
-    max-height: 80vh;
-    object-fit: contain;
-    border-radius: 8px;
+ max-width: 90vw;
+ max-height: 80vh;
+ object-fit: contain;
+ border-radius: 8px;
 }
 .gallery-close {
-    position: absolute;
-    top: 16px; right: 16px;
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 2rem;
-    cursor: pointer;
-    z-index: 10001;
+ position: absolute;
+ top: 16px; right: 16px;
+ background: none;
+ border: none;
+ color: #fff;
+ font-size: 2rem;
+ cursor: pointer;
+ z-index: 10001;
 }
 .gallery-nav {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(255,255,255,0.2);
-    border: none;
-    color: #fff;
-    font-size: 2rem;
-    padding: 12px 16px;
-    cursor: pointer;
-    border-radius: 8px;
+ position: absolute;
+ top: 50%;
+ transform: translateY(-50%);
+ background: rgba(255,255,255,0.2);
+ border: none;
+ color: #fff;
+ font-size: 2rem;
+ padding: 12px 16px;
+ cursor: pointer;
+ border-radius: 8px;
 }
 .gallery-prev { left: 12px; }
 .gallery-next { right: 12px; }
 .gallery-modal-caption {
-    position: absolute;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: #fff;
-    font-size: 0.9rem;
-    text-align: center;
+ position: absolute;
+ bottom: 24px;
+ left: 50%;
+ transform: translateX(-50%);
+ color: #fff;
+ font-size: 0.9rem;
+ text-align: center;
 }
 
 /* SNSボタン */
 .sns-btn {
-    flex: 1;
-    min-width: 120px;
-    text-align: center;
+ flex: 1;
+ min-width: 120px;
+ text-align: center;
 }
 
 /* 誕生日 */
 .birthday-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border);
-    border-radius: 20px;
-    font-size: 0.85rem;
+ display: flex;
+ align-items: center;
+ gap: 6px;
+ padding: 6px 14px;
+ background: var(--color-bg-elevated);
+ border: 1px solid var(--color-border);
+ border-radius: 20px;
+ font-size: 0.85rem;
 }
 .birthday-today {
-    background: linear-gradient(135deg, rgba(255,105,180,0.2), rgba(255,182,193,0.2));
-    border-color: #ff69b4;
-    animation: birthday-glow 2s ease-in-out infinite;
+ background: linear-gradient(135deg, rgba(255,105,180,0.2), rgba(255,182,193,0.2));
+ border-color: #ff69b4;
+ animation: birthday-glow 2s ease-in-out infinite;
 }
 @keyframes birthday-glow {
-    0%, 100% { box-shadow: 0 0 4px rgba(255,105,180,0.3); }
-    50% { box-shadow: 0 0 12px rgba(255,105,180,0.6); }
+ 0%, 100% { box-shadow: 0 0 4px rgba(255,105,180,0.3); }
+ 50% { box-shadow: 0 0 12px rgba(255,105,180,0.6); }
 }
 .birthday-date {
-    font-weight: 600;
+ font-weight: 600;
 }
 .birthday-label {
-    color: var(--color-text-secondary);
-    font-size: 0.8rem;
+ color: var(--color-text-secondary);
+ font-size: 0.8rem;
 }
 
 /* シフトカレンダー */
 .shift-week {
-    display: flex;
-    gap: 4px;
+ display: flex;
+ gap: 4px;
 }
 .shift-day {
-    flex: 1;
-    text-align: center;
-    padding: 8px 4px;
-    background: var(--color-bg-elevated);
-    border-radius: 8px;
-    font-size: 0.8rem;
+ flex: 1;
+ text-align: center;
+ padding: 8px 4px;
+ background: var(--color-bg-elevated);
+ border-radius: 8px;
+ font-size: 0.8rem;
 }
 .shift-today {
-    background: rgba(59, 130, 246, 0.15);
-    border: 2px solid var(--color-primary);
+ background: rgba(59, 130, 246, 0.15);
+ border: 2px solid var(--color-primary);
 }
 .shift-day-name {
-    font-weight: 600;
-    margin-bottom: 2px;
+ font-weight: 600;
+ margin-bottom: 2px;
 }
 .shift-day-date {
-    font-size: 0.7rem;
-    color: var(--color-text-secondary);
-    margin-bottom: 4px;
+ font-size: 0.7rem;
+ color: var(--color-text-secondary);
+ margin-bottom: 4px;
 }
 .shift-time {
-    font-size: 0.7rem;
-    color: var(--color-primary);
-    font-weight: 600;
+ font-size: 0.7rem;
+ color: var(--color-primary);
+ font-weight: 600;
 }
 .shift-off {
-    color: var(--color-text-muted);
-    font-size: 0.75rem;
+ color: var(--color-text-muted);
+ font-size: 0.75rem;
 }
 
 /* プログレスバー */
 .progress-bar-bg {
-    height: 16px;
-    background: var(--color-bg);
-    border-radius: 8px;
-    overflow: hidden;
-    margin-bottom: 4px;
+ height: 16px;
+ background: var(--color-bg);
+ border-radius: 8px;
+ overflow: hidden;
+ margin-bottom: 4px;
 }
 .progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--color-primary), #f59e0b);
-    border-radius: 8px;
-    transition: width 0.5s ease;
+ height: 100%;
+ background: linear-gradient(90deg, var(--color-primary), #f59e0b);
+ border-radius: 8px;
+ transition: width 0.5s ease;
 }
 
 .gift-card-item {
-    transition: transform 0.2s;
+ transition: transform 0.2s;
 }
 .gift-card-item:hover {
-    transform: translateY(-2px);
+ transform: translateY(-2px);
 }
 </style>
 
@@ -548,45 +548,45 @@
 <script>
 // ギャラリーモーダル
 const galleryImages = [
-    {% for img in gallery %}
-    { url: "{{ img.url }}", caption: "{{ img.caption or '' }}" }{% if not loop.last %},{% endif %}
-    {% endfor %}
+ {% for img in gallery %}
+ { url: "{{ img.url }}", caption: "{{ img.caption or '' }}" }{% if not loop.last %},{% endif %}
+ {% endfor %}
 ];
 let currentGalleryIndex = 0;
 
 function openGalleryModal(idx) {
-    currentGalleryIndex = idx;
-    const modal = document.getElementById('galleryModal');
-    const img = document.getElementById('galleryModalImg');
-    const caption = document.getElementById('galleryModalCaption');
-    img.src = galleryImages[idx].url;
-    caption.textContent = galleryImages[idx].caption;
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+ currentGalleryIndex = idx;
+ const modal = document.getElementById('galleryModal');
+ const img = document.getElementById('galleryModalImg');
+ const caption = document.getElementById('galleryModalCaption');
+ img.src = galleryImages[idx].url;
+ caption.textContent = galleryImages[idx].caption;
+ modal.style.display = 'flex';
+ document.body.style.overflow = 'hidden';
 }
 
 function closeGalleryModal(e) {
-    if (e.target.id === 'galleryModal' || e.target.classList.contains('gallery-close')) {
-        document.getElementById('galleryModal').style.display = 'none';
-        document.body.style.overflow = '';
-    }
+ if (e.target.id === 'galleryModal' || e.target.classList.contains('gallery-close')) {
+ document.getElementById('galleryModal').style.display = 'none';
+ document.body.style.overflow = '';
+ }
 }
 
 function navigateGallery(dir, e) {
-    e.stopPropagation();
-    currentGalleryIndex = (currentGalleryIndex + dir + galleryImages.length) % galleryImages.length;
-    document.getElementById('galleryModalImg').src = galleryImages[currentGalleryIndex].url;
-    document.getElementById('galleryModalCaption').textContent = galleryImages[currentGalleryIndex].caption;
+ e.stopPropagation();
+ currentGalleryIndex = (currentGalleryIndex + dir + galleryImages.length) % galleryImages.length;
+ document.getElementById('galleryModalImg').src = galleryImages[currentGalleryIndex].url;
+ document.getElementById('galleryModalCaption').textContent = galleryImages[currentGalleryIndex].caption;
 }
 
 // キーボードナビゲーション
 document.addEventListener('keydown', function(e) {
-    const modal = document.getElementById('galleryModal');
-    if (modal && modal.style.display === 'flex') {
-        if (e.key === 'Escape') closeGalleryModal({target: {id: 'galleryModal'}});
-        if (e.key === 'ArrowLeft') navigateGallery(-1, e);
-        if (e.key === 'ArrowRight') navigateGallery(1, e);
-    }
+ const modal = document.getElementById('galleryModal');
+ if (modal && modal.style.display === 'flex') {
+ if (e.key === 'Escape') closeGalleryModal({target: {id: 'galleryModal'}});
+ if (e.key === 'ArrowLeft') navigateGallery(-1, e);
+ if (e.key === 'ArrowRight') navigateGallery(1, e);
+ }
 });
 </script>
 {% endif %}

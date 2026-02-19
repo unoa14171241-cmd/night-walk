@@ -4,135 +4,135 @@
 
 {% block content %}
 <div class="container">
-    <div class="d-flex justify-between align-center mb-4">
-        <div>
-            <h1 class="mb-1">{{ shop.name }}</h1>
-            <p class="text-muted mb-0">📍 {{ shop.area }}</p>
-        </div>
-        {% if shop.is_published %}
-        <span class="badge badge-success">公開中</span>
-        {% else %}
-        <span class="badge badge-warning">非公開</span>
-        {% endif %}
-    </div>
-    
-    <!-- Quick Stats -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <a href="{{ url_for('shop_admin.vacancy') }}">
-                <div class="stat-value">
-                    <span class="vacancy-badge vacancy-badge-lg vacancy-{{ shop.vacancy_status.color if shop.vacancy_status else 'secondary' }}">
-                        {{ shop.vacancy_status.label if shop.vacancy_status else '−' }}
-                    </span>
-                </div>
-                <div class="stat-label">現在の空席状況</div>
-            </a>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-value">{{ today_bookings }}</div>
-            <div class="stat-label">本日の予約</div>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-value">
-                {% if subscription %}
-                <span class="badge badge-{% if subscription.is_active %}success{% elif subscription.is_past_due %}warning{% else %}danger{% endif %}">
-                    {{ subscription.status_label }}
-                </span>
-                {% else %}
-                <span class="badge badge-info">未設定</span>
-                {% endif %}
-            </div>
-            <div class="stat-label">支払い状態</div>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-value" style="font-size: 1rem;">
-                {{ shop.get_next_payout_date().strftime('%m/%d') }}
-            </div>
-            <div class="stat-label">次回振込予定</div>
-        </div>
-    </div>
-    
-    <!-- キャンペーン情報（適用中の場合のみ表示） -->
-    {% if shop.is_in_free_period %}
-    <div class="card mb-4" style="border-left: 4px solid var(--color-success); background: rgba(16, 185, 129, 0.05);">
-        <div class="d-flex align-center gap-2">
-            <span style="font-size: 1.5rem;">🎉</span>
-            <div>
-                <strong>無料期間適用中</strong>
-                <p class="text-muted mb-0" style="font-size: 0.875rem;">
-                    {{ shop.free_period_end_date.strftime('%Y年%m月%d日') }}まで手数料無料
-                </p>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-    
-    <!-- Quick Actions -->
-    <div class="card mb-4">
-        <h3 class="mb-3">クイックアクション</h3>
-        <div class="d-flex gap-2" style="flex-wrap: wrap;">
-            <a href="{{ url_for('shop_admin.vacancy') }}" class="btn btn-primary">
-                空席を更新
-            </a>
-            <a href="{{ url_for('shop_admin.edit') }}" class="btn btn-secondary">
-                店舗情報を編集
-            </a>
-            <a href="{{ url_for('shop_admin.casts') }}" class="btn btn-secondary">
-                キャスト管理
-            </a>
-            <a href="{{ url_for('shop_admin.jobs') }}" class="btn btn-secondary">
-                求人を管理
-            </a>
-            <a href="{{ url_for('shop_admin.images') }}" class="btn btn-secondary">
-                画像管理
-            </a>
-            <a href="{{ url_for('shop_admin.shop_qrcode') }}" class="btn btn-secondary">
-                📱 QRコード
-            </a>
-            <a href="{{ url_for('shop_admin.earnings') }}" class="btn btn-secondary">
-                売上確認
-            </a>
-            <a href="{{ url_for('shop_admin.referral') }}" class="btn btn-secondary">
-                🎁 紹介制度
-            </a>
-            <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}" class="btn btn-outline" target="_blank">
-                公開ページを見る ↗
-            </a>
-        </div>
-    </div>
-    
-    <!-- Recent Vacancy History -->
-    <div class="card">
-        <h3 class="mb-3">空席更新履歴</h3>
-        {% if recent_history %}
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>日時</th>
-                    <th>ステータス</th>
-                    <th>更新者</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for history in recent_history %}
-                <tr>
-                    <td>{{ history.changed_at.strftime('%m/%d %H:%M') }}</td>
-                    <td>
-                        <span class="vacancy-badge vacancy-{{ shop.vacancy_status.STATUS_COLORS.get(history.status, 'secondary') }}">
-                            {{ shop.vacancy_status.STATUS_LABELS.get(history.status, history.status) }}
-                        </span>
-                    </td>
-                    <td>{{ history.changer.name if history.changer else '−' }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p class="text-muted">まだ更新履歴がありません</p>
-        {% endif %}
-    </div>
+ <div class="d-flex justify-between align-center mb-4">
+ <div>
+ <h1 class="mb-1">{{ shop.name }}</h1>
+ <p class="text-muted mb-0"> {{ shop.area }}</p>
+ </div>
+ {% if shop.is_published %}
+ <span class="badge badge-success">公開中</span>
+ {% else %}
+ <span class="badge badge-warning">非公開</span>
+ {% endif %}
+ </div>
+ 
+ <!-- Quick Stats -->
+ <div class="stats-grid">
+ <div class="stat-card">
+ <a href="{{ url_for('shop_admin.vacancy') }}">
+ <div class="stat-value">
+ <span class="vacancy-badge vacancy-badge-lg vacancy-{{ shop.vacancy_status.color if shop.vacancy_status else 'secondary' }}">
+ {{ shop.vacancy_status.label if shop.vacancy_status else '−' }}
+ </span>
+ </div>
+ <div class="stat-label">現在の空席状況</div>
+ </a>
+ </div>
+ 
+ <div class="stat-card">
+ <div class="stat-value">{{ today_bookings }}</div>
+ <div class="stat-label">本日の予約</div>
+ </div>
+ 
+ <div class="stat-card">
+ <div class="stat-value">
+ {% if subscription %}
+ <span class="badge badge-{% if subscription.is_active %}success{% elif subscription.is_past_due %}warning{% else %}danger{% endif %}">
+ {{ subscription.status_label }}
+ </span>
+ {% else %}
+ <span class="badge badge-info">未設定</span>
+ {% endif %}
+ </div>
+ <div class="stat-label">支払い状態</div>
+ </div>
+ 
+ <div class="stat-card">
+ <div class="stat-value" style="font-size: 1rem;">
+ {{ shop.get_next_payout_date().strftime('%m/%d') }}
+ </div>
+ <div class="stat-label">次回振込予定</div>
+ </div>
+ </div>
+ 
+ <!-- キャンペーン情報（適用中の場合のみ表示） -->
+ {% if shop.is_in_free_period %}
+ <div class="card mb-4" style="border-left: 4px solid var(--color-success); background: rgba(16, 185, 129, 0.05);">
+ <div class="d-flex align-center gap-2">
+ <span style="font-size: 1.5rem;"></span>
+ <div>
+ <strong>無料期間適用中</strong>
+ <p class="text-muted mb-0" style="font-size: 0.875rem;">
+ {{ shop.free_period_end_date.strftime('%Y年%m月%d日') }}まで手数料無料
+ </p>
+ </div>
+ </div>
+ </div>
+ {% endif %}
+ 
+ <!-- Quick Actions -->
+ <div class="card mb-4">
+ <h3 class="mb-3">クイックアクション</h3>
+ <div class="d-flex gap-2" style="flex-wrap: wrap;">
+ <a href="{{ url_for('shop_admin.vacancy') }}" class="btn btn-primary">
+ 空席を更新
+ </a>
+ <a href="{{ url_for('shop_admin.edit') }}" class="btn btn-secondary">
+ 店舗情報を編集
+ </a>
+ <a href="{{ url_for('shop_admin.casts') }}" class="btn btn-secondary">
+ キャスト管理
+ </a>
+ <a href="{{ url_for('shop_admin.jobs') }}" class="btn btn-secondary">
+ 求人を管理
+ </a>
+ <a href="{{ url_for('shop_admin.images') }}" class="btn btn-secondary">
+ 画像管理
+ </a>
+ <a href="{{ url_for('shop_admin.shop_qrcode') }}" class="btn btn-secondary">
+ QRコード
+ </a>
+ <a href="{{ url_for('shop_admin.earnings') }}" class="btn btn-secondary">
+ 売上確認
+ </a>
+ <a href="{{ url_for('shop_admin.referral') }}" class="btn btn-secondary">
+ 紹介制度
+ </a>
+ <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}" class="btn btn-outline" target="_blank">
+ 公開ページを見る ↗
+ </a>
+ </div>
+ </div>
+ 
+ <!-- Recent Vacancy History -->
+ <div class="card">
+ <h3 class="mb-3">空席更新履歴</h3>
+ {% if recent_history %}
+ <table class="table">
+ <thead>
+ <tr>
+ <th>日時</th>
+ <th>ステータス</th>
+ <th>更新者</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for history in recent_history %}
+ <tr>
+ <td>{{ history.changed_at.strftime('%m/%d %H:%M') }}</td>
+ <td>
+ <span class="vacancy-badge vacancy-{{ shop.vacancy_status.STATUS_COLORS.get(history.status, 'secondary') }}">
+ {{ shop.vacancy_status.STATUS_LABELS.get(history.status, history.status) }}
+ </span>
+ </td>
+ <td>{{ history.changer.name if history.changer else '−' }}</td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ {% else %}
+ <p class="text-muted">まだ更新履歴がありません</p>
+ {% endif %}
+ </div>
 </div>
 {% endblock %}

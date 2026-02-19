@@ -4,43 +4,43 @@
 
 {% block content %}
 <div class="admin-container">
-    <div class="page-header">
-        <div>
-            <a href="{{ url_for('admin.demo_accounts') }}" class="back-link">← デモ管理に戻る</a>
-            <h1>🎭 新規デモアカウント作成</h1>
-        </div>
-    </div>
-    
-    <div class="card" style="max-width: 600px;">
-        <form method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            
-            <div class="form-group">
-                <label for="name">デモ名 <span class="required">*</span></label>
-                <input type="text" id="name" name="name" class="form-control" 
-                       placeholder="例: 営業用デモA" required maxlength="100">
-                <small class="form-help">識別しやすい名前を付けてください</small>
-            </div>
-            
-            <div class="form-group">
-                <label for="description">説明</label>
-                <textarea id="description" name="description" class="form-control" rows="3"
-                          placeholder="例: 〇〇さん営業用"></textarea>
-            </div>
-            
-            <div class="alert alert-info">
-                <strong>自動作成される内容:</strong>
-                <ul class="mb-0" style="margin-top: 0.5rem;">
-                    <li>デモ用店舗（サンプルデータ入り）</li>
-                    <li>店舗管理者アカウント（ログイン情報は作成後に表示）</li>
-                </ul>
-            </div>
-            
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">作成</button>
-                <a href="{{ url_for('admin.demo_accounts') }}" class="btn btn-secondary">キャンセル</a>
-            </div>
-        </form>
-    </div>
+ <div class="page-header">
+ <div>
+ <a href="{{ url_for('admin.demo_accounts') }}" class="back-link">← デモ管理に戻る</a>
+ <h1> 新規デモアカウント作成</h1>
+ </div>
+ </div>
+ 
+ <div class="card" style="max-width: 600px;">
+ <form method="POST">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ 
+ <div class="form-group">
+ <label for="name">デモ名 <span class="required">*</span></label>
+ <input type="text" id="name" name="name" class="form-control" 
+ placeholder="例: 営業用デモA" required maxlength="100">
+ <small class="form-help">識別しやすい名前を付けてください</small>
+ </div>
+ 
+ <div class="form-group">
+ <label for="description">説明</label>
+ <textarea id="description" name="description" class="form-control" rows="3"
+ placeholder="例: 〇〇さん営業用"></textarea>
+ </div>
+ 
+ <div class="alert alert-info">
+ <strong>自動作成される内容:</strong>
+ <ul class="mb-0" style="margin-top: 0.5rem;">
+ <li>デモ用店舗（サンプルデータ入り）</li>
+ <li>店舗管理者アカウント（ログイン情報は作成後に表示）</li>
+ </ul>
+ </div>
+ 
+ <div class="form-actions">
+ <button type="submit" class="btn btn-primary">作成</button>
+ <a href="{{ url_for('admin.demo_accounts') }}" class="btn btn-secondary">キャンセル</a>
+ </div>
+ </form>
+ </div>
 </div>
 {% endblock %}

@@ -167,8 +167,8 @@ def new_shop():
         
         # 成功メッセージ（ログイン情報を表示）
         flash(f'店舗「{name}」を作成しました。', 'success')
-        flash(f'🔑 オーナー: {owner_login_id} / パスワード: {owner_password}', 'info')
-        flash(f'🔑 スタッフ: {staff_login_id} / パスワード: {staff_password}', 'info')
+        flash(f'オーナー: {owner_login_id} / パスワード: {owner_password}', 'info')
+        flash(f'スタッフ: {staff_login_id} / パスワード: {staff_password}', 'info')
         
         return redirect(url_for('admin.shops'))
     
@@ -2280,7 +2280,7 @@ def reset_user_password(user_id):
     audit_log('user.password_reset', 'user', user.id)
     
     flash(f'{user.name}さんのパスワードをリセットしました', 'success')
-    flash(f'🔑 新しいパスワード: {new_password}', 'info')
+    flash(f'新しいパスワード: {new_password}', 'info')
     return redirect(url_for('admin.user_detail', user_id=user_id))
 
 

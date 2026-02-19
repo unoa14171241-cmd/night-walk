@@ -4,119 +4,119 @@
 
 {% block content %}
 <div class="admin-layout">
-    {% include "admin/_sidebar.html" %}
-    
-    <div class="admin-content">
-        <p class="mb-3">
-            <a href="{{ url_for('admin.shop_detail', shop_id=shop.id) }}">← {{ shop.name }} に戻る</a>
-        </p>
-        
-        <h1 class="mb-4">キャンペーン・振込設定</h1>
-        <p class="text-muted mb-4">{{ shop.name }}</p>
-        
-        <div class="card" style="max-width: 600px;">
-            <form method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                
-                <h3 class="mb-3">キャンペーン設定</h3>
-                
-                <div class="form-group">
-                    <label class="form-label" for="free_months">無料期間（月数）</label>
-                    <input type="number" 
-                           id="free_months" 
-                           name="free_months" 
-                           class="form-control" 
-                           value="{{ shop.campaign_free_months or 0 }}"
-                           min="0"
-                           max="24">
-                    <small class="text-muted">0 = 無料期間なし</small>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="start_date">キャンペーン開始日</label>
-                    <input type="date" 
-                           id="start_date" 
-                           name="start_date" 
-                           class="form-control" 
-                           value="{{ shop.campaign_start_date.isoformat() if shop.campaign_start_date else '' }}">
-                    <small class="text-muted">無料期間の起点となる日付</small>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="notes">特別条件（メモ）</label>
-                    <textarea id="notes" 
-                              name="notes" 
-                              class="form-control" 
-                              rows="3"
-                              placeholder="例: 紹介割引適用、初期手数料50%OFF など">{{ shop.campaign_notes or '' }}</textarea>
-                    <small class="text-muted">請求時の参考情報として記録</small>
-                </div>
-                
-                <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
-                
-                <h3 class="mb-3">振込サイクル設定</h3>
-                
-                <div class="form-group">
-                    <label class="form-label">締め日</label>
-                    <input type="text" class="form-control" value="月末締め" disabled>
-                    <small class="text-muted">現在は月末締めのみ対応</small>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="payout_day">支払日（翌月○営業日）</label>
-                    <select id="payout_day" name="payout_day" class="form-control">
-                        {% for day in range(1, 16) %}
-                        <option value="{{ day }}" {% if (shop.payout_day or 5) == day %}selected{% endif %}>
-                            翌月 {{ day }} 営業日
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <small class="text-muted">
-                        次回振込予定: {{ shop.get_next_payout_date().strftime('%Y年%m月%d日') }}
-                    </small>
-                </div>
-                
-                <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
-                
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">保存</button>
-                    <a href="{{ url_for('admin.shop_detail', shop_id=shop.id) }}" class="btn btn-secondary">キャンセル</a>
-                </div>
-            </form>
-        </div>
-        
-        <!-- 現在の状態 -->
-        <div class="card mt-4" style="max-width: 600px;">
-            <h3 class="mb-3">現在の状態</h3>
-            <table class="table" style="margin: 0;">
-                <tr>
-                    <th style="width: 150px;">無料期間状態</th>
-                    <td>
-                        {% if shop.is_in_free_period %}
-                        <span class="badge badge-success">適用中</span>
-                        <span class="text-muted">（{{ shop.free_period_end_date.strftime('%Y/%m/%d') }}まで）</span>
-                        {% elif shop.campaign_free_months and shop.campaign_free_months > 0 %}
-                        <span class="badge" style="background: var(--color-bg-elevated);">終了済み</span>
-                        {% else %}
-                        <span class="text-muted">設定なし</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                <tr>
-                    <th>次回振込予定</th>
-                    <td>{{ shop.get_next_payout_date().strftime('%Y年%m月%d日（%a）') }}</td>
-                </tr>
-            </table>
-        </div>
-    </div>
+ {% include "admin/_sidebar.html" %}
+ 
+ <div class="admin-content">
+ <p class="mb-3">
+ <a href="{{ url_for('admin.shop_detail', shop_id=shop.id) }}">← {{ shop.name }} に戻る</a>
+ </p>
+ 
+ <h1 class="mb-4">キャンペーン振込設定</h1>
+ <p class="text-muted mb-4">{{ shop.name }}</p>
+ 
+ <div class="card" style="max-width: 600px;">
+ <form method="POST">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ 
+ <h3 class="mb-3">キャンペーン設定</h3>
+ 
+ <div class="form-group">
+ <label class="form-label" for="free_months">無料期間（月数）</label>
+ <input type="number" 
+ id="free_months" 
+ name="free_months" 
+ class="form-control" 
+ value="{{ shop.campaign_free_months or 0 }}"
+ min="0"
+ max="24">
+ <small class="text-muted">0 = 無料期間なし</small>
+ </div>
+ 
+ <div class="form-group">
+ <label class="form-label" for="start_date">キャンペーン開始日</label>
+ <input type="date" 
+ id="start_date" 
+ name="start_date" 
+ class="form-control" 
+ value="{{ shop.campaign_start_date.isoformat() if shop.campaign_start_date else '' }}">
+ <small class="text-muted">無料期間の起点となる日付</small>
+ </div>
+ 
+ <div class="form-group">
+ <label class="form-label" for="notes">特別条件（メモ）</label>
+ <textarea id="notes" 
+ name="notes" 
+ class="form-control" 
+ rows="3"
+ placeholder="例: 紹介割引適用、初期手数料50%OFF など">{{ shop.campaign_notes or '' }}</textarea>
+ <small class="text-muted">請求時の参考情報として記録</small>
+ </div>
+ 
+ <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+ 
+ <h3 class="mb-3">振込サイクル設定</h3>
+ 
+ <div class="form-group">
+ <label class="form-label">締め日</label>
+ <input type="text" class="form-control" value="月末締め" disabled>
+ <small class="text-muted">現在は月末締めのみ対応</small>
+ </div>
+ 
+ <div class="form-group">
+ <label class="form-label" for="payout_day">支払日（翌月○営業日）</label>
+ <select id="payout_day" name="payout_day" class="form-control">
+ {% for day in range(1, 16) %}
+ <option value="{{ day }}" {% if (shop.payout_day or 5) == day %}selected{% endif %}>
+ 翌月 {{ day }} 営業日
+ </option>
+ {% endfor %}
+ </select>
+ <small class="text-muted">
+ 次回振込予定: {{ shop.get_next_payout_date().strftime('%Y年%m月%d日') }}
+ </small>
+ </div>
+ 
+ <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
+ 
+ <div class="d-flex gap-2">
+ <button type="submit" class="btn btn-primary">保存</button>
+ <a href="{{ url_for('admin.shop_detail', shop_id=shop.id) }}" class="btn btn-secondary">キャンセル</a>
+ </div>
+ </form>
+ </div>
+ 
+ <!-- 現在の状態 -->
+ <div class="card mt-4" style="max-width: 600px;">
+ <h3 class="mb-3">現在の状態</h3>
+ <table class="table" style="margin: 0;">
+ <tr>
+ <th style="width: 150px;">無料期間状態</th>
+ <td>
+ {% if shop.is_in_free_period %}
+ <span class="badge badge-success">適用中</span>
+ <span class="text-muted">（{{ shop.free_period_end_date.strftime('%Y/%m/%d') }}まで）</span>
+ {% elif shop.campaign_free_months and shop.campaign_free_months > 0 %}
+ <span class="badge" style="background: var(--color-bg-elevated);">終了済み</span>
+ {% else %}
+ <span class="text-muted">設定なし</span>
+ {% endif %}
+ </td>
+ </tr>
+ <tr>
+ <th>次回振込予定</th>
+ <td>{{ shop.get_next_payout_date().strftime('%Y年%m月%d日（%a）') }}</td>
+ </tr>
+ </table>
+ </div>
+ </div>
 </div>
 
 <style>
 .gap-2 {
-    gap: var(--space-sm);
+ gap: var(--space-sm);
 }
 .mt-4 {
-    margin-top: var(--space-lg);
+ margin-top: var(--space-lg);
 }
 </style>
 {% endblock %}

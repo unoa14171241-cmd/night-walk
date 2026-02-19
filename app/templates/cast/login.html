@@ -4,47 +4,47 @@
 
 {% block content %}
 <div class="container" style="max-width: 400px; padding: var(--space-xl) var(--space-lg);">
-    
-    <div class="text-center mb-4">
-        <h1 style="font-size: 1.75rem;">📱 キャストログイン</h1>
-        <p class="text-muted">スマホから出勤状況を更新できます</p>
-    </div>
-    
-    <div class="card">
-        <form method="POST" action="{{ url_for('cast.login') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            
-            <div class="mb-3">
-                <label class="form-label">ログインコード（8桁）</label>
-                <input type="text" name="login_code" class="form-control" 
-                       placeholder="12345678"
-                       pattern="[0-9]{8}" maxlength="8" inputmode="numeric"
-                       style="font-size: 1.5rem; text-align: center; letter-spacing: 4px;"
-                       required>
-                <small class="text-muted">店舗管理者から発行されたコードを入力</small>
-            </div>
-            
-            <div class="mb-4">
-                <label class="form-label">PIN（4桁）</label>
-                <input type="password" name="pin" class="form-control" 
-                       placeholder="••••"
-                       pattern="[0-9]{4}" maxlength="4" inputmode="numeric"
-                       style="font-size: 1.5rem; text-align: center; letter-spacing: 8px;"
-                       required>
-            </div>
-            
-            <button type="submit" class="btn btn-primary w-100">
-                ログイン
-            </button>
-        </form>
-    </div>
-    
-    <div class="text-center mt-4">
-        <p class="text-muted" style="font-size: 0.875rem;">
-            ログインコードは店舗管理者にお問い合わせください
-        </p>
-        <a href="{{ url_for('public.index') }}" class="text-muted">← トップページへ</a>
-    </div>
-    
+ 
+ <div class="text-center mb-4">
+ <h1 style="font-size: 1.75rem;"> キャストログイン</h1>
+ <p class="text-muted">スマホから出勤状況を更新できます</p>
+ </div>
+ 
+ <div class="card">
+ <form method="POST" action="{{ url_for('cast.login') }}">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ 
+ <div class="mb-3">
+ <label class="form-label">ログインコード（8桁）</label>
+ <input type="text" name="login_code" class="form-control" 
+ placeholder="12345678"
+ pattern="[0-9]{8}" maxlength="8" inputmode="numeric"
+ style="font-size: 1.5rem; text-align: center; letter-spacing: 4px;"
+ required>
+ <small class="text-muted">店舗管理者から発行されたコードを入力</small>
+ </div>
+ 
+ <div class="mb-4">
+ <label class="form-label">PIN（4桁）</label>
+ <input type="password" name="pin" class="form-control" 
+ placeholder="••••"
+ pattern="[0-9]{4}" maxlength="4" inputmode="numeric"
+ style="font-size: 1.5rem; text-align: center; letter-spacing: 8px;"
+ required>
+ </div>
+ 
+ <button type="submit" class="btn btn-primary w-100">
+ ログイン
+ </button>
+ </form>
+ </div>
+ 
+ <div class="text-center mt-4">
+ <p class="text-muted" style="font-size: 0.875rem;">
+ ログインコードは店舗管理者にお問い合わせください
+ </p>
+ <a href="{{ url_for('public.index') }}" class="text-muted">← トップページへ</a>
+ </div>
+ 
 </div>
 {% endblock %}

@@ -285,7 +285,7 @@ class ShopPointService:
         
         logger.info(f"Rank up: customer={customer_id}, shop={shop_id}, new_rank={new_rank.rank_name}")
         
-        return f'🎉 {new_rank.rank_icon} {new_rank.rank_name}ランクに昇格しました！'
+        return f'{new_rank.rank_name}ランクに昇格しました！'
 
     @classmethod
     def get_customer_rank(cls, customer_id, shop_id):

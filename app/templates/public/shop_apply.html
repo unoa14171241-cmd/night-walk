@@ -2,593 +2,593 @@
 
 {% block title %}店舗掲載のご案内 - Night-Walk{% endblock %}
 
-{% block meta_description %}Night-Walkに店舗を掲載しませんか？岡山・倉敷エリアのナイトレジャー情報サイトで集客を強化。無料プランから始められます。{% endblock %}
+{% block meta_description %}Night-Walkに店舗を掲載しませんか？岡山倉敷エリアのナイトレジャー情報サイトで集客を強化。無料プランから始められます。{% endblock %}
 
 {% block content %}
 <div class="apply-page">
-    <div class="container">
-        <!-- ヒーローセクション -->
-        <section class="apply-hero">
-            <h1>Night-Walkに<br class="sp-only">店舗を掲載しませんか？</h1>
-            <p class="hero-subtitle">岡山・倉敷エリアのナイトレジャー情報サイト</p>
-        </section>
-        
-        <!-- メリットセクション -->
-        <section class="benefits-section">
-            <h2>掲載のメリット</h2>
-            <div class="benefits-grid">
-                <div class="benefit-card">
-                    <div class="benefit-icon">📱</div>
-                    <h3>スマホで簡単更新</h3>
-                    <p>空席状況をリアルタイムで更新。お客様に今の状況を伝えられます。</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon">🔍</div>
-                    <h3>検索からの集客</h3>
-                    <p>エリア・業態・空席状況で検索可能。新規のお客様との出会いを創出。</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon">🏆</div>
-                    <h3>ランキング掲載</h3>
-                    <p>人気ランキングに掲載されることで、さらなる集客効果が期待できます。</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon">💰</div>
-                    <h3>成果報酬型</h3>
-                    <p>送客1件ごとの手数料制。固定費なしで始められます。</p>
-                </div>
-            </div>
-        </section>
-        
-        <!-- 料金セクション -->
-        <section class="pricing-section">
-            <h2>料金体系</h2>
-            <div class="pricing-card">
-                <div class="pricing-header">
-                    <span class="pricing-label">送客手数料</span>
-                    <div class="pricing-amount">
-                        <span class="amount">700</span><span class="unit">円〜</span>
-                    </div>
-                    <p class="pricing-note">1件（1名）あたり / 業態により異なります</p>
-                </div>
-                <ul class="pricing-features">
-                    <li>✓ 初期費用・月額費用なし</li>
-                    <li>✓ 店舗ページ作成・管理画面利用無料</li>
-                    <li>✓ 空席更新・求人掲載も追加費用なし</li>
-                    <li>✓ 送客が発生した場合のみ手数料</li>
-                </ul>
-            </div>
-        </section>
-        
-        <!-- 申込フォームセクション -->
-        <section class="apply-form-section" id="apply-form">
-            <h2>掲載のお申し込み</h2>
-            <p class="form-desc">
-                下記フォームに必要事項をご入力ください。<br>
-                審査完了後、ログイン情報をメールでお送りします。
-            </p>
-            
-            <form method="POST" action="{{ url_for('public.shop_apply') }}" class="apply-form">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                
-                <div class="form-section">
-                    <h3>店舗情報</h3>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="shop_name">店舗名 <span class="required">*</span></label>
-                        <input type="text" id="shop_name" name="shop_name" class="form-control" 
-                               value="{{ form_data.shop_name if form_data else '' }}"
-                               placeholder="例: Club ROYAL" required>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label" for="area">エリア <span class="required">*</span></label>
-                            <select id="area" name="area" class="form-control" required>
-                                <option value="">-- 選択してください --</option>
-                                {% for area_option in areas %}
-                                <option value="{{ area_option }}" 
-                                        {% if form_data and form_data.area == area_option %}selected{% endif %}>
-                                    {{ area_option }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label" for="category">業態 <span class="required">*</span></label>
-                            <select id="category" name="category" class="form-control" required>
-                                <option value="">-- 選択してください --</option>
-                                {% for cat in categories %}
-                                <option value="{{ cat }}" 
-                                        {% if form_data and form_data.category == cat %}selected{% endif %}>
-                                    {{ category_labels[cat] }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-section">
-                    <h3>ご担当者情報</h3>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="contact_name">担当者名 <span class="required">*</span></label>
-                        <input type="text" id="contact_name" name="contact_name" class="form-control"
-                               value="{{ form_data.contact_name if form_data else '' }}"
-                               placeholder="例: 山田 太郎" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="email">メールアドレス <span class="required">*</span></label>
-                        <input type="email" id="email" name="email" class="form-control"
-                               value="{{ form_data.email if form_data else '' }}"
-                               placeholder="例: info@example.com" required>
-                        <small class="form-text">審査完了後、こちらにログイン情報をお送りします</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="phone">電話番号 <span class="required">*</span></label>
-                        <input type="tel" id="phone" name="phone" class="form-control"
-                               value="{{ form_data.phone if form_data else '' }}"
-                               placeholder="例: 086-XXX-XXXX" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="message">備考・ご質問（任意）</label>
-                        <textarea id="message" name="message" class="form-control" rows="3"
-                                  placeholder="その他ご質問等があればご記入ください">{{ form_data.message if form_data else '' }}</textarea>
-                    </div>
-                </div>
-                
-                <div class="form-section">
-                    <h3>振込口座情報</h3>
-                    <p class="form-section-desc">売上の振込先口座をご入力ください。</p>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="bank_name">金融機関名 <span class="required">*</span></label>
-                        <input type="text" id="bank_name" name="bank_name" class="form-control"
-                               value="{{ form_data.bank_name if form_data else '' }}"
-                               placeholder="例: 中国銀行" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="bank_branch">支店名 <span class="required">*</span></label>
-                        <input type="text" id="bank_branch" name="bank_branch" class="form-control"
-                               value="{{ form_data.bank_branch if form_data else '' }}"
-                               placeholder="例: 岡山駅前支店" required>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label" for="account_type">口座種別 <span class="required">*</span></label>
-                            <select id="account_type" name="account_type" class="form-control" required>
-                                <option value="">-- 選択 --</option>
-                                <option value="普通" {% if form_data and form_data.account_type == '普通' %}selected{% endif %}>普通</option>
-                                <option value="当座" {% if form_data and form_data.account_type == '当座' %}selected{% endif %}>当座</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label" for="account_number">口座番号 <span class="required">*</span></label>
-                            <input type="text" id="account_number" name="account_number" class="form-control"
-                                   value="{{ form_data.account_number if form_data else '' }}"
-                                   placeholder="例: 1234567" pattern="[0-9]{7,8}" maxlength="8" required>
-                            <small class="form-text">半角数字7〜8桁で入力してください</small>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="account_holder">口座名義（カタカナ） <span class="required">*</span></label>
-                        <input type="text" id="account_holder" name="account_holder" class="form-control"
-                               value="{{ form_data.account_holder if form_data else '' }}"
-                               placeholder="例: カ）ナイトウォーク" required>
-                        <small class="form-text">通帳に記載の名義をカタカナで入力してください</small>
-                    </div>
-                </div>
-                
-                <div class="form-submit">
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        📝 申し込む
-                    </button>
-                    <p class="form-note">
-                        ※ 審査には通常1〜3営業日かかります
-                    </p>
-                </div>
-            </form>
-        </section>
-        
-        <!-- お問い合わせセクション -->
-        <section class="contact-section">
-            <h2>ご質問・お問い合わせ</h2>
-            <p class="contact-desc">
-                ご不明な点がございましたら<br>
-                お気軽にお問い合わせください。
-            </p>
-            
-            <div class="contact-methods">
-                <div class="contact-method">
-                    <div class="contact-icon">📧</div>
-                    <h3>メールでのお問い合わせ</h3>
-                    <a href="mailto:yorutabi2025@gmail.com" class="contact-link">yorutabi2025@gmail.com</a>
-                </div>
-            </div>
-        </section>
-        
-        <!-- フッターナビ -->
-        <div class="apply-footer">
-            <a href="{{ url_for('public.index') }}" class="back-link">
-                ← トップページに戻る
-            </a>
-        </div>
-    </div>
+ <div class="container">
+ <!-- ヒーローセクション -->
+ <section class="apply-hero">
+ <h1>Night-Walkに<br class="sp-only">店舗を掲載しませんか？</h1>
+ <p class="hero-subtitle">岡山倉敷エリアのナイトレジャー情報サイト</p>
+ </section>
+ 
+ <!-- メリットセクション -->
+ <section class="benefits-section">
+ <h2>掲載のメリット</h2>
+ <div class="benefits-grid">
+ <div class="benefit-card">
+ <div class="benefit-icon"></div>
+ <h3>スマホで簡単更新</h3>
+ <p>空席状況をリアルタイムで更新。お客様に今の状況を伝えられます。</p>
+ </div>
+ <div class="benefit-card">
+ <div class="benefit-icon"></div>
+ <h3>検索からの集客</h3>
+ <p>エリア業態空席状況で検索可能。新規のお客様との出会いを創出。</p>
+ </div>
+ <div class="benefit-card">
+ <div class="benefit-icon"></div>
+ <h3>ランキング掲載</h3>
+ <p>人気ランキングに掲載されることで、さらなる集客効果が期待できます。</p>
+ </div>
+ <div class="benefit-card">
+ <div class="benefit-icon"></div>
+ <h3>成果報酬型</h3>
+ <p>送客1件ごとの手数料制。固定費なしで始められます。</p>
+ </div>
+ </div>
+ </section>
+ 
+ <!-- 料金セクション -->
+ <section class="pricing-section">
+ <h2>料金体系</h2>
+ <div class="pricing-card">
+ <div class="pricing-header">
+ <span class="pricing-label">送客手数料</span>
+ <div class="pricing-amount">
+ <span class="amount">700</span><span class="unit">円〜</span>
+ </div>
+ <p class="pricing-note">1件（1名）あたり / 業態により異なります</p>
+ </div>
+ <ul class="pricing-features">
+ <li> 初期費用月額費用なし</li>
+ <li> 店舗ページ作成管理画面利用無料</li>
+ <li> 空席更新求人掲載も追加費用なし</li>
+ <li> 送客が発生した場合のみ手数料</li>
+ </ul>
+ </div>
+ </section>
+ 
+ <!-- 申込フォームセクション -->
+ <section class="apply-form-section" id="apply-form">
+ <h2>掲載のお申し込み</h2>
+ <p class="form-desc">
+ 下記フォームに必要事項をご入力ください。<br>
+ 審査完了後、ログイン情報をメールでお送りします。
+ </p>
+ 
+ <form method="POST" action="{{ url_for('public.shop_apply') }}" class="apply-form">
+ <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ 
+ <div class="form-section">
+ <h3>店舗情報</h3>
+ 
+ <div class="form-group">
+ <label class="form-label" for="shop_name">店舗名 <span class="required">*</span></label>
+ <input type="text" id="shop_name" name="shop_name" class="form-control" 
+ value="{{ form_data.shop_name if form_data else '' }}"
+ placeholder="例: Club ROYAL" required>
+ </div>
+ 
+ <div class="form-row">
+ <div class="form-group">
+ <label class="form-label" for="area">エリア <span class="required">*</span></label>
+ <select id="area" name="area" class="form-control" required>
+ <option value="">-- 選択してください --</option>
+ {% for area_option in areas %}
+ <option value="{{ area_option }}" 
+ {% if form_data and form_data.area == area_option %}selected{% endif %}>
+ {{ area_option }}
+ </option>
+ {% endfor %}
+ </select>
+ </div>
+ 
+ <div class="form-group">
+ <label class="form-label" for="category">業態 <span class="required">*</span></label>
+ <select id="category" name="category" class="form-control" required>
+ <option value="">-- 選択してください --</option>
+ {% for cat in categories %}
+ <option value="{{ cat }}" 
+ {% if form_data and form_data.category == cat %}selected{% endif %}>
+ {{ category_labels[cat] }}
+ </option>
+ {% endfor %}
+ </select>
+ </div>
+ </div>
+ </div>
+ 
+ <div class="form-section">
+ <h3>ご担当者情報</h3>
+ 
+ <div class="form-group">
+ <label class="form-label" for="contact_name">担当者名 <span class="required">*</span></label>
+ <input type="text" id="contact_name" name="contact_name" class="form-control"
+ value="{{ form_data.contact_name if form_data else '' }}"
+ placeholder="例: 山田 太郎" required>
+ </div>
+ 
+ <div class="form-group">
+ <label class="form-label" for="email">メールアドレス <span class="required">*</span></label>
+ <input type="email" id="email" name="email" class="form-control"
+ value="{{ form_data.email if form_data else '' }}"
+ placeholder="例: info@example.com" required>
+ <small class="form-text">審査完了後、こちらにログイン情報をお送りします</small>
+ </div>
+ 
+ <div class="form-group">
+ <label class="form-label" for="phone">電話番号 <span class="required">*</span></label>
+ <input type="tel" id="phone" name="phone" class="form-control"
+ value="{{ form_data.phone if form_data else '' }}"
+ placeholder="例: 086-XXX-XXXX" required>
+ </div>
+ 
+ <div class="form-group">
+ <label class="form-label" for="message">備考ご質問（任意）</label>
+ <textarea id="message" name="message" class="form-control" rows="3"
+ placeholder="その他ご質問等があればご記入ください">{{ form_data.message if form_data else '' }}</textarea>
+ </div>
+ </div>
+ 
+ <div class="form-section">
+ <h3>振込口座情報</h3>
+ <p class="form-section-desc">売上の振込先口座をご入力ください。</p>
+ 
+ <div class="form-group">
+ <label class="form-label" for="bank_name">金融機関名 <span class="required">*</span></label>
+ <input type="text" id="bank_name" name="bank_name" class="form-control"
+ value="{{ form_data.bank_name if form_data else '' }}"
+ placeholder="例: 中国銀行" required>
+ </div>
+ 
+ <div class="form-group">
+ <label class="form-label" for="bank_branch">支店名 <span class="required">*</span></label>
+ <input type="text" id="bank_branch" name="bank_branch" class="form-control"
+ value="{{ form_data.bank_branch if form_data else '' }}"
+ placeholder="例: 岡山駅前支店" required>
+ </div>
+ 
+ <div class="form-row">
+ <div class="form-group">
+ <label class="form-label" for="account_type">口座種別 <span class="required">*</span></label>
+ <select id="account_type" name="account_type" class="form-control" required>
+ <option value="">-- 選択 --</option>
+ <option value="普通" {% if form_data and form_data.account_type == '普通' %}selected{% endif %}>普通</option>
+ <option value="当座" {% if form_data and form_data.account_type == '当座' %}selected{% endif %}>当座</option>
+ </select>
+ </div>
+ 
+ <div class="form-group">
+ <label class="form-label" for="account_number">口座番号 <span class="required">*</span></label>
+ <input type="text" id="account_number" name="account_number" class="form-control"
+ value="{{ form_data.account_number if form_data else '' }}"
+ placeholder="例: 1234567" pattern="[0-9]{7,8}" maxlength="8" required>
+ <small class="form-text">半角数字7〜8桁で入力してください</small>
+ </div>
+ </div>
+ 
+ <div class="form-group">
+ <label class="form-label" for="account_holder">口座名義（カタカナ） <span class="required">*</span></label>
+ <input type="text" id="account_holder" name="account_holder" class="form-control"
+ value="{{ form_data.account_holder if form_data else '' }}"
+ placeholder="例: カ）ナイトウォーク" required>
+ <small class="form-text">通帳に記載の名義をカタカナで入力してください</small>
+ </div>
+ </div>
+ 
+ <div class="form-submit">
+ <button type="submit" class="btn btn-primary btn-lg">
+ 申し込む
+ </button>
+ <p class="form-note">
+ ※ 審査には通常1〜3営業日かかります
+ </p>
+ </div>
+ </form>
+ </section>
+ 
+ <!-- お問い合わせセクション -->
+ <section class="contact-section">
+ <h2>ご質問お問い合わせ</h2>
+ <p class="contact-desc">
+ ご不明な点がございましたら<br>
+ お気軽にお問い合わせください。
+ </p>
+ 
+ <div class="contact-methods">
+ <div class="contact-method">
+ <div class="contact-icon"></div>
+ <h3>メールでのお問い合わせ</h3>
+ <a href="mailto:yorutabi2025@gmail.com" class="contact-link">yorutabi2025@gmail.com</a>
+ </div>
+ </div>
+ </section>
+ 
+ <!-- フッターナビ -->
+ <div class="apply-footer">
+ <a href="{{ url_for('public.index') }}" class="back-link">
+ ← トップページに戻る
+ </a>
+ </div>
+ </div>
 </div>
 
 <style>
 .apply-page {
-    min-height: 100vh;
-    padding: var(--space-xl) 0;
+ min-height: 100vh;
+ padding: var(--space-xl) 0;
 }
 
 .container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 0 var(--space-md);
+ max-width: 800px;
+ margin: 0 auto;
+ padding: 0 var(--space-md);
 }
 
 /* ヒーロー */
 .apply-hero {
-    text-align: center;
-    padding: var(--space-xl) 0;
-    margin-bottom: var(--space-xl);
+ text-align: center;
+ padding: var(--space-xl) 0;
+ margin-bottom: var(--space-xl);
 }
 
 .apply-hero h1 {
-    font-size: 2rem;
-    margin-bottom: var(--space-md);
-    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+ font-size: 2rem;
+ margin-bottom: var(--space-md);
+ background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+ -webkit-background-clip: text;
+ -webkit-text-fill-color: transparent;
+ background-clip: text;
 }
 
 .hero-subtitle {
-    color: var(--color-text-muted);
-    font-size: 1rem;
+ color: var(--color-text-muted);
+ font-size: 1rem;
 }
 
 .sp-only {
-    display: none;
+ display: none;
 }
 
 @media (max-width: 600px) {
-    .sp-only {
-        display: block;
-    }
-    .apply-hero h1 {
-        font-size: 1.5rem;
-    }
+ .sp-only {
+ display: block;
+ }
+ .apply-hero h1 {
+ font-size: 1.5rem;
+ }
 }
 
 /* セクション共通 */
 section {
-    margin-bottom: var(--space-xl);
+ margin-bottom: var(--space-xl);
 }
 
 section h2 {
-    text-align: center;
-    font-size: 1.5rem;
-    margin-bottom: var(--space-lg);
+ text-align: center;
+ font-size: 1.5rem;
+ margin-bottom: var(--space-lg);
 }
 
 /* メリット */
 .benefits-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-md);
+ display: grid;
+ grid-template-columns: repeat(2, 1fr);
+ gap: var(--space-md);
 }
 
 @media (max-width: 600px) {
-    .benefits-grid {
-        grid-template-columns: 1fr;
-    }
+ .benefits-grid {
+ grid-template-columns: 1fr;
+ }
 }
 
 .benefit-card {
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-lg);
-    text-align: center;
+ background: var(--color-bg-elevated);
+ border: 1px solid var(--color-border);
+ border-radius: var(--radius-lg);
+ padding: var(--space-lg);
+ text-align: center;
 }
 
 .benefit-icon {
-    font-size: 2rem;
-    margin-bottom: var(--space-sm);
+ font-size: 2rem;
+ margin-bottom: var(--space-sm);
 }
 
 .benefit-card h3 {
-    font-size: 1rem;
-    margin-bottom: var(--space-sm);
+ font-size: 1rem;
+ margin-bottom: var(--space-sm);
 }
 
 .benefit-card p {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    margin: 0;
+ font-size: 0.875rem;
+ color: var(--color-text-muted);
+ margin: 0;
 }
 
 /* 料金 */
 .pricing-card {
-    background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,100,100,0.1));
-    border: 2px solid var(--color-primary);
-    border-radius: var(--radius-lg);
-    padding: var(--space-xl);
-    text-align: center;
+ background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,100,100,0.1));
+ border: 2px solid var(--color-primary);
+ border-radius: var(--radius-lg);
+ padding: var(--space-xl);
+ text-align: center;
 }
 
 .pricing-header {
-    margin-bottom: var(--space-lg);
+ margin-bottom: var(--space-lg);
 }
 
 .pricing-label {
-    display: inline-block;
-    background: var(--color-primary);
-    color: var(--color-bg);
-    padding: var(--space-xs) var(--space-md);
-    border-radius: var(--radius);
-    font-size: 0.875rem;
-    font-weight: bold;
-    margin-bottom: var(--space-md);
+ display: inline-block;
+ background: var(--color-primary);
+ color: var(--color-bg);
+ padding: var(--space-xs) var(--space-md);
+ border-radius: var(--radius);
+ font-size: 0.875rem;
+ font-weight: bold;
+ margin-bottom: var(--space-md);
 }
 
 .pricing-amount {
-    margin: var(--space-md) 0;
+ margin: var(--space-md) 0;
 }
 
 .pricing-amount .amount {
-    font-size: 3rem;
-    font-weight: bold;
-    color: var(--color-primary);
+ font-size: 3rem;
+ font-weight: bold;
+ color: var(--color-primary);
 }
 
 .pricing-amount .unit {
-    font-size: 1.5rem;
-    color: var(--color-text);
+ font-size: 1.5rem;
+ color: var(--color-text);
 }
 
 .pricing-note {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
+ font-size: 0.875rem;
+ color: var(--color-text-muted);
 }
 
 .pricing-features {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    text-align: left;
-    max-width: 300px;
-    margin: 0 auto;
+ list-style: none;
+ padding: 0;
+ margin: 0;
+ text-align: left;
+ max-width: 300px;
+ margin: 0 auto;
 }
 
 .pricing-features li {
-    padding: var(--space-sm) 0;
-    border-bottom: 1px solid var(--color-border);
-    font-size: 0.9rem;
+ padding: var(--space-sm) 0;
+ border-bottom: 1px solid var(--color-border);
+ font-size: 0.9rem;
 }
 
 .pricing-features li:last-child {
-    border-bottom: none;
+ border-bottom: none;
 }
 
 /* 申込フォーム */
 .apply-form-section {
-    background: var(--color-bg-elevated);
-    border: 2px solid var(--color-primary);
-    border-radius: var(--radius-lg);
-    padding: var(--space-xl);
+ background: var(--color-bg-elevated);
+ border: 2px solid var(--color-primary);
+ border-radius: var(--radius-lg);
+ padding: var(--space-xl);
 }
 
 .form-desc {
-    text-align: center;
-    color: var(--color-text-muted);
-    margin-bottom: var(--space-lg);
+ text-align: center;
+ color: var(--color-text-muted);
+ margin-bottom: var(--space-lg);
 }
 
 .apply-form {
-    max-width: 500px;
-    margin: 0 auto;
+ max-width: 500px;
+ margin: 0 auto;
 }
 
 .form-section {
-    margin-bottom: var(--space-lg);
-    padding-bottom: var(--space-lg);
-    border-bottom: 1px solid var(--color-border);
+ margin-bottom: var(--space-lg);
+ padding-bottom: var(--space-lg);
+ border-bottom: 1px solid var(--color-border);
 }
 
 .form-section:last-of-type {
-    border-bottom: none;
+ border-bottom: none;
 }
 
 .form-section h3 {
-    font-size: 1rem;
-    margin-bottom: var(--space-sm);
-    color: var(--color-primary);
+ font-size: 1rem;
+ margin-bottom: var(--space-sm);
+ color: var(--color-primary);
 }
 
 .form-section-desc {
-    font-size: 0.85rem;
-    color: var(--color-text-muted);
-    margin-bottom: var(--space-md);
+ font-size: 0.85rem;
+ color: var(--color-text-muted);
+ margin-bottom: var(--space-md);
 }
 
 .form-group {
-    margin-bottom: var(--space-md);
+ margin-bottom: var(--space-md);
 }
 
 .form-label {
-    display: block;
-    margin-bottom: var(--space-xs);
-    font-weight: 500;
-    font-size: 0.9rem;
+ display: block;
+ margin-bottom: var(--space-xs);
+ font-weight: 500;
+ font-size: 0.9rem;
 }
 
 .form-label .required {
-    color: #ef4444;
+ color: #ef4444;
 }
 
 .form-control {
-    width: 100%;
-    padding: var(--space-sm) var(--space-md);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    background: var(--color-bg);
-    color: var(--color-text);
-    font-size: 1rem;
+ width: 100%;
+ padding: var(--space-sm) var(--space-md);
+ border: 1px solid var(--color-border);
+ border-radius: var(--radius);
+ background: var(--color-bg);
+ color: var(--color-text);
+ font-size: 1rem;
 }
 
 .form-control:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+ outline: none;
+ border-color: var(--color-primary);
+ box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
 }
 
 .form-control::placeholder {
-    color: var(--color-text-muted);
-    opacity: 0.6;
+ color: var(--color-text-muted);
+ opacity: 0.6;
 }
 
 select.form-control {
-    cursor: pointer;
+ cursor: pointer;
 }
 
 /* ドロップダウンの選択肢を読みやすく */
 select.form-control option {
-    background: #fff;
-    color: #333;
-    padding: 10px;
+ background: #fff;
+ color: #333;
+ padding: 10px;
 }
 
 textarea.form-control {
-    resize: vertical;
-    min-height: 80px;
+ resize: vertical;
+ min-height: 80px;
 }
 
 .form-text {
-    display: block;
-    margin-top: var(--space-xs);
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
+ display: block;
+ margin-top: var(--space-xs);
+ font-size: 0.75rem;
+ color: var(--color-text-muted);
 }
 
 .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-md);
+ display: grid;
+ grid-template-columns: 1fr 1fr;
+ gap: var(--space-md);
 }
 
 @media (max-width: 500px) {
-    .form-row {
-        grid-template-columns: 1fr;
-    }
+ .form-row {
+ grid-template-columns: 1fr;
+ }
 }
 
 .form-submit {
-    text-align: center;
-    padding-top: var(--space-md);
+ text-align: center;
+ padding-top: var(--space-md);
 }
 
 .form-submit .btn {
-    min-width: 200px;
+ min-width: 200px;
 }
 
 .form-note {
-    margin-top: var(--space-md);
-    font-size: 0.8rem;
-    color: var(--color-text-muted);
+ margin-top: var(--space-md);
+ font-size: 0.8rem;
+ color: var(--color-text-muted);
 }
 
 /* お問い合わせ */
 .contact-section {
-    background: var(--color-bg-elevated);
-    border-radius: var(--radius-lg);
-    padding: var(--space-xl);
-    text-align: center;
+ background: var(--color-bg-elevated);
+ border-radius: var(--radius-lg);
+ padding: var(--space-xl);
+ text-align: center;
 }
 
 .contact-desc {
-    color: var(--color-text-muted);
-    margin-bottom: var(--space-lg);
+ color: var(--color-text-muted);
+ margin-bottom: var(--space-lg);
 }
 
 .contact-methods {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-lg);
-    margin-bottom: var(--space-lg);
+ display: grid;
+ grid-template-columns: repeat(2, 1fr);
+ gap: var(--space-lg);
+ margin-bottom: var(--space-lg);
 }
 
 @media (max-width: 600px) {
-    .contact-methods {
-        grid-template-columns: 1fr;
-    }
+ .contact-methods {
+ grid-template-columns: 1fr;
+ }
 }
 
 .contact-method {
-    padding: var(--space-md);
+ padding: var(--space-md);
 }
 
 .contact-icon {
-    font-size: 2rem;
-    margin-bottom: var(--space-sm);
+ font-size: 2rem;
+ margin-bottom: var(--space-sm);
 }
 
 .contact-method h3 {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    margin-bottom: var(--space-sm);
+ font-size: 0.875rem;
+ color: var(--color-text-muted);
+ margin-bottom: var(--space-sm);
 }
 
 .contact-link {
-    font-size: 1.25rem;
-    color: var(--color-primary);
-    text-decoration: none;
-    font-weight: bold;
+ font-size: 1.25rem;
+ color: var(--color-primary);
+ text-decoration: none;
+ font-weight: bold;
 }
 
 .contact-link:hover {
-    text-decoration: underline;
+ text-decoration: underline;
 }
 
 .contact-note {
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
-    margin-top: var(--space-xs);
+ font-size: 0.75rem;
+ color: var(--color-text-muted);
+ margin-top: var(--space-xs);
 }
 
 .cta-buttons {
-    margin-top: var(--space-lg);
+ margin-top: var(--space-lg);
 }
 
 .btn-lg {
-    padding: var(--space-md) var(--space-xl);
-    font-size: 1rem;
+ padding: var(--space-md) var(--space-xl);
+ font-size: 1rem;
 }
 
 /* フッター */
 .apply-footer {
-    text-align: center;
-    padding-top: var(--space-xl);
+ text-align: center;
+ padding-top: var(--space-xl);
 }
 
 .back-link {
-    color: var(--color-text-muted);
-    text-decoration: none;
+ color: var(--color-text-muted);
+ text-decoration: none;
 }
 
 .back-link:hover {
-    color: var(--color-primary);
+ color: var(--color-primary);
 }
 </style>
 {% endblock %}

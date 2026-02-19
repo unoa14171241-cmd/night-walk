@@ -2,157 +2,157 @@
 <html lang="ja">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Night-Walk{% endblock %}</title>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>{% block title %}Night-Walk{% endblock %}</title>
 
-    <!-- SEO Meta Tags -->
-    <meta name="description"
-        content="{% block meta_description %}岡山・倉敷のナイトレジャー情報サイト。スナック、キャバクラ、ガールズバーなどの空席状況をリアルタイムで確認・予約できます。{% endblock %}">
-    {% block meta_robots %}{% if seo_noindex %}
-    <meta name="robots" content="noindex, nofollow">{% else %}
-    <meta name="robots" content="index, follow">{% endif %}{% endblock %}
-    {% block canonical %}{% if request %}
-    <link rel="canonical" href="{{ request.url_root[:-1] }}{{ request.path }}">{% endif %}{% endblock %}
+ <!-- SEO Meta Tags -->
+ <meta name="description"
+ content="{% block meta_description %}岡山倉敷のナイトレジャー情報サイト。スナック、キャバクラ、ガールズバーなどの空席状況をリアルタイムで確認予約できます。{% endblock %}">
+ {% block meta_robots %}{% if seo_noindex %}
+ <meta name="robots" content="noindex, nofollow">{% else %}
+ <meta name="robots" content="index, follow">{% endif %}{% endblock %}
+ {% block canonical %}{% if request %}
+ <link rel="canonical" href="{{ request.url_root[:-1] }}{{ request.path }}">{% endif %}{% endblock %}
 
-    <!-- OGP (Open Graph Protocol) -->
-    <meta property="og:site_name" content="Night-Walk">
-    <meta property="og:locale" content="ja_JP">
-    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
-    <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}">
-    <meta property="og:description" content="{% block og_description %}{{ self.meta_description() }}{% endblock %}">
-    <meta property="og:url" content="{% block og_url %}{{ request.url if request else '' }}{% endblock %}">
-    <meta property="og:image"
-        content="{% block og_image %}{{ url_for('static', filename='images/ogp-default.png', _external=True) }}{% endblock %}">
+ <!-- OGP (Open Graph Protocol) -->
+ <meta property="og:site_name" content="Night-Walk">
+ <meta property="og:locale" content="ja_JP">
+ <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+ <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}">
+ <meta property="og:description" content="{% block og_description %}{{ self.meta_description() }}{% endblock %}">
+ <meta property="og:url" content="{% block og_url %}{{ request.url if request else '' }}{% endblock %}">
+ <meta property="og:image"
+ content="{% block og_image %}{{ url_for('static', filename='images/ogp-default.png', _external=True) }}{% endblock %}">
 
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="{% block twitter_card %}summary_large_image{% endblock %}">
-    <meta name="twitter:title" content="{{ self.og_title() }}">
-    <meta name="twitter:description" content="{{ self.og_description() }}">
-    <meta name="twitter:image" content="{{ self.og_image() }}">
+ <!-- Twitter Card -->
+ <meta name="twitter:card" content="{% block twitter_card %}summary_large_image{% endblock %}">
+ <meta name="twitter:title" content="{{ self.og_title() }}">
+ <meta name="twitter:description" content="{{ self.og_description() }}">
+ <meta name="twitter:image" content="{{ self.og_image() }}">
 
-    <!-- Structured Data (JSON-LD) -->
-    {% block structured_data %}{% endblock %}
+ <!-- Structured Data (JSON-LD) -->
+ {% block structured_data %}{% endblock %}
 
-    <!-- PWA Support -->
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
-    <meta name="theme-color" content="#0B0B18">
+ <!-- PWA Support -->
+ <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+ <meta name="theme-color" content="#0B0B18">
 
-    <!-- iOS PWA Support -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Night-Walk">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
+ <!-- iOS PWA Support -->
+ <meta name="apple-mobile-web-app-capable" content="yes">
+ <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+ <meta name="apple-mobile-web-app-title" content="Night-Walk">
+ <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/favicon-32.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='icons/favicon-32.png') }}">
+ <!-- Favicon -->
+ <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/favicon-32.png') }}">
+ <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='icons/favicon-32.png') }}">
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Playfair+Display:wght@600&display=swap"
-        rel="stylesheet">
+ <!-- Fonts -->
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link
+ href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Playfair+Display:wght@600&display=swap"
+ rel="stylesheet">
 
-    <!-- Styles -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+ <!-- Styles -->
+ <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 
-    {% block extra_css %}{% endblock %}
+ {% block extra_css %}{% endblock %}
 </head>
 
 <body class="{% block body_class %}{% endblock %}">
-    {% block navbar %}
-    <nav class="navbar">
-        <div class="container navbar-content">
-            {% if current_user.is_authenticated and (current_user.is_admin or current_user.is_shop_staff) %}
-            <button class="sidebar-toggle-btn" id="showSidebar">☰</button>
-            {% endif %}
+ {% block navbar %}
+ <nav class="navbar">
+ <div class="container navbar-content">
+ {% if current_user.is_authenticated and (current_user.is_admin or current_user.is_shop_staff) %}
+ <button class="sidebar-toggle-btn" id="showSidebar"></button>
+ {% endif %}
 
-            <a href="{{ url_for('public.index') }}" class="navbar-brand">
-                <span class="brand-icon">🌙</span>
-                <span class="brand-text">Night-Walk</span>
-            </a>
+ <a href="{{ url_for('public.index') }}" class="navbar-brand">
+ <span class="brand-icon"></span>
+ <span class="brand-text">Night-Walk</span>
+ </a>
 
-            <div class="navbar-menu">
-                {% if current_user.is_authenticated %}
-                {% if current_user.is_admin %}
-                <a href="{{ url_for('admin.dashboard') }}" class="nav-link">管理画面</a>
-                {% else %}
-                <a href="{{ url_for('shop_admin.dashboard') }}" class="nav-link">店舗管理</a>
-                {% endif %}
-                <a href="{{ url_for('auth.logout') }}" class="nav-link">ログアウト</a>
-                {% else %}
-                <a href="{{ url_for('auth.login') }}" class="nav-link btn-outline">ログイン</a>
-                {% endif %}
-            </div>
-        </div>
-    </nav>
-    {% endblock %}
+ <div class="navbar-menu">
+ {% if current_user.is_authenticated %}
+ {% if current_user.is_admin %}
+ <a href="{{ url_for('admin.dashboard') }}" class="nav-link">管理画面</a>
+ {% else %}
+ <a href="{{ url_for('shop_admin.dashboard') }}" class="nav-link">店舗管理</a>
+ {% endif %}
+ <a href="{{ url_for('auth.logout') }}" class="nav-link">ログアウト</a>
+ {% else %}
+ <a href="{{ url_for('auth.login') }}" class="nav-link btn-outline">ログイン</a>
+ {% endif %}
+ </div>
+ </div>
+ </nav>
+ {% endblock %}
 
-    <!-- System Status Banner -->
-    {% if system_status and system_status.status != 'normal' and system_status.notify_users %}
-    <div class="system-status-banner system-status-{{ system_status.status }}" style="
-        background: {% if system_status.status == 'outage' %}#dc2626{% elif system_status.status == 'degraded' %}#d97706{% else %}#2563eb{% endif %};
-        color: white;
-        padding: 0.75rem 1rem;
-        text-align: center;
-        font-size: 0.875rem;
-    ">
-        <strong>
-            {% if system_status.status == 'outage' %}🔴 障害発生中{% elif system_status.status == 'degraded' %}⚠️ 一部障害{% else
-            %}🔧 メンテナンス中{% endif %}
-        </strong>
-        {{ system_status.title }}
-        {% if system_status.message %}
-        <span style="opacity: 0.9;">- {{ system_status.message }}</span>
-        {% endif %}
-    </div>
-    {% endif %}
+ <!-- System Status Banner -->
+ {% if system_status and system_status.status != 'normal' and system_status.notify_users %}
+ <div class="system-status-banner system-status-{{ system_status.status }}" style="
+ background: {% if system_status.status == 'outage' %}#dc2626{% elif system_status.status == 'degraded' %}#d97706{% else %}#2563eb{% endif %};
+ color: white;
+ padding: 0.75rem 1rem;
+ text-align: center;
+ font-size: 0.875rem;
+ ">
+ <strong>
+ {% if system_status.status == 'outage' %} 障害発生中{% elif system_status.status == 'degraded' %} 一部障害{% else
+ %} メンテナンス中{% endif %}
+ </strong>
+ {{ system_status.title }}
+ {% if system_status.message %}
+ <span style="opacity: 0.9;">- {{ system_status.message }}</span>
+ {% endif %}
+ </div>
+ {% endif %}
 
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <div class="flash-messages">
-        <div class="container">
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">
-                {{ message }}
-                <button class="alert-close" onclick="this.parentElement.remove()">×</button>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-    {% endwith %}
+ <!-- Flash Messages -->
+ {% with messages = get_flashed_messages(with_categories=true) %}
+ {% if messages %}
+ <div class="flash-messages">
+ <div class="container">
+ {% for category, message in messages %}
+ <div class="alert alert-{{ category }}">
+ {{ message }}
+ <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+ </div>
+ {% endfor %}
+ </div>
+ </div>
+ {% endif %}
+ {% endwith %}
 
-    <!-- Main Content -->
-    <main class="main-content">
-        {% block content %}{% endblock %}
-    </main>
+ <!-- Main Content -->
+ <main class="main-content">
+ {% block content %}{% endblock %}
+ </main>
 
-    {% block footer %}
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2026 Night-Walk. All rights reserved.</p>
-        </div>
-    </footer>
-    {% endblock %}
+ {% block footer %}
+ <footer class="footer">
+ <div class="container">
+ <p>&copy; 2026 Night-Walk. All rights reserved.</p>
+ </div>
+ </footer>
+ {% endblock %}
 
-    <!-- Scripts -->
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    {% block extra_js %}{% endblock %}
+ <!-- Scripts -->
+ <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+ {% block extra_js %}{% endblock %}
 
-    <!-- Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/static/js/sw.js')
-                    .then(reg => console.log('Service Worker registered:', reg.scope))
-                    .catch(err => console.log('Service Worker registration failed:', err));
-            });
-        }
-    </script>
+ <!-- Service Worker Registration -->
+ <script>
+ if ('serviceWorker' in navigator) {
+ window.addEventListener('load', () => {
+ navigator.serviceWorker.register('/static/js/sw.js')
+ .then(reg => console.log('Service Worker registered:', reg.scope))
+ .catch(err => console.log('Service Worker registration failed:', err));
+ });
+ }
+ </script>
 </body>
 
 </html>
