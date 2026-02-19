@@ -64,8 +64,8 @@ class ShopReview(db.Model):
         db.Index('ix_review_created', 'created_at'),
     )
     
-    # 口コミ投稿ポイント還元額（設定値）
-    REWARD_POINTS = 500  # 1投稿=500ポイント
+    # 口コミ投稿ポイント還元 → 廃止（新規会員登録ボーナスに一本化）
+    REWARD_POINTS = 0
     
     @property
     def status_label(self):
@@ -151,20 +151,8 @@ class ShopReview(db.Model):
         return True
     
     def reward_points(self, customer):
-        """ポイント還元を実行"""
-        if self.points_rewarded > 0:
-            return False  # 既に還元済み
-        
-        if self.status != self.STATUS_VERIFIED:
-            return False  # 未認証
-        
-        # ポイント付与
-        customer.add_points(self.REWARD_POINTS, f'口コミ投稿報酬（店舗ID: {self.shop_id}）')
-        
-        self.points_rewarded = self.REWARD_POINTS
-        self.points_rewarded_at = datetime.utcnow()
-        
-        return True
+        """ポイント還元 → 廃止（互換性のため残すが常にFalse）"""
+        return False
     
     def reject(self, reason=None):
         """不正として却下"""

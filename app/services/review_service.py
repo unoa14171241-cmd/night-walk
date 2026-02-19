@@ -82,13 +82,16 @@ class ReviewService:
         # 口コミを認証済みに
         review.verify()
         
-        # ポイント還元（顧客がログインしている場合）
-        points_rewarded = 0
+        # ポイントカード自動発行（顧客がログインしている場合）
+        card_issued = False
         if customer_id:
-            customer = Customer.query.get(customer_id)
-            if customer:
-                if review.reward_points(customer):
-                    points_rewarded = ShopReview.REWARD_POINTS
+            from ..models.shop_point import CustomerShopPoint, ShopPointCard
+            # 店舗のポイントカード設定を取得（なければ作成）
+            card_config = ShopPointCard.get_or_create(review.shop_id)
+            if card_config.is_active:
+                # 顧客のポイントカードを取得（なければ自動発行）
+                customer_point = CustomerShopPoint.get_or_create(customer_id, review.shop_id)
+                card_issued = True
         
         db.session.commit()
         
@@ -98,7 +101,8 @@ class ReviewService:
         return {
             'success': True,
             'review': review,
-            'points_rewarded': points_rewarded,
+            'points_rewarded': 0,
+            'card_issued': card_issued,
             'error': None
         }
     

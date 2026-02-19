@@ -47,7 +47,10 @@ class Customer(UserMixin, db.Model):
         """パスワードを検証"""
         return check_password_hash(self.password_hash, password)
     
-    def add_points(self, amount):
+    # 会員登録ボーナスポイント
+    REGISTRATION_BONUS = 500
+    
+    def add_points(self, amount, description=None):
         """ポイントを追加"""
         self.point_balance += amount
         self.total_purchased_points += amount
