@@ -187,9 +187,6 @@
             <div class="gift-grid">
                 {% for gift in gifts %}
                 <div class="gift-card {% if current_user.point_balance < gift.points %}disabled{% endif %}">
-                    <div class="gift-image">
-                        <img src="{{ gift.image_url }}" alt="{{ gift.name }}">
-                    </div>
                     <div class="gift-name">{{ gift.name }}</div>
                     <div class="gift-points">{{ gift.points | int }}pt</div>
                     
