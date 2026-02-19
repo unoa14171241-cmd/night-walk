@@ -1082,6 +1082,17 @@ def plan():
 # 店舗ポイントカード管理
 # ============================================
 
+def _shop_has_point_card_feature(shop_id):
+    """店舗がポイントカード機能を使える有料プランか判定"""
+    from ..models.store_plan import StorePlan
+    plan = StorePlan.query.filter_by(shop_id=shop_id).first()
+    if not plan:
+        return False
+    if not plan.is_active:
+        return False
+    return plan.plan_type in [StorePlan.PLAN_PREMIUM, StorePlan.PLAN_BUSINESS, 'standard']
+
+
 @shop_admin_bp.route('/point-card')
 @login_required
 @owner_required
@@ -1090,6 +1101,12 @@ def point_card():
     from ..models.shop_point import ShopPointCard, CustomerShopPoint
     
     shop = g.current_shop
+    
+    # 有料プランチェック
+    has_feature = _shop_has_point_card_feature(shop.id)
+    if not has_feature:
+        flash('ポイントカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        return redirect(url_for('shop_admin.plan'))
     
     # ポイントカード設定を取得（なければ作成）
     card_config = ShopPointCard.get_or_create(shop.id)
@@ -1109,7 +1126,8 @@ def point_card():
                           shop=shop,
                           card_config=card_config,
                           recent_visitors=recent_visitors,
-                          top_customers=top_customers)
+                          top_customers=top_customers,
+                          get_image_url=get_image_url)
 
 
 @shop_admin_bp.route('/point-card/settings', methods=['POST'])
@@ -1120,6 +1138,11 @@ def point_card_settings():
     from ..models.shop_point import ShopPointCard
     
     shop = g.current_shop
+    
+    # 有料プランチェック
+    if not _shop_has_point_card_feature(shop.id):
+        flash('ポイントカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        return redirect(url_for('shop_admin.plan'))
     
     card_config = ShopPointCard.get_or_create(shop.id)
     
@@ -1144,6 +1167,30 @@ def point_card_settings():
     card_config.reward_description = request.form.get('reward_description', '').strip() or None
     card_config.card_color = request.form.get('card_color', '#6366f1').strip() or '#6366f1'
     
+    # カード画像アップロード処理
+    if 'card_image' in request.files:
+        file = request.files['card_image']
+        if file and file.filename and allowed_file(file.filename):
+            try:
+                from ..services.image_service import resize_and_optimize_image
+                optimized_data, fmt = resize_and_optimize_image(file)
+                if optimized_data:
+                    result = cloud_upload(optimized_data, 'point_cards', filename_prefix=f"pc_{shop.id}_")
+                else:
+                    result = cloud_upload(file, 'point_cards', filename_prefix=f"pc_{shop.id}_")
+                if result:
+                    # 古い画像があれば削除
+                    if card_config.card_image_url:
+                        cloud_delete(card_config.card_image_url, 'point_cards')
+                    card_config.card_image_url = result['filename']
+            except Exception as e:
+                current_app.logger.error(f"Point card image upload failed: {e}")
+    
+    # 画像削除リクエスト
+    if request.form.get('delete_card_image') == '1' and card_config.card_image_url:
+        cloud_delete(card_config.card_image_url, 'point_cards')
+        card_config.card_image_url = None
+    
     db.session.commit()
     
     flash('ポイントカード設定を更新しました。', 'success')
@@ -1159,6 +1206,11 @@ def grant_visit_points():
     from ..models import Customer
     
     shop = g.current_shop
+    
+    # 有料プランチェック
+    if not _shop_has_point_card_feature(shop.id):
+        flash('ポイントカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        return redirect(url_for('shop_admin.plan'))
     
     # 顧客を検索（メールで）
     email = request.form.get('customer_email', '').strip().lower()
@@ -1202,6 +1254,12 @@ def point_card_ranks():
     from ..models.shop_point_rank import ShopPointRank
     
     shop = g.current_shop
+    
+    # 有料プランチェック
+    if not _shop_has_point_card_feature(shop.id):
+        flash('ポイントカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        return redirect(url_for('shop_admin.plan'))
+    
     card_config = ShopPointCard.get_or_create(shop.id)
     db.session.commit()
     
@@ -1222,6 +1280,11 @@ def toggle_rank_system():
     from ..models.shop_point_rank import ShopPointRank
     
     shop = g.current_shop
+    
+    if not _shop_has_point_card_feature(shop.id):
+        flash('ポイントカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        return redirect(url_for('shop_admin.plan'))
+    
     card_config = ShopPointCard.get_or_create(shop.id)
     
     card_config.rank_system_enabled = not card_config.rank_system_enabled
@@ -1247,6 +1310,10 @@ def save_ranks():
     from ..models.shop_point_rank import ShopPointRank
     
     shop = g.current_shop
+    
+    if not _shop_has_point_card_feature(shop.id):
+        flash('ポイントカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        return redirect(url_for('shop_admin.plan'))
     
     # フォームからランクデータを取得
     rank_ids = request.form.getlist('rank_id[]')
@@ -1323,6 +1390,10 @@ def reset_default_ranks():
     from ..models.shop_point_rank import ShopPointRank
     
     shop = g.current_shop
+    
+    if not _shop_has_point_card_feature(shop.id):
+        flash('ポイントカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        return redirect(url_for('shop_admin.plan'))
     
     # 既存削除
     ShopPointRank.query.filter_by(shop_id=shop.id).delete(synchronize_session=False)

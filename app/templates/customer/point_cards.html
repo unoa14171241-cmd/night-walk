@@ -33,7 +33,11 @@
  <div class="card-grid">
  {% for card in cards %}
  <a href="{{ url_for('customer.point_card_detail', shop_id=card.shop_id) }}" class="point-card-item">
+ {% if card.shop.point_card and card.shop.point_card.card_image_url %}
+ <div class="point-card-header point-card-header-image" style="background-image: url('{{ get_image_url(card.shop.point_card.card_image_url, 'point_cards') }}');">
+ {% else %}
  <div class="point-card-header" style="background: {{ card.shop.point_card.card_color if card.shop.point_card else '#6366f1' }};">
+ {% endif %}
  <div class="shop-name">{{ card.shop.name }}</div>
  <div class="d-flex justify-between align-center">
  <div class="visit-count">{{ card.visit_count }}回来店</div>
@@ -138,6 +142,24 @@
 .point-card-header {
  padding: 1rem;
  color: #fff;
+}
+
+.point-card-header-image {
+ background-size: cover;
+ background-position: center;
+ position: relative;
+}
+
+.point-card-header-image::before {
+ content: '';
+ position: absolute;
+ inset: 0;
+ background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%);
+}
+
+.point-card-header-image > * {
+ position: relative;
+ z-index: 1;
 }
 
 .point-card-header .shop-name {

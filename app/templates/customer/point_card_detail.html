@@ -7,7 +7,8 @@
  <a href="{{ url_for('customer.point_cards') }}" class="back-link">← ポイントカード一覧に戻る</a>
  
  <!-- ポイントカード -->
- <div class="main-card" style="--card-color: {{ card_config.card_color }};">
+ <div class="main-card {{ 'main-card-image' if card_config.card_image_url else '' }}" 
+ style="--card-color: {{ card_config.card_color }}; {% if card_config.card_image_url %}--card-bg-image: url('{{ get_image_url(card_config.card_image_url, 'point_cards') }}');{% endif %}">
  <div class="card-header">
  <div class="shop-info">
  <h1 class="shop-name">{{ shop.name }}</h1>
@@ -215,6 +216,24 @@
  color: #fff;
  margin-bottom: 1.5rem;
  overflow: hidden;
+}
+
+.main-card-image {
+ background: var(--card-bg-image) center / cover no-repeat;
+ position: relative;
+}
+
+.main-card-image::before {
+ content: '';
+ position: absolute;
+ inset: 0;
+ background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.65) 100%);
+ z-index: 0;
+}
+
+.main-card-image > * {
+ position: relative;
+ z-index: 1;
 }
 
 .main-card .card-header {

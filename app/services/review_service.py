@@ -82,16 +82,23 @@ class ReviewService:
         # 口コミを認証済みに
         review.verify()
         
-        # ポイントカード自動発行（顧客がログインしている場合）
+        # ポイントカード自動発行（顧客がログインしていて、店舗が有料プランの場合）
         card_issued = False
         if customer_id:
             from ..models.shop_point import CustomerShopPoint, ShopPointCard
-            # 店舗のポイントカード設定を取得（なければ作成）
-            card_config = ShopPointCard.get_or_create(review.shop_id)
-            if card_config.is_active:
-                # 顧客のポイントカードを取得（なければ自動発行）
-                customer_point = CustomerShopPoint.get_or_create(customer_id, review.shop_id)
-                card_issued = True
+            from ..models.store_plan import StorePlan
+            # 店舗が有料プラン（ポイントカード機能あり）か確認
+            plan = StorePlan.query.filter_by(shop_id=review.shop_id).first()
+            has_point_card_feature = (
+                plan and plan.is_active and 
+                plan.plan_type in [StorePlan.PLAN_PREMIUM, StorePlan.PLAN_BUSINESS, 'standard']
+            )
+            if has_point_card_feature:
+                card_config = ShopPointCard.get_or_create(review.shop_id)
+                if card_config.is_active:
+                    # 顧客のポイントカードを取得（なければ自動発行）
+                    customer_point = CustomerShopPoint.get_or_create(customer_id, review.shop_id)
+                    card_issued = True
         
         db.session.commit()
         

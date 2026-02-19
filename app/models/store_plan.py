@@ -173,7 +173,7 @@ class StorePlan(db.Model):
     @property
     def is_paid_plan(self):
         """有料プランかどうか"""
-        return self.plan_type in [self.PLAN_STANDARD, self.PLAN_PREMIUM]
+        return self.plan_type in [self.PLAN_PREMIUM, self.PLAN_BUSINESS, 'standard']
     
     @property
     def is_trial(self):

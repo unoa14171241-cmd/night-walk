@@ -24,7 +24,7 @@
  </span>
  </div>
  
- <form action="{{ url_for('shop_admin.point_card_settings') }}" method="POST">
+ <form action="{{ url_for('shop_admin.point_card_settings') }}" method="POST" enctype="multipart/form-data">
  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
  
  <div class="form-row">
@@ -38,6 +38,25 @@
  <input type="color" id="card_color" name="card_color" class="form-control"
  value="{{ card_config.card_color }}" style="height: 42px;">
  </div>
+ </div>
+ 
+ <!-- カード画像設定 -->
+ <div class="form-group">
+ <label for="card_image">カード画像</label>
+ {% if card_config.card_image_url %}
+ <div class="current-card-image mb-2">
+ <img src="{{ get_image_url(card_config.card_image_url, 'point_cards') }}" 
+ alt="カード画像" style="max-width: 200px; border-radius: 8px; border: 1px solid var(--color-border);">
+ <div class="mt-1">
+ <label class="checkbox-label">
+ <input type="checkbox" name="delete_card_image" value="1">
+ 画像を削除する
+ </label>
+ </div>
+ </div>
+ {% endif %}
+ <input type="file" id="card_image" name="card_image" class="form-control" accept="image/*">
+ <small class="form-help">推奨サイズ: 600x400px（JPG/PNG/WebP）</small>
  </div>
  
  <div class="form-row">

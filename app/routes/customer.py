@@ -9,6 +9,7 @@ import stripe
 from ..extensions import db, limiter
 from ..models import Customer, PointPackage, PointTransaction, Gift, Cast, GiftTransaction, Earning, Shop, PhoneVerification
 from ..services.review_service import ReviewService
+from ..services.storage_service import get_image_url
 from ..utils.logger import audit_log
 
 customer_bp = Blueprint('customer', __name__)
@@ -715,7 +716,8 @@ def point_cards():
     return render_template('customer/point_cards.html',
                            cards=cards,
                            rewards=rewards,
-                           rank_map=rank_map)
+                           rank_map=rank_map,
+                           get_image_url=get_image_url)
 
 
 @customer_bp.route('/point-cards/<int:shop_id>')
@@ -762,7 +764,8 @@ def point_card_detail(shop_id):
                            current_rank=current_rank,
                            next_rank=next_rank,
                            remaining_points=remaining_points,
-                           all_ranks=all_ranks)
+                           all_ranks=all_ranks,
+                           get_image_url=get_image_url)
 
 
 @customer_bp.route('/point-cards/<int:shop_id>/exchange', methods=['POST'])

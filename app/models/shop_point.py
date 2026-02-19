@@ -28,8 +28,9 @@ class ShopPointCard(db.Model):
     reward_threshold = db.Column(db.Integer, default=1000)  # 特典交換に必要なポイント
     reward_description = db.Column(db.String(200))  # 特典の説明（例: 「ドリンク1杯無料」）
     
-    # デザイン設定（将来拡張用）
+    # デザイン設定
     card_color = db.Column(db.String(20), default='#6366f1')
+    card_image_url = db.Column(db.String(500))  # 店舗独自カード画像
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

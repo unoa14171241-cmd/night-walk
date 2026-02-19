@@ -297,20 +297,25 @@ def auto_migrate_columns():
                             print(f"[WARNING] Failed to add '{col_name}': {col_e}")
                             db.session.rollback()
                     
-            # shop_point_cardsテーブルにランク制度カラムを追加
+            # shop_point_cardsテーブルにカラムを追加
             if 'shop_point_cards' in inspector.get_table_names():
                 columns = [col['name'] for col in inspector.get_columns('shop_point_cards')]
-                if 'rank_system_enabled' not in columns:
-                    print("[INFO] Adding 'rank_system_enabled' column to shop_point_cards table...")
-                    try:
-                        db.session.execute(text(
-                            "ALTER TABLE shop_point_cards ADD COLUMN rank_system_enabled BOOLEAN DEFAULT FALSE"
-                        ))
-                        db.session.commit()
-                        print("[SUCCESS] 'rank_system_enabled' column added!")
-                    except Exception as col_e:
-                        print(f"[WARNING] Failed to add 'rank_system_enabled': {col_e}")
-                        db.session.rollback()
+                spc_columns = [
+                    ("rank_system_enabled", "BOOLEAN DEFAULT FALSE"),
+                    ("card_image_url", "VARCHAR(500)"),
+                ]
+                for col_name, col_type in spc_columns:
+                    if col_name not in columns:
+                        print(f"[INFO] Adding '{col_name}' column to shop_point_cards table...")
+                        try:
+                            db.session.execute(text(
+                                f"ALTER TABLE shop_point_cards ADD COLUMN {col_name} {col_type}"
+                            ))
+                            db.session.commit()
+                            print(f"[SUCCESS] '{col_name}' column added!")
+                        except Exception as col_e:
+                            print(f"[WARNING] Failed to add '{col_name}': {col_e}")
+                            db.session.rollback()
             
             # customer_shop_pointsテーブルにランクキャッシュカラムを追加
             if 'customer_shop_points' in inspector.get_table_names():
