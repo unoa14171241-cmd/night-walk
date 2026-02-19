@@ -13,8 +13,15 @@
                 <h1 class="shop-name">{{ shop.name }}</h1>
                 <div class="card-name">{{ card_config.card_name }}</div>
             </div>
-            <div class="visit-badge">
-                {{ customer_point.visit_count }}回来店
+            <div class="header-badges">
+                {% if current_rank %}
+                <div class="rank-badge-on-card">
+                    {{ current_rank.rank_icon }} {{ current_rank.rank_name }}
+                </div>
+                {% endif %}
+                <div class="visit-badge">
+                    {{ customer_point.visit_count }}回来店
+                </div>
             </div>
         </div>
         
@@ -66,6 +73,70 @@
             {% endif %}
         </div>
     </div>
+    
+    <!-- ランク情報 -->
+    {% if all_ranks %}
+    <div class="section rank-section">
+        <h2>👑 ランク</h2>
+        
+        {% if current_rank %}
+        <div class="current-rank-display" style="--rank-color: {{ current_rank.rank.rank_color if current_rank.rank else '#6366f1' }};">
+            <div class="current-rank-icon">{{ current_rank.rank_icon }}</div>
+            <div class="current-rank-info">
+                <div class="current-rank-name">{{ current_rank.rank_name }}</div>
+                {% if current_rank.rank and current_rank.rank.bonus_description %}
+                <div class="current-rank-bonus">{{ current_rank.rank.bonus_description }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="no-rank-yet">
+            <p class="text-muted">まだランクがありません。ポイントを貯めてランクアップしましょう！</p>
+        </div>
+        {% endif %}
+        
+        {% if next_rank %}
+        <div class="next-rank-progress">
+            <div class="next-rank-label">
+                次のランク: <strong>{{ next_rank.rank_icon }} {{ next_rank.rank_name }}</strong>
+                （あと <strong>{{ '{:,}'.format(remaining_points) }}</strong> pt）
+            </div>
+            {% set progress = ((customer_point.total_earned / next_rank.min_total_points) * 100) | int %}
+            <div class="rank-progress-bar-container">
+                <div class="rank-progress-bar" style="width: {{ [progress, 100] | min }}%;"></div>
+            </div>
+        </div>
+        {% elif current_rank %}
+        <div class="max-rank-notice">
+            🎊 最高ランクに到達しています！
+        </div>
+        {% endif %}
+        
+        <!-- 全ランク一覧 -->
+        <div class="all-ranks-list">
+            {% for rank in all_ranks %}
+            <div class="rank-list-item {{ 'rank-current' if current_rank and current_rank.rank_level == rank.rank_level else ('rank-achieved' if current_rank and current_rank.rank_level > rank.rank_level else 'rank-locked') }}"
+                 style="--rank-color: {{ rank.rank_color }};">
+                <div class="rank-item-icon">{{ rank.rank_icon }}</div>
+                <div class="rank-item-info">
+                    <div class="rank-item-name">{{ rank.rank_name }}</div>
+                    <div class="rank-item-threshold">{{ '{:,}'.format(rank.min_total_points) }}pt〜</div>
+                </div>
+                {% if rank.point_multiplier > 1.0 %}
+                <div class="rank-item-bonus">×{{ rank.point_multiplier }}</div>
+                {% endif %}
+                {% if current_rank and current_rank.rank_level == rank.rank_level %}
+                <div class="rank-item-current-badge">NOW</div>
+                {% elif current_rank and current_rank.rank_level > rank.rank_level %}
+                <div class="rank-item-check">✓</div>
+                {% else %}
+                <div class="rank-item-lock">🔒</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
     
     <!-- 有効な特典 -->
     {% if rewards %}
@@ -164,6 +235,22 @@
     font-size: 0.85rem;
     opacity: 0.9;
     margin-top: 0.25rem;
+}
+
+.header-badges {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+}
+
+.rank-badge-on-card {
+    background: rgba(255,255,255,0.3);
+    padding: 0.2rem 0.65rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .visit-badge {
@@ -367,6 +454,150 @@
 .stat-item .stat-label {
     font-size: 0.8rem;
     color: var(--color-text-muted);
+}
+
+/* ====== ランクセクション ====== */
+.rank-section {
+    margin-bottom: 1.5rem;
+}
+
+.current-rank-display {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, var(--rank-color), color-mix(in srgb, var(--rank-color) 65%, black));
+    border-radius: var(--radius-lg);
+    color: #fff;
+    margin-bottom: 1rem;
+}
+
+.current-rank-icon {
+    font-size: 2.5rem;
+}
+
+.current-rank-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.current-rank-bonus {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    margin-top: 0.15rem;
+}
+
+.no-rank-yet {
+    padding: 1rem;
+    text-align: center;
+}
+
+.next-rank-progress {
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.next-rank-label {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.rank-progress-bar-container {
+    height: 10px;
+    background: var(--color-bg);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.rank-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #ec4899);
+    border-radius: 5px;
+    transition: width 0.5s ease;
+}
+
+.max-rank-notice {
+    text-align: center;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(236, 72, 153, 0.15));
+    border-radius: var(--radius);
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.all-ranks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.rank-list-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    background: var(--color-bg-elevated);
+    border-left: 4px solid var(--rank-color);
+    transition: opacity 0.2s;
+}
+
+.rank-list-item.rank-current {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(236, 72, 153, 0.08));
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.rank-list-item.rank-locked {
+    opacity: 0.5;
+}
+
+.rank-item-icon {
+    font-size: 1.5rem;
+}
+
+.rank-item-info {
+    flex: 1;
+}
+
+.rank-item-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.rank-item-threshold {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+.rank-item-bonus {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    padding: 0.15rem 0.5rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.rank-item-current-badge {
+    background: var(--color-primary);
+    color: #fff;
+    padding: 0.15rem 0.5rem;
+    border-radius: 1rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.rank-item-check {
+    color: var(--color-success);
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.rank-item-lock {
+    font-size: 0.9rem;
+    opacity: 0.6;
 }
 </style>
 {% endblock %}

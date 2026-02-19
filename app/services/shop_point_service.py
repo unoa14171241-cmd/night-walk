@@ -7,6 +7,7 @@ from ..extensions import db
 from ..models.shop_point import (
     ShopPointCard, CustomerShopPoint, ShopPointTransaction, ShopPointReward
 )
+from ..models.shop_point_rank import ShopPointRank, CustomerShopRank
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +66,17 @@ class ShopPointService:
             wait_minutes = int((next_available - datetime.utcnow()).total_seconds() / 60)
             return False, f'次のポイント獲得まであと約{wait_minutes}分お待ちください', 0
         
+        # ランク倍率の適用
+        base_points = card_config.visit_points
+        multiplier = 1.0
+        if card_config.rank_system_enabled and customer_point.current_rank_id:
+            rank = ShopPointRank.query.get(customer_point.current_rank_id)
+            if rank and rank.point_multiplier:
+                multiplier = rank.point_multiplier
+        
+        points = int(base_points * multiplier)
+        
         # ポイント付与
-        points = card_config.visit_points
         customer_point.add_points(points, reason='visit')
         
         # 取引ログ
@@ -79,11 +89,22 @@ class ShopPointService:
             method=method
         )
         
+        # ランク昇格チェック
+        rank_up_message = ''
+        if card_config.rank_system_enabled:
+            rank_up_message = cls._check_rank_up(customer_id, shop_id, customer_point)
+        
         db.session.commit()
         
-        logger.info(f"Visit points granted: customer={customer_id}, shop={shop_id}, points={points}")
+        logger.info(f"Visit points granted: customer={customer_id}, shop={shop_id}, points={points}, multiplier={multiplier}")
         
-        return True, f'{points}ポイントを獲得しました！', points
+        msg = f'{points}ポイントを獲得しました！'
+        if multiplier > 1.0:
+            msg += f'（{multiplier}倍ボーナス）'
+        if rank_up_message:
+            msg += f' {rank_up_message}'
+        
+        return True, msg, points
     
     @classmethod
     def use_reward(cls, customer_id, shop_id, staff_id=None):
@@ -214,3 +235,108 @@ class ShopPointService:
         return CustomerShopPoint.query.filter_by(
             shop_id=shop_id
         ).order_by(CustomerShopPoint.total_earned.desc()).limit(limit).all()
+
+    # =====================
+    # ランク関連メソッド
+    # =====================
+
+    @classmethod
+    def _check_rank_up(cls, customer_id, shop_id, customer_point):
+        """
+        ランク昇格チェック＆適用
+        
+        Returns:
+            str: ランクアップメッセージ（空文字ならランクアップなし）
+        """
+        new_rank = ShopPointRank.get_rank_for_points(shop_id, customer_point.total_earned)
+        
+        if not new_rank:
+            return ''
+        
+        # 現在のランクレベルと比較
+        current_level = 0
+        current_rank_entry = CustomerShopRank.get_current_rank(customer_id, shop_id)
+        if current_rank_entry:
+            current_level = current_rank_entry.rank_level
+        
+        if new_rank.rank_level <= current_level:
+            return ''  # 昇格なし
+        
+        # 旧ランクを非アクティブに
+        if current_rank_entry:
+            current_rank_entry.is_current = False
+        
+        # 新ランク履歴を追加
+        rank_entry = CustomerShopRank(
+            customer_id=customer_id,
+            shop_id=shop_id,
+            rank_id=new_rank.id,
+            rank_name=new_rank.rank_name,
+            rank_level=new_rank.rank_level,
+            rank_icon=new_rank.rank_icon,
+            is_current=True
+        )
+        db.session.add(rank_entry)
+        
+        # 非正規化キャッシュ更新
+        customer_point.current_rank_id = new_rank.id
+        customer_point.current_rank_name = new_rank.rank_name
+        customer_point.current_rank_icon = new_rank.rank_icon
+        
+        logger.info(f"Rank up: customer={customer_id}, shop={shop_id}, new_rank={new_rank.rank_name}")
+        
+        return f'🎉 {new_rank.rank_icon} {new_rank.rank_name}ランクに昇格しました！'
+
+    @classmethod
+    def get_customer_rank(cls, customer_id, shop_id):
+        """
+        顧客の現在のランクを取得
+        
+        Returns:
+            CustomerShopRank or None
+        """
+        return CustomerShopRank.get_current_rank(customer_id, shop_id)
+
+    @classmethod
+    def get_customer_rank_history(cls, customer_id, shop_id):
+        """
+        顧客のランク昇格履歴を取得
+        
+        Returns:
+            list: CustomerShopRank リスト
+        """
+        return CustomerShopRank.query.filter_by(
+            customer_id=customer_id,
+            shop_id=shop_id
+        ).order_by(CustomerShopRank.promoted_at.desc()).all()
+
+    @classmethod
+    def get_next_rank(cls, customer_id, shop_id):
+        """
+        次のランクとそこまでの必要ポイントを返す
+        
+        Returns:
+            tuple: (next_rank: ShopPointRank or None, remaining_points: int)
+        """
+        customer_point = CustomerShopPoint.query.filter_by(
+            customer_id=customer_id, shop_id=shop_id
+        ).first()
+        
+        if not customer_point:
+            # ランク定義の最低ランクを返す
+            lowest = ShopPointRank.query.filter_by(shop_id=shop_id).order_by(
+                ShopPointRank.rank_level).first()
+            return lowest, (lowest.min_total_points if lowest else 0)
+        
+        current_total = customer_point.total_earned
+        
+        # 次のランクを検索
+        next_rank = ShopPointRank.query.filter(
+            ShopPointRank.shop_id == shop_id,
+            ShopPointRank.min_total_points > current_total
+        ).order_by(ShopPointRank.min_total_points).first()
+        
+        if not next_rank:
+            return None, 0  # 最高ランク到達
+        
+        return next_rank, next_rank.min_total_points - current_total

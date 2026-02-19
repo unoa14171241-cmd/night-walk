@@ -17,6 +17,9 @@ class ShopPointCard(db.Model):
     is_active = db.Column(db.Boolean, default=True)  # ポイントカード機能有効
     card_name = db.Column(db.String(50), default='ポイントカード')  # カード名称
     
+    # ランク制度
+    rank_system_enabled = db.Column(db.Boolean, default=False)  # ランク制度ON/OFF
+    
     # 来店ポイント設定
     visit_points = db.Column(db.Integer, default=100)  # 1回の来店で付与するポイント
     min_visit_interval_hours = db.Column(db.Integer, default=4)  # 最短来店間隔（時間）連続付与防止
@@ -65,6 +68,11 @@ class CustomerShopPoint(db.Model):
     
     # 最終来店日時（連続付与防止用）
     last_visit_at = db.Column(db.DateTime)
+    
+    # ランク（非正規化キャッシュ）
+    current_rank_id = db.Column(db.Integer, db.ForeignKey('shop_point_ranks.id', ondelete='SET NULL'))
+    current_rank_name = db.Column(db.String(50))    # 表示用キャッシュ
+    current_rank_icon = db.Column(db.String(10))    # アイコンキャッシュ
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

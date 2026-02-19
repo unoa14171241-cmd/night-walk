@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}ランク制度設定 - {{ shop.name }} - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="shop-admin-layout">
+    <div class="shop-admin-content">
+        <div class="d-flex justify-between align-center mb-4">
+            <h1 class="mb-0">👑 ランク制度設定</h1>
+            <a href="{{ url_for('shop_admin.point_card') }}" class="btn btn-outline-secondary btn-sm">
+                ← ポイントカード管理
+            </a>
+        </div>
+
+        <!-- ランク制度ON/OFF -->
+        <div class="card mb-4">
+            <div class="d-flex justify-between align-center mb-3">
+                <div>
+                    <h3 class="mb-1">ランク制度</h3>
+                    <p class="text-muted mb-0" style="font-size:0.85rem;">
+                        累計ポイントに応じてお客様のランクが上がり、ポイント倍率などの特典が付きます。
+                    </p>
+                </div>
+                <span class="badge {{ 'badge-success' if card_config.rank_system_enabled else 'badge-secondary' }}" style="font-size:0.9rem;">
+                    {{ '有効' if card_config.rank_system_enabled else '無効' }}
+                </span>
+            </div>
+            <form action="{{ url_for('shop_admin.toggle_rank_system') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% if card_config.rank_system_enabled %}
+                <button type="submit" class="btn btn-outline-danger btn-sm"
+                        onclick="return confirm('ランク制度を無効にしますか？（既存ランクデータは保持されます）')">
+                    ランク制度を無効にする
+                </button>
+                {% else %}
+                <button type="submit" class="btn btn-primary btn-sm">
+                    ランク制度を有効にする
+                </button>
+                {% endif %}
+            </form>
+        </div>
+
+        {% if card_config.rank_system_enabled %}
+        <!-- ランク一覧編集 -->
+        <div class="card mb-4">
+            <div class="d-flex justify-between align-center mb-3">
+                <h3 class="mb-0">ランク一覧</h3>
+                <form action="{{ url_for('shop_admin.reset_default_ranks') }}" method="POST" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm"
+                            onclick="return confirm('全ランクをデフォルトにリセットしますか？')">
+                        デフォルトにリセット
+                    </button>
+                </form>
+            </div>
+
+            <form action="{{ url_for('shop_admin.save_ranks') }}" method="POST" id="ranksForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div id="deleteContainer"></div>
+
+                <div class="rank-table-wrapper">
+                    <table class="rank-table" id="rankTable">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">Lv</th>
+                                <th style="width:40px;">Icon</th>
+                                <th>ランク名</th>
+                                <th>必要累計pt</th>
+                                <th>pt倍率</th>
+                                <th>カラー</th>
+                                <th>特典説明</th>
+                                <th style="width:50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="rankBody">
+                            {% for rank in ranks %}
+                            <tr data-rank-id="{{ rank.id }}">
+                                <td>
+                                    <input type="hidden" name="rank_id[]" value="{{ rank.id }}">
+                                    <input type="number" name="rank_level[]" value="{{ rank.rank_level }}"
+                                           class="form-control form-control-sm" min="1" style="width:60px;">
+                                </td>
+                                <td>
+                                    <input type="text" name="rank_icon[]" value="{{ rank.rank_icon }}"
+                                           class="form-control form-control-sm" style="width:50px; text-align:center; font-size:1.2rem;">
+                                </td>
+                                <td>
+                                    <input type="text" name="rank_name[]" value="{{ rank.rank_name }}"
+                                           class="form-control form-control-sm" required maxlength="50">
+                                </td>
+                                <td>
+                                    <input type="number" name="min_total_points[]" value="{{ rank.min_total_points }}"
+                                           class="form-control form-control-sm" min="0">
+                                </td>
+                                <td>
+                                    <input type="number" name="point_multiplier[]" value="{{ rank.point_multiplier }}"
+                                           class="form-control form-control-sm" step="0.1" min="1.0" style="width:80px;">
+                                </td>
+                                <td>
+                                    <input type="color" name="rank_color[]" value="{{ rank.rank_color }}"
+                                           class="form-control form-control-sm" style="width:50px; height:32px; padding:2px;">
+                                </td>
+                                <td>
+                                    <input type="text" name="bonus_description[]" value="{{ rank.bonus_description or '' }}"
+                                           class="form-control form-control-sm" maxlength="200" placeholder="例: ポイント1.5倍">
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRank(this)" title="削除">
+                                        ✕
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addRank()">
+                        ＋ ランクを追加
+                    </button>
+                    <button type="submit" class="btn btn-primary">設定を保存</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- プレビュー -->
+        <div class="card mb-4">
+            <h3 class="mb-3">🎨 プレビュー</h3>
+            <p class="text-muted mb-3" style="font-size:0.85rem;">
+                お客様に表示されるランクバッジのプレビューです。
+            </p>
+            <div class="rank-preview-grid" id="rankPreview">
+                {% for rank in ranks %}
+                <div class="rank-preview-badge" style="--rank-color: {{ rank.rank_color }};">
+                    <span class="rank-badge-icon">{{ rank.rank_icon }}</span>
+                    <span class="rank-badge-name">{{ rank.rank_name }}</span>
+                    <span class="rank-badge-pts">{{ '{:,}'.format(rank.min_total_points) }}pt〜</span>
+                    {% if rank.point_multiplier > 1.0 %}
+                    <span class="rank-badge-bonus">×{{ rank.point_multiplier }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% if not ranks %}
+                <p class="text-muted">ランクが設定されていません</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.rank-table-wrapper {
+    overflow-x: auto;
+}
+
+.rank-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.rank-table th,
+.rank-table td {
+    padding: 0.5rem 0.4rem;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+}
+
+.rank-table thead th {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.rank-table tbody tr:hover {
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.rank-preview-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.rank-preview-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, var(--rank-color), color-mix(in srgb, var(--rank-color) 60%, black));
+    color: #fff;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.rank-badge-icon {
+    font-size: 2rem;
+    margin-bottom: 0.25rem;
+}
+
+.rank-badge-name {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.rank-badge-pts {
+    font-size: 0.75rem;
+    opacity: 0.85;
+}
+
+.rank-badge-bonus {
+    font-size: 0.8rem;
+    background: rgba(255,255,255,0.25);
+    padding: 0.15rem 0.5rem;
+    border-radius: 1rem;
+    margin-top: 0.35rem;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .rank-table {
+        font-size: 0.85rem;
+    }
+    .rank-preview-grid {
+        justify-content: center;
+    }
+}
+</style>
+
+<script>
+function addRank() {
+    const tbody = document.getElementById('rankBody');
+    const rows = tbody.querySelectorAll('tr');
+    const nextLevel = rows.length + 1;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>
+            <input type="hidden" name="rank_id[]" value="">
+            <input type="number" name="rank_level[]" value="${nextLevel}"
+                   class="form-control form-control-sm" min="1" style="width:60px;">
+        </td>
+        <td>
+            <input type="text" name="rank_icon[]" value="⭐"
+                   class="form-control form-control-sm" style="width:50px; text-align:center; font-size:1.2rem;">
+        </td>
+        <td>
+            <input type="text" name="rank_name[]" value=""
+                   class="form-control form-control-sm" required maxlength="50" placeholder="ランク名">
+        </td>
+        <td>
+            <input type="number" name="min_total_points[]" value="0"
+                   class="form-control form-control-sm" min="0">
+        </td>
+        <td>
+            <input type="number" name="point_multiplier[]" value="1.0"
+                   class="form-control form-control-sm" step="0.1" min="1.0" style="width:80px;">
+        </td>
+        <td>
+            <input type="color" name="rank_color[]" value="#6366f1"
+                   class="form-control form-control-sm" style="width:50px; height:32px; padding:2px;">
+        </td>
+        <td>
+            <input type="text" name="bonus_description[]" value=""
+                   class="form-control form-control-sm" maxlength="200" placeholder="例: ポイント2倍">
+        </td>
+        <td>
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRank(this)" title="削除">
+                ✕
+            </button>
+        </td>
+    `;
+    tbody.appendChild(tr);
+}
+
+function removeRank(btn) {
+    const tr = btn.closest('tr');
+    const rankId = tr.querySelector('input[name="rank_id[]"]').value;
+
+    if (rankId) {
+        // 既存ランクは削除リストに追加
+        const container = document.getElementById('deleteContainer');
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'delete_rank_id[]';
+        input.value = rankId;
+        container.appendChild(input);
+    }
+
+    tr.remove();
+}
+</script>
+{% endblock %}

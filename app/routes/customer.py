@@ -691,9 +691,17 @@ def point_cards():
     cards = ShopPointService.get_customer_cards(current_user.id)
     rewards = ShopPointService.get_customer_rewards(current_user.id, valid_only=True)
     
+    # ランク情報を各カードに付加
+    rank_map = {}
+    for card in cards:
+        rank_entry = ShopPointService.get_customer_rank(current_user.id, card.shop_id)
+        if rank_entry:
+            rank_map[card.shop_id] = rank_entry
+    
     return render_template('customer/point_cards.html',
                            cards=cards,
-                           rewards=rewards)
+                           rewards=rewards,
+                           rank_map=rank_map)
 
 
 @customer_bp.route('/point-cards/<int:shop_id>')
@@ -702,6 +710,7 @@ def point_card_detail(shop_id):
     """店舗ポイントカード詳細"""
     from ..services.shop_point_service import ShopPointService
     from ..models.shop_point import ShopPointCard
+    from ..models.shop_point_rank import ShopPointRank
     
     shop = Shop.query.get_or_404(shop_id)
     
@@ -720,12 +729,26 @@ def point_card_detail(shop_id):
     # 特典
     rewards = ShopPointService.get_customer_rewards(current_user.id, shop_id, valid_only=True)
     
+    # ランク情報
+    current_rank = None
+    next_rank = None
+    remaining_points = 0
+    all_ranks = []
+    if card_config.rank_system_enabled:
+        current_rank = ShopPointService.get_customer_rank(current_user.id, shop_id)
+        next_rank, remaining_points = ShopPointService.get_next_rank(current_user.id, shop_id)
+        all_ranks = ShopPointRank.get_ranks_by_shop(shop_id)
+    
     return render_template('customer/point_card_detail.html',
                            shop=shop,
                            card_config=card_config,
                            customer_point=customer_point,
                            transactions=transactions,
-                           rewards=rewards)
+                           rewards=rewards,
+                           current_rank=current_rank,
+                           next_rank=next_rank,
+                           remaining_points=remaining_points,
+                           all_ranks=all_ranks)
 
 
 @customer_bp.route('/point-cards/<int:shop_id>/exchange', methods=['POST'])

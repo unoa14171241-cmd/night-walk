@@ -31,6 +31,8 @@ from .cast_birthday import CastBirthday
 from .review import ShopReview, PhoneVerification, ShopReviewScore
 # 店舗ポイントカード
 from .shop_point import ShopPointCard, CustomerShopPoint, ShopPointTransaction, ShopPointReward
+# 店舗ポイントランク制度
+from .shop_point_rank import ShopPointRank, CustomerShopRank
 # システム管理（デモ・障害対応）
 from .system import SystemStatus, ContentReport, SystemLog, DemoAccount, ImageStore
 # 紹介制度
@@ -95,6 +97,9 @@ __all__ = [
     'CustomerShopPoint',
     'ShopPointTransaction',
     'ShopPointReward',
+    # 店舗ポイントランク制度
+    'ShopPointRank',
+    'CustomerShopRank',
     # システム管理
     'SystemStatus',
     'ContentReport',

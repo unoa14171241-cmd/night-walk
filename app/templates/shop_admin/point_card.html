@@ -7,7 +7,12 @@
     <div class="shop-admin-content">
         <div class="d-flex justify-between align-center mb-4">
             <h1 class="mb-0">🎴 ポイントカード管理</h1>
-            <span class="text-muted">{{ shop.name }}</span>
+            <div class="d-flex gap-2 align-center">
+                <a href="{{ url_for('shop_admin.point_card_ranks') }}" class="btn btn-outline-primary btn-sm">
+                    👑 ランク制度設定
+                </a>
+                <span class="text-muted">{{ shop.name }}</span>
+            </div>
         </div>
         
         <!-- 現在のステータス -->

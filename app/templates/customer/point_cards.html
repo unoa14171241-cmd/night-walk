@@ -35,7 +35,14 @@
         <a href="{{ url_for('customer.point_card_detail', shop_id=card.shop_id) }}" class="point-card-item">
             <div class="point-card-header" style="background: {{ card.shop.point_card.card_color if card.shop.point_card else '#6366f1' }};">
                 <div class="shop-name">{{ card.shop.name }}</div>
-                <div class="visit-count">{{ card.visit_count }}回来店</div>
+                <div class="d-flex justify-between align-center">
+                    <div class="visit-count">{{ card.visit_count }}回来店</div>
+                    {% if rank_map.get(card.shop_id) %}
+                    <div class="rank-badge-mini">
+                        {{ rank_map[card.shop_id].rank_icon }} {{ rank_map[card.shop_id].rank_name }}
+                    </div>
+                    {% endif %}
+                </div>
             </div>
             <div class="point-card-body">
                 <div class="point-balance">
@@ -142,6 +149,15 @@
 .point-card-header .visit-count {
     font-size: 0.85rem;
     opacity: 0.9;
+}
+
+.rank-badge-mini {
+    background: rgba(255,255,255,0.25);
+    padding: 0.15rem 0.6rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .point-card-body {

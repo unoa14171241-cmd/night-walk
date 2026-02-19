@@ -353,6 +353,11 @@ def delete_shop(shop_id):
         # 13. キャスト（Cast）削除
         Cast.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
         
+        # 13.5 ランク制度関連削除
+        from ..models.shop_point_rank import ShopPointRank, CustomerShopRank
+        CustomerShopRank.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        ShopPointRank.query.filter_by(shop_id=shop_id).delete(synchronize_session=False)
+        
         # 14. 店舗本体を削除（CASCADE: ShopImage, VacancyStatus, VacancyHistory, 
         #     ShopMember, Job, Subscription, CommissionRate, StorePlan, etc.）
         db.session.delete(shop)

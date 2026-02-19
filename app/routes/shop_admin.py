@@ -1189,6 +1189,151 @@ def grant_visit_points():
     return redirect(url_for('shop_admin.point_card'))
 
 
+# ============================================
+# ランク制度管理
+# ============================================
+
+@shop_admin_bp.route('/point-card/ranks')
+@login_required
+@owner_required
+def point_card_ranks():
+    """ランク制度設定ページ"""
+    from ..models.shop_point import ShopPointCard
+    from ..models.shop_point_rank import ShopPointRank
+    
+    shop = g.current_shop
+    card_config = ShopPointCard.get_or_create(shop.id)
+    db.session.commit()
+    
+    ranks = ShopPointRank.get_ranks_by_shop(shop.id)
+    
+    return render_template('shop_admin/point_card_ranks.html',
+                          shop=shop,
+                          card_config=card_config,
+                          ranks=ranks)
+
+
+@shop_admin_bp.route('/point-card/ranks/toggle', methods=['POST'])
+@login_required
+@owner_required
+def toggle_rank_system():
+    """ランク制度のON/OFF切替"""
+    from ..models.shop_point import ShopPointCard
+    from ..models.shop_point_rank import ShopPointRank
+    
+    shop = g.current_shop
+    card_config = ShopPointCard.get_or_create(shop.id)
+    
+    card_config.rank_system_enabled = not card_config.rank_system_enabled
+    
+    # 有効にした時にランクが0件ならデフォルトランクを作成
+    if card_config.rank_system_enabled:
+        existing = ShopPointRank.query.filter_by(shop_id=shop.id).count()
+        if existing == 0:
+            ShopPointRank.create_default_ranks(shop.id)
+    
+    db.session.commit()
+    
+    status = '有効' if card_config.rank_system_enabled else '無効'
+    flash(f'ランク制度を{status}にしました。', 'success')
+    return redirect(url_for('shop_admin.point_card_ranks'))
+
+
+@shop_admin_bp.route('/point-card/ranks/save', methods=['POST'])
+@login_required
+@owner_required
+def save_ranks():
+    """ランク一覧を一括保存"""
+    from ..models.shop_point_rank import ShopPointRank
+    
+    shop = g.current_shop
+    
+    # フォームからランクデータを取得
+    rank_ids = request.form.getlist('rank_id[]')
+    rank_names = request.form.getlist('rank_name[]')
+    rank_levels = request.form.getlist('rank_level[]')
+    min_points_list = request.form.getlist('min_total_points[]')
+    multipliers = request.form.getlist('point_multiplier[]')
+    colors = request.form.getlist('rank_color[]')
+    icons = request.form.getlist('rank_icon[]')
+    descriptions = request.form.getlist('bonus_description[]')
+    
+    # 削除対象
+    delete_ids = request.form.getlist('delete_rank_id[]')
+    if delete_ids:
+        ShopPointRank.query.filter(
+            ShopPointRank.id.in_([int(d) for d in delete_ids if d]),
+            ShopPointRank.shop_id == shop.id
+        ).delete(synchronize_session=False)
+    
+    # 保存
+    for i in range(len(rank_names)):
+        name = rank_names[i].strip()
+        if not name:
+            continue
+        
+        try:
+            level = int(rank_levels[i]) if i < len(rank_levels) else i + 1
+            min_pts = int(min_points_list[i]) if i < len(min_points_list) else 0
+            mult = float(multipliers[i]) if i < len(multipliers) else 1.0
+        except (ValueError, IndexError):
+            continue
+        
+        color = colors[i].strip() if i < len(colors) else '#6366f1'
+        icon = icons[i].strip() if i < len(icons) else '⭐'
+        desc = descriptions[i].strip() if i < len(descriptions) else ''
+        
+        rid = rank_ids[i] if i < len(rank_ids) else ''
+        
+        if rid and rid.isdigit():
+            # 既存ランク更新
+            rank = ShopPointRank.query.filter_by(id=int(rid), shop_id=shop.id).first()
+            if rank:
+                rank.rank_name = name
+                rank.rank_level = level
+                rank.min_total_points = min_pts
+                rank.point_multiplier = mult
+                rank.rank_color = color
+                rank.rank_icon = icon
+                rank.bonus_description = desc
+        else:
+            # 新規ランク
+            rank = ShopPointRank(
+                shop_id=shop.id,
+                rank_name=name,
+                rank_level=level,
+                min_total_points=min_pts,
+                point_multiplier=mult,
+                rank_color=color,
+                rank_icon=icon,
+                bonus_description=desc
+            )
+            db.session.add(rank)
+    
+    db.session.commit()
+    flash('ランク設定を保存しました。', 'success')
+    return redirect(url_for('shop_admin.point_card_ranks'))
+
+
+@shop_admin_bp.route('/point-card/ranks/reset-defaults', methods=['POST'])
+@login_required
+@owner_required
+def reset_default_ranks():
+    """デフォルトランクにリセット"""
+    from ..models.shop_point_rank import ShopPointRank
+    
+    shop = g.current_shop
+    
+    # 既存削除
+    ShopPointRank.query.filter_by(shop_id=shop.id).delete(synchronize_session=False)
+    # デフォルト作成
+    ShopPointRank.create_default_ranks(shop.id)
+    
+    db.session.commit()
+    flash('ランクをデフォルトにリセットしました。', 'success')
+    return redirect(url_for('shop_admin.point_card_ranks'))
+
+
 @shop_admin_bp.route('/plan/subscribe', methods=['POST'])
 @login_required
 @owner_required
