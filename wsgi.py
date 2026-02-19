@@ -208,6 +208,11 @@ def auto_migrate_columns():
                     ("monthly_gift_goal", "INTEGER DEFAULT 0"),
                     ("monthly_gift_goal_message", "VARCHAR(200)"),
                     ("show_gift_progress", "BOOLEAN DEFAULT FALSE"),
+                    # キャストプロフィール拡張
+                    ("age", "INTEGER"),
+                    ("tiktok_url", "VARCHAR(255)"),
+                    ("video_url", "VARCHAR(255)"),
+                    ("gift_appeal", "TEXT"),
                 ]
                 
                 for col_name, col_type in cast_columns:
@@ -292,6 +297,42 @@ def auto_migrate_columns():
                             print(f"[WARNING] Failed to add '{col_name}': {col_e}")
                             db.session.rollback()
                     
+            # shop_point_cardsテーブルにランク制度カラムを追加
+            if 'shop_point_cards' in inspector.get_table_names():
+                columns = [col['name'] for col in inspector.get_columns('shop_point_cards')]
+                if 'rank_system_enabled' not in columns:
+                    print("[INFO] Adding 'rank_system_enabled' column to shop_point_cards table...")
+                    try:
+                        db.session.execute(text(
+                            "ALTER TABLE shop_point_cards ADD COLUMN rank_system_enabled BOOLEAN DEFAULT FALSE"
+                        ))
+                        db.session.commit()
+                        print("[SUCCESS] 'rank_system_enabled' column added!")
+                    except Exception as col_e:
+                        print(f"[WARNING] Failed to add 'rank_system_enabled': {col_e}")
+                        db.session.rollback()
+            
+            # customer_shop_pointsテーブルにランクキャッシュカラムを追加
+            if 'customer_shop_points' in inspector.get_table_names():
+                columns = [col['name'] for col in inspector.get_columns('customer_shop_points')]
+                csp_columns = [
+                    ("current_rank_id", "INTEGER"),
+                    ("current_rank_name", "VARCHAR(50)"),
+                    ("current_rank_icon", "VARCHAR(10)"),
+                ]
+                for col_name, col_type in csp_columns:
+                    if col_name not in columns:
+                        print(f"[INFO] Adding '{col_name}' column to customer_shop_points table...")
+                        try:
+                            db.session.execute(text(
+                                f"ALTER TABLE customer_shop_points ADD COLUMN {col_name} {col_type}"
+                            ))
+                            db.session.commit()
+                            print(f"[SUCCESS] '{col_name}' column added!")
+                        except Exception as col_e:
+                            print(f"[WARNING] Failed to add '{col_name}': {col_e}")
+                            db.session.rollback()
+            
         except Exception as e:
             print(f"[WARNING] Column migration error: {e}")
             db.session.rollback()
