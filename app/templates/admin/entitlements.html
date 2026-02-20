@@ -72,7 +72,7 @@
                             {% if ent.target_type == 'shop' %}
                             <span class="badge badge-info">店舗</span>
                             {% if ent.target %}
-                            <a href="{{ url_for('admin.shop_detail', id=ent.target_id) }}">{{ ent.target.name }}</a>
+                            <a href="{{ url_for('admin.shop_detail', shop_id=ent.target_id) }}">{{ ent.target.name }}</a>
                             {% else %}
                             ID: {{ ent.target_id }}
                             {% endif %}
