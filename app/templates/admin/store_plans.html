@@ -70,7 +70,7 @@
                     {% for plan in plans %}
                     <tr>
                         <td>
-                            <a href="{{ url_for('admin.shop_detail', id=plan.shop_id) }}">
+                            <a href="{{ url_for('admin.shop_detail', shop_id=plan.shop_id) }}">
                                 {{ plan.shop.name if plan.shop else plan.shop_id }}
                             </a>
                             <br>
