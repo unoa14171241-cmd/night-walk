@@ -74,9 +74,28 @@
  border-color: #cd7f32;
  box-shadow: 0 0 10px rgba(205, 127, 50, 0.2);
 }
+
+/* 優良店カード - ゴールドキラキラ枠 */
 .shop-card.badge-premium {
- border-color: #4a90d9;
- box-shadow: 0 0 12px rgba(74, 144, 217, 0.25);
+ border: 2px solid #ffd700;
+ box-shadow:
+   0 0 8px rgba(255, 215, 0, 0.4),
+   0 0 20px rgba(255, 215, 0, 0.15),
+   inset 0 0 8px rgba(255, 215, 0, 0.05);
+ animation: premium-glow 3s ease-in-out infinite alternate;
+}
+
+@keyframes premium-glow {
+ 0% {
+   box-shadow:
+     0 0 8px rgba(255, 215, 0, 0.4),
+     0 0 20px rgba(255, 215, 0, 0.15);
+ }
+ 100% {
+   box-shadow:
+     0 0 12px rgba(255, 215, 0, 0.6),
+     0 0 30px rgba(255, 215, 0, 0.25);
+ }
 }
 
 .shop-card-top-badge {
@@ -104,9 +123,11 @@
  background: linear-gradient(135deg, #cd7f32, #8b4513);
  color: #fff;
 }
+/* 優良店トップバッジ - ゴールド */
 .shop-card-top-badge.badge-premium {
- background: linear-gradient(135deg, #4a90d9, #2a6cb8);
- color: #fff;
+ background: linear-gradient(135deg, #ffd700 0%, #ffb800 50%, #ffa000 100%);
+ color: #1a0a25;
+ text-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
 }
 
 .shop-card-badges {
@@ -116,12 +137,15 @@
  margin-top: 0.5rem;
 }
 
+/* 優良店バッジ（カード内テキスト） - ゴールド */
 .badge-premium {
- background: linear-gradient(135deg, #4a90d9, #357abd);
- color: #fff;
+ background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+ color: #1a0a25;
  font-size: 0.7rem;
  padding: 0.15rem 0.5rem;
  border-radius: 0.75rem;
- font-weight: 600;
+ font-weight: 700;
+ text-shadow: 0 0 2px rgba(255, 255, 255, 0.3);
+ box-shadow: 0 0 6px rgba(255, 215, 0, 0.4);
 }
 </style>

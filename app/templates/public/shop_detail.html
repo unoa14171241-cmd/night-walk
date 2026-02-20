@@ -606,14 +606,22 @@
  font-size: 1.25rem;
 }
 
-/* Premium / Rank Badges */
+/* Premium / Rank Badges - ゴールドキラキラ */
 .badge-premium-detail {
- background: linear-gradient(135deg, #4a90d9, #357abd);
- color: #fff;
+ background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+ color: #1a0a25;
  font-size: 0.75rem;
  padding: 0.25rem 0.6rem;
  border-radius: var(--radius-full);
- font-weight: 600;
+ font-weight: 700;
+ text-shadow: 0 0 2px rgba(255, 255, 255, 0.3);
+ box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+ animation: badge-shimmer 2s ease-in-out infinite alternate;
+}
+
+@keyframes badge-shimmer {
+ 0% { box-shadow: 0 0 6px rgba(255, 215, 0, 0.3); }
+ 100% { box-shadow: 0 0 12px rgba(255, 215, 0, 0.6); }
 }
 
 .badge-rank-gold {
