@@ -91,7 +91,7 @@ class ReviewService:
             plan = StorePlan.query.filter_by(shop_id=review.shop_id).first()
             has_stamp_card_feature = (
                 plan and plan.is_active and 
-                plan.plan_type in [StorePlan.PLAN_PREMIUM, StorePlan.PLAN_BUSINESS, 'standard']
+                plan.plan_type in [StorePlan.PLAN_STANDARD, StorePlan.PLAN_PREMIUM, StorePlan.PLAN_BUSINESS]
             )
             if has_stamp_card_feature:
                 card_config = ShopPointCard.get_or_create(review.shop_id)

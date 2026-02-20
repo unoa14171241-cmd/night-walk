@@ -1090,7 +1090,7 @@ def _shop_has_point_card_feature(shop_id):
         return False
     if not plan.is_active:
         return False
-    return plan.plan_type in [StorePlan.PLAN_PREMIUM, StorePlan.PLAN_BUSINESS, 'standard']
+    return plan.plan_type in [StorePlan.PLAN_STANDARD, StorePlan.PLAN_PREMIUM, StorePlan.PLAN_BUSINESS]
 
 
 @shop_admin_bp.route('/point-card')
@@ -1418,7 +1418,7 @@ def subscribe_plan():
     shop = g.current_shop
     plan_type = request.form.get('plan_type')
     
-    if plan_type not in [StorePlan.PLAN_STANDARD, StorePlan.PLAN_PREMIUM]:
+    if plan_type not in [StorePlan.PLAN_STANDARD, StorePlan.PLAN_PREMIUM, StorePlan.PLAN_BUSINESS]:
         flash('無効なプランです。', 'danger')
         return redirect(url_for('shop_admin.plan'))
     

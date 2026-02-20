@@ -10,57 +10,55 @@ class StorePlan(db.Model):
     __tablename__ = 'store_plans'
     
     # プランタイプ
-    # 要件: 無料/プレミアム（月額15,000円+税）
     PLAN_FREE = 'free'
-    PLAN_PREMIUM = 'premium'     # 月額15,000円+税（ランキング特典、ポイントカード、優良店バッジ等）
-    PLAN_BUSINESS = 'business'   # 月額30,000円+税（上位プラン：バナー枠等）
+    PLAN_STANDARD = 'standard'   # 月額25,000円+税（検索優先、バッジ、求人、キャスト出勤、スタンプカード等）
+    PLAN_PREMIUM = 'premium'     # 月額50,000円+税（スタンダード全機能+トップバナー、最優先表示）
+    PLAN_BUSINESS = 'business'   # 後方互換（premiumと同等扱い）
     
-    # 後方互換: 旧standardはpremiumと同等扱い
-    PLAN_STANDARD = 'premium'
-    
-    PLAN_TYPES = [PLAN_FREE, PLAN_PREMIUM, PLAN_BUSINESS]
+    PLAN_TYPES = [PLAN_FREE, PLAN_STANDARD, PLAN_PREMIUM, PLAN_BUSINESS]
     
     PLAN_LABELS = {
         PLAN_FREE: '無料プラン',
+        PLAN_STANDARD: 'スタンダード',
         PLAN_PREMIUM: 'プレミアム',
-        PLAN_BUSINESS: 'ビジネス',
-        'standard': 'プレミアム',  # 後方互換
+        PLAN_BUSINESS: 'プレミアム',  # 後方互換
     }
     
     PLAN_PRICES = {
         PLAN_FREE: 0,
-        PLAN_PREMIUM: 15000,    # 15,000円（税抜）
-        PLAN_BUSINESS: 30000,   # 30,000円（税抜）
-        'standard': 15000,      # 後方互換
+        PLAN_STANDARD: 25000,   # 25,000円（税抜）
+        PLAN_PREMIUM: 50000,    # 50,000円（税抜）
+        PLAN_BUSINESS: 50000,   # 後方互換
     }
     
     # プラン別の特典
     PLAN_FEATURES = {
         PLAN_FREE: [],
-        PLAN_PREMIUM: [
+        PLAN_STANDARD: [
             'search_boost',      # 検索優先表示
             'premium_badge',     # 優良店バッジ
             'job_board',         # 求人掲載
             'cast_display',      # キャスト出勤表示
-            'point_card',        # ポイントカード
+            'point_card',        # スタンプカード
             'ranking_benefits',  # ランキング特典
         ],
-        PLAN_BUSINESS: [
-            'search_boost',      # 検索優先表示（優先度高）
+        PLAN_PREMIUM: [
+            'search_boost',      # 検索優先表示（最優先）
             'premium_badge',     # 優良店バッジ
             'job_board',         # 求人掲載
             'cast_display',      # キャスト出勤表示
-            'point_card',        # ポイントカード
+            'point_card',        # スタンプカード
             'ranking_benefits',  # ランキング特典
             'top_banner',        # トップバナー掲載権
         ],
-        'standard': [            # 後方互換
+        PLAN_BUSINESS: [         # 後方互換（premiumと同等）
             'search_boost',
             'premium_badge',
             'job_board',
             'cast_display',
             'point_card',
             'ranking_benefits',
+            'top_banner',
         ],
     }
     
@@ -76,12 +74,12 @@ class StorePlan(db.Model):
             ],
             'description': 'エリア内店舗としての基本掲載。ユーザーの利便性を高めます。',
         },
-        PLAN_PREMIUM: {
-            'name': 'プレミアムプラン',
-            'price_display': '¥15,000/月（税抜）',
+        PLAN_STANDARD: {
+            'name': 'スタンダードプラン',
+            'price_display': '¥25,000/月（税抜）',
             'features': [
                 'ランキング特典・参加権',
-                'ポイントカード機能',
+                'スタンプカード機能',
                 '優良店バッジの付与',
                 'キャスト出勤表示（リアルタイム）',
                 '検索結果で優先表示',
@@ -90,13 +88,14 @@ class StorePlan(db.Model):
             'description': '初月無料！1年継続で30%OFF。紹介で最大2ヶ月無料延長。縛りなし。',
             'trial_note': '初月無料でお試しいただけます',
         },
-        PLAN_BUSINESS: {
-            'name': 'ビジネスプラン',
-            'price_display': '¥30,000/月（税抜）',
+        PLAN_PREMIUM: {
+            'name': 'プレミアムプラン',
+            'price_display': '¥50,000/月（税抜）',
             'features': [
-                'プレミアムの全機能',
+                'スタンダードの全機能',
                 'トップページバナー掲載権',
                 '検索結果で最優先表示',
+                '専任サポート',
             ],
             'description': '最大限の露出で集客力を最大化。トップバナーで圧倒的な存在感。',
         },
@@ -173,7 +172,7 @@ class StorePlan(db.Model):
     @property
     def is_paid_plan(self):
         """有料プランかどうか"""
-        return self.plan_type in [self.PLAN_PREMIUM, self.PLAN_BUSINESS, 'standard']
+        return self.plan_type in [self.PLAN_STANDARD, self.PLAN_PREMIUM, self.PLAN_BUSINESS]
     
     @property
     def is_trial(self):
@@ -229,7 +228,7 @@ class StorePlan(db.Model):
     def get_active_paid_plans(cls):
         """有効な有料プランを取得"""
         return cls.query.filter(
-            cls.plan_type.in_([cls.PLAN_STANDARD, cls.PLAN_PREMIUM]),
+            cls.plan_type.in_([cls.PLAN_STANDARD, cls.PLAN_PREMIUM, cls.PLAN_BUSINESS]),
             cls.status.in_([cls.STATUS_ACTIVE, cls.STATUS_TRIAL])
         ).all()
     

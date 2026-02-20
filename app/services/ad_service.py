@@ -73,12 +73,13 @@ class AdService:
     def get_paid_plan_shop_ids(cls):
         """有料プランの店舗IDと優先度を取得"""
         plans = StorePlan.query.filter(
-            StorePlan.plan_type.in_([StorePlan.PLAN_STANDARD, StorePlan.PLAN_PREMIUM]),
+            StorePlan.plan_type.in_([StorePlan.PLAN_STANDARD, StorePlan.PLAN_PREMIUM, StorePlan.PLAN_BUSINESS]),
             StorePlan.status.in_([StorePlan.STATUS_ACTIVE, StorePlan.STATUS_TRIAL])
         ).all()
         
         priority_map = {
             StorePlan.PLAN_PREMIUM: 20,
+            StorePlan.PLAN_BUSINESS: 20,
             StorePlan.PLAN_STANDARD: 10,
         }
         
