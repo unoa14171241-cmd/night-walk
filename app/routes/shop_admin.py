@@ -1248,6 +1248,69 @@ def grant_visit_points():
 
 
 # ============================================
+# 特典管理
+# ============================================
+
+@shop_admin_bp.route('/point-card/rewards')
+@login_required
+@shop_access_required
+def point_card_rewards():
+    """未使用の特典一覧"""
+    from ..models.shop_point import ShopPointReward
+    
+    shop = g.current_shop
+    
+    if not _shop_has_point_card_feature(shop.id):
+        flash('スタンプカード機能は有料プランでご利用いただけます。', 'warning')
+        return redirect(url_for('shop_admin.plan'))
+    
+    status_filter = request.args.get('status', 'pending')
+    
+    query = ShopPointReward.query.filter_by(shop_id=shop.id)
+    if status_filter == 'pending':
+        query = query.filter_by(status=ShopPointReward.STATUS_PENDING)
+    elif status_filter == 'used':
+        query = query.filter_by(status=ShopPointReward.STATUS_USED)
+    
+    rewards = query.order_by(ShopPointReward.created_at.desc()).limit(100).all()
+    
+    pending_count = ShopPointReward.query.filter_by(
+        shop_id=shop.id, status=ShopPointReward.STATUS_PENDING
+    ).count()
+    
+    return render_template('shop_admin/point_card_rewards.html',
+                          shop=shop,
+                          rewards=rewards,
+                          status_filter=status_filter,
+                          pending_count=pending_count)
+
+
+@shop_admin_bp.route('/point-card/rewards/<int:reward_id>/use', methods=['POST'])
+@login_required
+@shop_access_required
+def mark_reward_used(reward_id):
+    """特典を利用済みにマーク"""
+    from ..models.shop_point import ShopPointReward
+    from ..services.shop_point_service import ShopPointService
+    
+    shop = g.current_shop
+    
+    reward = ShopPointReward.query.get_or_404(reward_id)
+    if reward.shop_id != shop.id:
+        flash('この特典にアクセスする権限がありません。', 'danger')
+        return redirect(url_for('shop_admin.point_card_rewards'))
+    
+    success, message = ShopPointService.mark_reward_used(reward_id, current_user.id)
+    
+    if success:
+        flash(f'{reward.customer.nickname or reward.customer.email}さんの特典を利用済みにしました。', 'success')
+    else:
+        flash(message, 'warning')
+    
+    return redirect(url_for('shop_admin.point_card_rewards'))
+
+
+# ============================================
 # ランク制度管理
 # ============================================
 
