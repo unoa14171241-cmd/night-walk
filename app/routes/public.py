@@ -41,13 +41,15 @@ def index():
         area_banners[area] = AdService.get_top_banner(area)[:3]
     
     # Get featured shops (広告優先ロジック適用)
-    featured_shops = AdService.get_search_results(featured_only=True)[:6]
+    featured_shops_raw = AdService.get_search_results(featured_only=True)[:6]
+    featured_shops = AdService.enrich_shop_list(featured_shops_raw)
     
     # Get recent shops
-    recent_shops = Shop.query.filter_by(
+    recent_shops_raw = Shop.query.filter_by(
         is_published=True, 
         is_active=True
     ).order_by(Shop.created_at.desc()).limit(6).all()
+    recent_shops = AdService.enrich_shop_list(recent_shops_raw)
     
     # 急上昇（店舗・キャスト）
     trending_shops = TrendingService.get_trending_shops(limit=5)
@@ -212,6 +214,14 @@ def shop_detail(shop_id):
     # バッジ情報を取得
     shop_badges = AdService.get_shop_badges(shop_id)
     best_badge = AdService.get_best_badge('shop', shop_id)
+    
+    # 有料プランフォールバック（エンタイトルメント未同期でもバッジ表示）
+    if not shop_badges.get('premium_badge'):
+        paid_plan_shops = AdService.get_paid_plan_shop_ids()
+        if shop_id in paid_plan_shops:
+            shop_badges['premium_badge'] = True
+            if not best_badge:
+                best_badge = {'type': 'premium', 'rank': None, 'label': '優良店', 'color': 'premium'}
     
     # 口コミ評価データを取得
     from ..services.review_service import ReviewService

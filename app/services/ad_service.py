@@ -319,15 +319,33 @@ class AdService:
                 badge_map[ent.target_id] = []
             badge_map[ent.target_id].append(ent)
         
+        # 有料プランの店舗もフォールバックで取得（エンタイトルメント未同期対策）
+        paid_plan_shops = cls.get_paid_plan_shop_ids()
+        
         results = []
         for shop in shops:
             shop_ents = badge_map.get(shop.id, [])
             badge = cls._determine_best_badge(shop_ents)
             
+            # エンタイトルメントでpremium_badgeがあるか、有料プランかどうか
+            has_premium_ent = any(e.placement_type == AdPlacement.TYPE_PREMIUM_BADGE for e in shop_ents)
+            is_paid = shop.id in paid_plan_shops
+            
+            # 有料プラン（standard以上）ならpremium扱い
+            is_premium = has_premium_ent or is_paid
+            
+            # バッジがなくても有料プランならpremiumバッジを付与
+            if badge is None and is_paid:
+                plan_priority = paid_plan_shops[shop.id]
+                if plan_priority >= 20:
+                    badge = {'type': 'premium', 'rank': None, 'label': '優良店', 'color': 'premium'}
+                else:
+                    badge = {'type': 'premium', 'rank': None, 'label': '優良店', 'color': 'premium'}
+            
             results.append({
                 'shop': shop,
                 'badge': badge,
-                'is_premium': any(e.placement_type == AdPlacement.TYPE_PREMIUM_BADGE for e in shop_ents),
+                'is_premium': is_premium,
                 'has_boost': any(e.placement_type == AdPlacement.TYPE_SEARCH_BOOST for e in shop_ents),
             })
         

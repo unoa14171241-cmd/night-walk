@@ -68,12 +68,15 @@
 }
 .shop-card.badge-silver {
  border-color: #c0c0c0;
+ box-shadow: 0 0 10px rgba(192, 192, 192, 0.2);
 }
 .shop-card.badge-bronze {
  border-color: #cd7f32;
+ box-shadow: 0 0 10px rgba(205, 127, 50, 0.2);
 }
 .shop-card.badge-premium {
- border-color: var(--color-primary);
+ border-color: #4a90d9;
+ box-shadow: 0 0 12px rgba(74, 144, 217, 0.25);
 }
 
 .shop-card-top-badge {
@@ -87,6 +90,7 @@
  font-weight: 700;
  z-index: 10;
  white-space: nowrap;
+ box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 .shop-card-top-badge.badge-gold {
  background: linear-gradient(135deg, #ffd700, #ff8c00);
@@ -101,7 +105,7 @@
  color: #fff;
 }
 .shop-card-top-badge.badge-premium {
- background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+ background: linear-gradient(135deg, #4a90d9, #2a6cb8);
  color: #fff;
 }
 
@@ -115,5 +119,9 @@
 .badge-premium {
  background: linear-gradient(135deg, #4a90d9, #357abd);
  color: #fff;
+ font-size: 0.7rem;
+ padding: 0.15rem 0.5rem;
+ border-radius: 0.75rem;
+ font-weight: 600;
 }
 </style>

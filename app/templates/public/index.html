@@ -177,25 +177,31 @@
  <h3 class="section-title">
  おすすめ店舗
  </h3>
- <div class="shop-grid">
- {% for shop in featured_shops %}
- {% include "public/_shop_card.html" %}
- {% endfor %}
- </div>
- </div>
- {% endif %}
+    <div class="shop-grid">
+    {% for item in featured_shops %}
+    {% set shop = item.shop %}
+    {% set badge = item.badge %}
+    {% set is_premium = item.is_premium %}
+    {% include "public/_shop_card.html" %}
+    {% endfor %}
+    </div>
+    </div>
+    {% endif %}
 
- <!-- Recent Shops -->
- {% if recent_shops %}
- <div class="recent-section mb-4">
- <h3 class="section-title">
- 🆕 新着店舗
- </h3>
- <div class="shop-grid">
- {% for shop in recent_shops %}
- {% include "public/_shop_card.html" %}
- {% endfor %}
- </div>
+    <!-- Recent Shops -->
+    {% if recent_shops %}
+    <div class="recent-section mb-4">
+    <h3 class="section-title">
+    新着店舗
+    </h3>
+    <div class="shop-grid">
+    {% for item in recent_shops %}
+    {% set shop = item.shop %}
+    {% set badge = item.badge %}
+    {% set is_premium = item.is_premium %}
+    {% include "public/_shop_card.html" %}
+    {% endfor %}
+    </div>
 
  <div class="text-center mt-3">
  <a href="{{ url_for('public.search') }}" class="btn btn-gold">

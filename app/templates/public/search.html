@@ -136,7 +136,7 @@
  店舗一覧
  {% endif %}
  </h1>
- <span class="results-count">{{ shops | length }}件</span>
+ <span class="results-count">{{ shops_with_badges | length }}件</span>
  </div>
  
  <!-- Active Filters -->
@@ -184,12 +184,15 @@
  {% endif %}
  
  <!-- Shop Grid -->
- {% if shops %}
- <div class="shop-grid">
- {% for shop in shops %}
- {% include "public/_shop_card.html" %}
- {% endfor %}
- </div>
+    {% if shops_with_badges %}
+    <div class="shop-grid">
+    {% for item in shops_with_badges %}
+    {% set shop = item.shop %}
+    {% set badge = item.badge %}
+    {% set is_premium = item.is_premium %}
+    {% include "public/_shop_card.html" %}
+    {% endfor %}
+    </div>
  {% else %}
  <div class="no-results">
  <div class="no-results-icon"></div>
