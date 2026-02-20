@@ -27,6 +27,14 @@
     
     <!-- クイックアクション -->
     <div class="quick-actions">
+        <a href="{{ url_for('customer.point_cards') }}" class="quick-action">
+            <span class="quick-action-icon">S</span>
+            <span class="quick-action-label">スタンプカード</span>
+        </a>
+        <a href="{{ url_for('customer.my_bookings') }}" class="quick-action">
+            <span class="quick-action-icon">B</span>
+            <span class="quick-action-label">予約一覧</span>
+        </a>
         <a href="{{ url_for('public.index') }}" class="quick-action">
             <span class="quick-action-icon">店</span>
             <span class="quick-action-label">店舗を探す</span>

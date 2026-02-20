@@ -191,6 +191,27 @@
     {% set badge = item.badge %}
     {% set is_premium = item.is_premium %}
     {% include "public/_shop_card.html" %}
+    
+    {# インライン広告を3件目の後に挿入 #}
+    {% if loop.index == 3 and inline_ads %}
+    {% for ad in inline_ads %}
+    <a href="{{ url_for('public.ad_click', ad_id=ad.id) }}" class="shop-card inline-ad-card" target="_blank" rel="noopener" style="border: 1px solid var(--color-accent-gold); background: var(--color-bg-elevated);">
+    <div style="position: absolute; top: 8px; right: 8px; background: var(--color-accent-gold); color: var(--color-bg); font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; z-index: 2;">PR</div>
+    {% if ad.display_image_url %}
+    <div class="shop-card-image">
+    <img src="{{ ad.display_image_url }}" alt="{{ ad.title }}" loading="lazy">
+    </div>
+    {% endif %}
+    <div class="shop-card-body">
+    <h4 class="shop-card-name">{{ ad.title }}</h4>
+    {% if ad.description %}
+    <p style="font-size: 0.75rem; color: var(--color-text-muted); margin: 0;">{{ ad.description | truncate(60) }}</p>
+    {% endif %}
+    </div>
+    </a>
+    {% endfor %}
+    {% endif %}
+    
     {% endfor %}
     </div>
  {% else %}
@@ -246,6 +267,15 @@
  {{ category_labels[cat] }}
  </a>
  {% endfor %}
+ </div>
+ </div>
+ 
+ <div class="sidebar-section">
+ <h4>コンテンツ</h4>
+ <div class="sidebar-links">
+ <a href="{{ url_for('public.ranking_index') }}" class="sidebar-link">キャストランキング</a>
+ <a href="{{ url_for('public.trending', type='shop') }}" class="sidebar-link">急上昇店舗</a>
+ <a href="{{ url_for('public.trending', type='cast') }}" class="sidebar-link">急上昇キャスト</a>
  </div>
  </div>
  </aside>

@@ -174,6 +174,29 @@
  </div>
  </div>
  
+ <!-- Working Casts (出勤中) -->
+ {% if working_casts %}
+ <div class="info-section">
+ <h3>出勤中のキャスト</h3>
+ <div class="cast-grid">
+ {% for shift in working_casts %}
+ <a href="{{ url_for('customer.cast_detail', cast_id=shift.cast.id) }}" class="cast-preview-card" style="border: 2px solid var(--color-success); position: relative;">
+ <div style="position: absolute; top: 4px; right: 4px; background: var(--color-success); color: #fff; font-size: 0.6rem; padding: 2px 6px; border-radius: 8px; z-index: 2;">出勤中</div>
+ <div class="cast-preview-image">
+ <img src="{{ shift.cast.image_url }}" alt="{{ shift.cast.name_display }}" loading="lazy">
+ </div>
+ <div class="cast-preview-info">
+ <span class="cast-preview-name">{{ shift.cast.name_display }}</span>
+ {% if shift.end_time %}
+ <span style="font-size: 0.7rem; color: var(--color-text-muted);">〜{{ shift.end_time.strftime('%H:%M') }}</span>
+ {% endif %}
+ </div>
+ </a>
+ {% endfor %}
+ </div>
+ </div>
+ {% endif %}
+ 
  <!-- Casts Section -->
  {% if casts %}
  <div class="info-section">
