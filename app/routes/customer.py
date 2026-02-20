@@ -609,11 +609,14 @@ def submit_review(shop_id):
         
         # SMS認証コードを送信
         verification = result['verification']
-        ReviewService.send_sms_verification(normalized_phone, verification.verification_code)
+        sms_sent = ReviewService.send_sms_verification(normalized_phone, verification.verification_code)
         
         # 認証画面へリダイレクト
         session['pending_review_id'] = result['review'].id
-        flash('認証コードを送信しました。SMSをご確認ください。', 'info')
+        if sms_sent:
+            flash('認証コードを送信しました。SMSをご確認ください。', 'info')
+        else:
+            flash('認証コードの送信に失敗しました。しばらく経ってから再送信してください。', 'warning')
         return redirect(url_for('customer.verify_review', shop_id=shop_id))
     
     return render_template('customer/review_form.html', shop=shop)

@@ -1,12 +1,57 @@
 """
 Night-Walk MVP - Twilio Service
-Handles phone reservation automation
+Handles phone reservation automation and SMS verification
 """
 from datetime import datetime
 from flask import current_app, url_for
 from ..extensions import db
 from ..models.shop import Shop
 from ..models.booking import Call, BookingLog
+
+
+class TwilioService:
+    """Twilio SMS/Voice service wrapper"""
+
+    @classmethod
+    def send_sms(cls, to_number, message):
+        """
+        Send an SMS message via Twilio.
+
+        Args:
+            to_number: Destination phone number (E.164 format)
+            message: SMS body text
+
+        Returns:
+            bool: True if sent successfully
+        """
+        account_sid = current_app.config.get('TWILIO_ACCOUNT_SID')
+        auth_token = current_app.config.get('TWILIO_AUTH_TOKEN')
+        from_number = current_app.config.get('TWILIO_PHONE_NUMBER')
+
+        if not all([account_sid, auth_token, from_number]):
+            current_app.logger.warning("Twilio is not configured - SMS not sent")
+            if current_app.debug:
+                current_app.logger.info(f"[DEV] SMS to {to_number}: {message}")
+                return True
+            return False
+
+        try:
+            from twilio.rest import Client
+
+            client = Client(account_sid, auth_token)
+            client.messages.create(
+                to=to_number,
+                from_=from_number,
+                body=message
+            )
+            current_app.logger.info(f"SMS sent to {to_number[:5]}***")
+            return True
+        except Exception as e:
+            current_app.logger.error(f"Twilio SMS error: {e}")
+            if current_app.debug:
+                current_app.logger.info(f"[DEV] SMS to {to_number}: {message}")
+                return True
+            return False
 
 
 def initiate_call(shop_id, caller_phone):
