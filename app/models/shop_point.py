@@ -113,8 +113,18 @@ class CustomerShopPoint(db.Model):
         """顧客のスタンプカードを取得または作成"""
         point = cls.query.filter_by(customer_id=customer_id, shop_id=shop_id).first()
         if not point:
-            point = cls(customer_id=customer_id, shop_id=shop_id)
+            point = cls(customer_id=customer_id, shop_id=shop_id,
+                        point_balance=0, total_earned=0, total_used=0, visit_count=0)
             db.session.add(point)
+        else:
+            if point.point_balance is None:
+                point.point_balance = 0
+            if point.total_earned is None:
+                point.total_earned = 0
+            if point.total_used is None:
+                point.total_used = 0
+            if point.visit_count is None:
+                point.visit_count = 0
         return point
     
     def can_earn_visit_points(self, min_interval_hours=4):
@@ -126,19 +136,20 @@ class CustomerShopPoint(db.Model):
     
     def add_points(self, points, reason='visit'):
         """スタンプを追加"""
-        self.point_balance += points
-        self.total_earned += points
+        self.point_balance = (self.point_balance or 0) + points
+        self.total_earned = (self.total_earned or 0) + points
         if reason == 'visit':
-            self.visit_count += 1
+            self.visit_count = (self.visit_count or 0) + 1
             self.last_visit_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
     
     def use_points(self, points):
         """スタンプを使用（特典交換）"""
-        if self.point_balance < points:
+        balance = self.point_balance or 0
+        if balance < points:
             raise ValueError('スタンプが不足しています')
-        self.point_balance -= points
-        self.total_used += points
+        self.point_balance = balance - points
+        self.total_used = (self.total_used or 0) + points
         self.updated_at = datetime.utcnow()
     
     @property
