@@ -82,23 +82,49 @@ class ReviewService:
         # 口コミを認証済みに
         review.verify()
         
-        # スタンプカード自動発行（顧客がログインしていて、店舗が有料プランの場合）
+        # スタンプカード自動発行
         card_issued = False
+        from flask import current_app
+        current_app.logger.info(f"[STAMP] verify_and_complete: review_id={review_id}, shop_id={review.shop_id}, customer_id={customer_id}")
+        
         if customer_id:
             from ..models.shop_point import CustomerShopPoint, ShopPointCard
             from ..models.store_plan import StorePlan
-            # 店舗が有料プラン（スタンプカード機能あり）か確認
-            plan = StorePlan.query.filter_by(shop_id=review.shop_id).first()
-            has_stamp_card_feature = (
-                plan and plan.is_active and 
-                plan.plan_type in [StorePlan.PLAN_STANDARD, StorePlan.PLAN_PREMIUM, StorePlan.PLAN_BUSINESS]
-            )
+            
+            # 有効な有料プランを検索（status='active' or 'trial'、かつ有料プランタイプ）
+            paid_types = [StorePlan.PLAN_STANDARD, StorePlan.PLAN_PREMIUM, StorePlan.PLAN_BUSINESS]
+            plan = StorePlan.query.filter(
+                StorePlan.shop_id == review.shop_id,
+                StorePlan.plan_type.in_(paid_types),
+                StorePlan.status.in_([StorePlan.STATUS_ACTIVE, StorePlan.STATUS_TRIAL])
+            ).first()
+            
+            if not plan:
+                all_plans = StorePlan.query.filter_by(shop_id=review.shop_id).all()
+                for p in all_plans:
+                    current_app.logger.warning(
+                        f"[STAMP] Shop {review.shop_id} plan: id={p.id}, type={p.plan_type}, status={p.status}, is_active={p.is_active}"
+                    )
+                if not all_plans:
+                    current_app.logger.warning(f"[STAMP] Shop {review.shop_id} has NO StorePlan records")
+            
+            has_stamp_card_feature = plan is not None
+            current_app.logger.info(f"[STAMP] has_stamp_card_feature={has_stamp_card_feature}, plan={plan}")
+            
             if has_stamp_card_feature:
-                card_config = ShopPointCard.get_or_create(review.shop_id)
-                if card_config.is_active:
-                    # 顧客のスタンプカードを取得（なければ自動発行）
-                    customer_point = CustomerShopPoint.get_or_create(customer_id, review.shop_id)
-                    card_issued = True
+                try:
+                    card_config = ShopPointCard.get_or_create(review.shop_id)
+                    current_app.logger.info(f"[STAMP] card_config: id={card_config.id}, is_active={card_config.is_active}")
+                    if card_config.is_active:
+                        customer_point = CustomerShopPoint.get_or_create(customer_id, review.shop_id)
+                        card_issued = True
+                        current_app.logger.info(f"[STAMP] Card issued! customer_id={customer_id}, shop_id={review.shop_id}")
+                    else:
+                        current_app.logger.warning(f"[STAMP] card_config.is_active=False for shop {review.shop_id}")
+                except Exception as e:
+                    current_app.logger.error(f"[STAMP] Error creating stamp card: {e}")
+        else:
+            current_app.logger.warning("[STAMP] customer_id is None - user not logged in as customer")
         
         db.session.commit()
         
