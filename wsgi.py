@@ -339,13 +339,17 @@ def auto_migrate_columns():
                             print(f"[WARNING] Failed to add '{col_name}': {col_e}")
                             db.session.rollback()
             
-            # customer_shop_pointsテーブルにランクキャッシュカラムを追加
+            # customer_shop_pointsテーブルにカラムを追加
             if 'customer_shop_points' in inspector.get_table_names():
                 columns = [col['name'] for col in inspector.get_columns('customer_shop_points')]
                 csp_columns = [
                     ("current_rank_id", "INTEGER"),
                     ("current_rank_name", "VARCHAR(50)"),
                     ("current_rank_icon", "VARCHAR(10)"),
+                    ("visit_count", "INTEGER DEFAULT 0"),
+                    ("total_earned", "INTEGER DEFAULT 0"),
+                    ("total_used", "INTEGER DEFAULT 0"),
+                    ("last_visit_at", "TIMESTAMP"),
                 ]
                 for col_name, col_type in csp_columns:
                     if col_name not in columns:
@@ -353,6 +357,26 @@ def auto_migrate_columns():
                         try:
                             db.session.execute(text(
                                 f"ALTER TABLE customer_shop_points ADD COLUMN {col_name} {col_type}"
+                            ))
+                            db.session.commit()
+                            print(f"[SUCCESS] '{col_name}' column added!")
+                        except Exception as col_e:
+                            print(f"[WARNING] Failed to add '{col_name}': {col_e}")
+                            db.session.rollback()
+            
+            # shop_point_transactionsテーブルにカラムを追加
+            if 'shop_point_transactions' in inspector.get_table_names():
+                columns = [col['name'] for col in inspector.get_columns('shop_point_transactions')]
+                spt_columns = [
+                    ("verification_method", "VARCHAR(20)"),
+                    ("verified_by", "INTEGER"),
+                ]
+                for col_name, col_type in spt_columns:
+                    if col_name not in columns:
+                        print(f"[INFO] Adding '{col_name}' column to shop_point_transactions table...")
+                        try:
+                            db.session.execute(text(
+                                f"ALTER TABLE shop_point_transactions ADD COLUMN {col_name} {col_type}"
                             ))
                             db.session.commit()
                             print(f"[SUCCESS] '{col_name}' column added!")
