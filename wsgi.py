@@ -297,12 +297,15 @@ def auto_migrate_columns():
                             print(f"[WARNING] Failed to add '{col_name}': {col_e}")
                             db.session.rollback()
                     
-            # shop_point_cardsテーブルにカラムを追加
+            # shop_point_cardsテーブルにカラムを追加（スタンプカード対応）
             if 'shop_point_cards' in inspector.get_table_names():
                 columns = [col['name'] for col in inspector.get_columns('shop_point_cards')]
                 spc_columns = [
                     ("rank_system_enabled", "BOOLEAN DEFAULT FALSE"),
                     ("card_image_url", "VARCHAR(500)"),
+                    ("max_stamps", "INTEGER DEFAULT 10"),
+                    ("card_template", "VARCHAR(30) DEFAULT 'bronze'"),
+                    ("show_stamp_numbers", "BOOLEAN DEFAULT TRUE"),
                 ]
                 for col_name, col_type in spc_columns:
                     if col_name not in columns:
@@ -310,6 +313,25 @@ def auto_migrate_columns():
                         try:
                             db.session.execute(text(
                                 f"ALTER TABLE shop_point_cards ADD COLUMN {col_name} {col_type}"
+                            ))
+                            db.session.commit()
+                            print(f"[SUCCESS] '{col_name}' column added!")
+                        except Exception as col_e:
+                            print(f"[WARNING] Failed to add '{col_name}': {col_e}")
+                            db.session.rollback()
+            
+            # shop_point_ranksテーブルにcard_templateカラムを追加
+            if 'shop_point_ranks' in inspector.get_table_names():
+                columns = [col['name'] for col in inspector.get_columns('shop_point_ranks')]
+                spr_columns = [
+                    ("card_template", "VARCHAR(30) DEFAULT 'bronze'"),
+                ]
+                for col_name, col_type in spr_columns:
+                    if col_name not in columns:
+                        print(f"[INFO] Adding '{col_name}' column to shop_point_ranks table...")
+                        try:
+                            db.session.execute(text(
+                                f"ALTER TABLE shop_point_ranks ADD COLUMN {col_name} {col_type}"
                             ))
                             db.session.commit()
                             print(f"[SUCCESS] '{col_name}' column added!")

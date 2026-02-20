@@ -1,5 +1,5 @@
 # app/models/shop_point.py
-"""店舗独自ポイントカード関連モデル"""
+"""店舗スタンプカード関連モデル"""
 
 from datetime import datetime, date, timedelta
 from sqlalchemy import func
@@ -7,30 +7,38 @@ from ..extensions import db
 
 
 class ShopPointCard(db.Model):
-    """店舗ポイントカード設定"""
+    """店舗スタンプカード設定"""
     __tablename__ = 'shop_point_cards'
     
     id = db.Column(db.Integer, primary_key=True)
     shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), nullable=False, unique=True, index=True)
     
-    # ポイントカード設定
-    is_active = db.Column(db.Boolean, default=True)  # ポイントカード機能有効
-    card_name = db.Column(db.String(50), default='ポイントカード')  # カード名称
+    # 基本設定
+    is_active = db.Column(db.Boolean, default=True)
+    card_name = db.Column(db.String(50), default='スタンプカード')
     
     # ランク制度
-    rank_system_enabled = db.Column(db.Boolean, default=False)  # ランク制度ON/OFF
+    rank_system_enabled = db.Column(db.Boolean, default=False)
     
-    # 来店ポイント設定
-    visit_points = db.Column(db.Integer, default=100)  # 1回の来店で付与するポイント
-    min_visit_interval_hours = db.Column(db.Integer, default=4)  # 最短来店間隔（時間）連続付与防止
+    # スタンプ設定
+    max_stamps = db.Column(db.Integer, default=10)            # スタンプ数（デフォルト10）
+    min_visit_interval_hours = db.Column(db.Integer, default=4)
+    
+    # 旧ポイント設定（後方互換）
+    visit_points = db.Column(db.Integer, default=1)           # 1回=1スタンプ
+    reward_threshold = db.Column(db.Integer, default=10)      # 10スタンプで特典
     
     # 特典設定
-    reward_threshold = db.Column(db.Integer, default=1000)  # 特典交換に必要なポイント
-    reward_description = db.Column(db.String(200))  # 特典の説明（例: 「ドリンク1杯無料」）
+    reward_description = db.Column(db.String(200))
     
     # デザイン設定
     card_color = db.Column(db.String(20), default='#6366f1')
-    card_image_url = db.Column(db.String(500))  # 店舗独自カード画像
+    card_image_url = db.Column(db.String(500))               # 店舗独自カード画像
+    
+    # テンプレート選択
+    # 'bronze', 'silver', 'gold', 'platinum', 'bronze_num', 'silver_num', 'gold_num', 'platinum_num', 'custom'
+    card_template = db.Column(db.String(30), default='bronze')
+    show_stamp_numbers = db.Column(db.Boolean, default=True)  # スタンプに番号を表示
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -38,9 +46,23 @@ class ShopPointCard(db.Model):
     # リレーション
     shop = db.relationship('Shop', backref=db.backref('point_card', uselist=False))
     
+    # テンプレート定義
+    TEMPLATES = {
+        'bronze':       {'label': 'ブロンズ',   'color': '#CD7F32', 'bg': 'linear-gradient(135deg, #CD7F32 0%, #A0522D 50%, #8B6914 100%)'},
+        'silver':       {'label': 'シルバー',   'color': '#C0C0C0', 'bg': 'linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 50%, #808080 100%)'},
+        'gold':         {'label': 'ゴールド',   'color': '#FFD700', 'bg': 'linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #B8860B 100%)'},
+        'platinum':     {'label': 'プラチナ',   'color': '#E5E4E2', 'bg': 'linear-gradient(135deg, #E5E4E2 0%, #BDC3C7 50%, #95A5A6 100%)'},
+        'custom':       {'label': 'カスタム',   'color': '#6366f1', 'bg': None},
+    }
+    
+    @property
+    def template_info(self):
+        """テンプレート情報を取得"""
+        return self.TEMPLATES.get(self.card_template or 'bronze', self.TEMPLATES['bronze'])
+    
     @classmethod
     def get_or_create(cls, shop_id):
-        """店舗のポイントカード設定を取得または作成"""
+        """店舗のスタンプカード設定を取得または作成"""
         card = cls.query.filter_by(shop_id=shop_id).first()
         if not card:
             card = cls(shop_id=shop_id)
@@ -52,28 +74,28 @@ class ShopPointCard(db.Model):
 
 
 class CustomerShopPoint(db.Model):
-    """顧客の店舗別ポイント残高"""
+    """顧客の店舗別スタンプ残高"""
     __tablename__ = 'customer_shop_points'
     
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id', ondelete='CASCADE'), nullable=False, index=True)
     shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), nullable=False, index=True)
     
-    # ポイント残高
+    # スタンプ残高（旧: point_balance）
     point_balance = db.Column(db.Integer, default=0, nullable=False)
     
     # 累計
-    total_earned = db.Column(db.Integer, default=0)  # 累計獲得ポイント
-    total_used = db.Column(db.Integer, default=0)    # 累計使用ポイント
-    visit_count = db.Column(db.Integer, default=0)   # 来店回数
+    total_earned = db.Column(db.Integer, default=0)
+    total_used = db.Column(db.Integer, default=0)
+    visit_count = db.Column(db.Integer, default=0)
     
-    # 最終来店日時（連続付与防止用）
+    # 最終来店日時
     last_visit_at = db.Column(db.DateTime)
     
-    # ランク（非正規化キャッシュ）
+    # ランク
     current_rank_id = db.Column(db.Integer, db.ForeignKey('shop_point_ranks.id', ondelete='SET NULL'))
-    current_rank_name = db.Column(db.String(50))    # 表示用キャッシュ
-    current_rank_icon = db.Column(db.String(10))    # アイコンキャッシュ
+    current_rank_name = db.Column(db.String(50))
+    current_rank_icon = db.Column(db.String(10))
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -88,7 +110,7 @@ class CustomerShopPoint(db.Model):
     
     @classmethod
     def get_or_create(cls, customer_id, shop_id):
-        """顧客の店舗ポイントを取得または作成"""
+        """顧客のスタンプカードを取得または作成"""
         point = cls.query.filter_by(customer_id=customer_id, shop_id=shop_id).first()
         if not point:
             point = cls(customer_id=customer_id, shop_id=shop_id)
@@ -96,15 +118,14 @@ class CustomerShopPoint(db.Model):
         return point
     
     def can_earn_visit_points(self, min_interval_hours=4):
-        """来店ポイントを獲得可能か（最短間隔チェック）"""
+        """スタンプを獲得可能か（最短間隔チェック）"""
         if not self.last_visit_at:
             return True
-        
         elapsed = datetime.utcnow() - self.last_visit_at
         return elapsed >= timedelta(hours=min_interval_hours)
     
     def add_points(self, points, reason='visit'):
-        """ポイントを追加"""
+        """スタンプを追加"""
         self.point_balance += points
         self.total_earned += points
         if reason == 'visit':
@@ -113,12 +134,26 @@ class CustomerShopPoint(db.Model):
         self.updated_at = datetime.utcnow()
     
     def use_points(self, points):
-        """ポイントを使用"""
+        """スタンプを使用（特典交換）"""
         if self.point_balance < points:
-            raise ValueError('ポイント残高が不足しています')
+            raise ValueError('スタンプが不足しています')
         self.point_balance -= points
         self.total_used += points
         self.updated_at = datetime.utcnow()
+    
+    @property
+    def stamps_in_current_card(self):
+        """現在のカードのスタンプ数（10個ごとにリセット表示）"""
+        card = ShopPointCard.query.filter_by(shop_id=self.shop_id).first()
+        max_stamps = card.max_stamps if card else 10
+        return self.point_balance % max_stamps if max_stamps > 0 else self.point_balance
+    
+    @property
+    def completed_cards(self):
+        """完了したカード枚数"""
+        card = ShopPointCard.query.filter_by(shop_id=self.shop_id).first()
+        max_stamps = card.max_stamps if card else 10
+        return self.point_balance // max_stamps if max_stamps > 0 else 0
     
     @property
     def progress_to_reward(self):
@@ -126,25 +161,25 @@ class CustomerShopPoint(db.Model):
         card = ShopPointCard.query.filter_by(shop_id=self.shop_id).first()
         if not card or card.reward_threshold <= 0:
             return 0
-        return min(100, round((self.point_balance / card.reward_threshold) * 100, 1))
+        current = self.point_balance % card.reward_threshold if card.reward_threshold > 0 else self.point_balance
+        return min(100, round((current / card.reward_threshold) * 100, 1))
     
     def __repr__(self):
-        return f'<CustomerShopPoint customer={self.customer_id} shop={self.shop_id} balance={self.point_balance}>'
+        return f'<CustomerShopPoint customer={self.customer_id} shop={self.shop_id} stamps={self.point_balance}>'
 
 
 class ShopPointTransaction(db.Model):
-    """店舗ポイント取引履歴"""
+    """店舗スタンプ取引履歴"""
     __tablename__ = 'shop_point_transactions'
     
-    # 取引タイプ
-    TYPE_VISIT = 'visit'          # 来店ポイント
-    TYPE_REWARD = 'reward'        # 特典交換
-    TYPE_BONUS = 'bonus'          # ボーナス付与
-    TYPE_ADJUSTMENT = 'adjustment'  # 調整（運営/店舗による）
-    TYPE_EXPIRED = 'expired'      # 期限切れ
+    TYPE_VISIT = 'visit'
+    TYPE_REWARD = 'reward'
+    TYPE_BONUS = 'bonus'
+    TYPE_ADJUSTMENT = 'adjustment'
+    TYPE_EXPIRED = 'expired'
     
     TYPE_LABELS = {
-        'visit': '来店ポイント',
+        'visit': 'スタンプ',
         'reward': '特典交換',
         'bonus': 'ボーナス',
         'adjustment': '調整',
@@ -156,14 +191,13 @@ class ShopPointTransaction(db.Model):
     shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), nullable=False, index=True)
     
     transaction_type = db.Column(db.String(20), nullable=False)
-    amount = db.Column(db.Integer, nullable=False)  # +獲得/-使用
-    balance_after = db.Column(db.Integer, nullable=False)  # 取引後残高
+    amount = db.Column(db.Integer, nullable=False)
+    balance_after = db.Column(db.Integer, nullable=False)
     
-    description = db.Column(db.String(200))  # 詳細説明
+    description = db.Column(db.String(200))
     
-    # 来店確認方法（将来のQRコード等対応用）
-    verification_method = db.Column(db.String(20))  # 'qr', 'manual', 'checkin'
-    verified_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))  # 店舗スタッフID
+    verification_method = db.Column(db.String(20))
+    verified_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -173,24 +207,22 @@ class ShopPointTransaction(db.Model):
     
     @property
     def type_label(self):
-        """取引タイプの日本語ラベル"""
         return self.TYPE_LABELS.get(self.transaction_type, self.transaction_type)
     
     @property
     def is_credit(self):
-        """入金（プラス）かどうか"""
         return self.amount > 0
     
     @classmethod
     def log_visit(cls, customer_id, shop_id, points, balance_after, verified_by=None, method='manual'):
-        """来店ポイント付与を記録"""
+        """スタンプ付与を記録"""
         transaction = cls(
             customer_id=customer_id,
             shop_id=shop_id,
             transaction_type=cls.TYPE_VISIT,
             amount=points,
             balance_after=balance_after,
-            description='来店ポイント',
+            description='スタンプ付与',
             verification_method=method,
             verified_by=verified_by
         )
@@ -219,10 +251,10 @@ class ShopPointReward(db.Model):
     """特典交換履歴"""
     __tablename__ = 'shop_point_rewards'
     
-    STATUS_PENDING = 'pending'      # 未使用
-    STATUS_USED = 'used'            # 使用済み
-    STATUS_EXPIRED = 'expired'      # 期限切れ
-    STATUS_CANCELLED = 'cancelled'  # キャンセル
+    STATUS_PENDING = 'pending'
+    STATUS_USED = 'used'
+    STATUS_EXPIRED = 'expired'
+    STATUS_CANCELLED = 'cancelled'
     
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id', ondelete='CASCADE'), nullable=False, index=True)
@@ -233,12 +265,10 @@ class ShopPointReward(db.Model):
     
     status = db.Column(db.String(20), default=STATUS_PENDING)
     
-    # 有効期限
     expires_at = db.Column(db.DateTime)
     
-    # 使用時の情報
     used_at = db.Column(db.DateTime)
-    used_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))  # 確認した店舗スタッフ
+    used_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -247,14 +277,12 @@ class ShopPointReward(db.Model):
     shop = db.relationship('Shop')
     
     def mark_as_used(self, staff_id=None):
-        """使用済みにする"""
         self.status = self.STATUS_USED
         self.used_at = datetime.utcnow()
         self.used_by = staff_id
     
     @property
     def is_valid(self):
-        """有効な特典か"""
         if self.status != self.STATUS_PENDING:
             return False
         if self.expires_at and datetime.utcnow() > self.expires_at:

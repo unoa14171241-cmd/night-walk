@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}ポイントカード管理 - {{ shop.name }} - Night-Walk{% endblock %}
+{% block title %}スタンプカード管理 - {{ shop.name }} - Night-Walk{% endblock %}
 
 {% block content %}
 <div class="shop-admin-layout">
  <div class="shop-admin-content">
  <div class="d-flex justify-between align-center mb-4">
- <h1 class="mb-0"> ポイントカード管理</h1>
+ <h1 class="mb-0">スタンプカード管理</h1>
  <div class="d-flex gap-2 align-center">
  <a href="{{ url_for('shop_admin.point_card_ranks') }}" class="btn btn-outline-primary btn-sm">
  ランク制度設定
@@ -15,7 +15,7 @@
  </div>
  </div>
  
- <!-- 現在のステータス -->
+ <!-- カード設定 -->
  <div class="card mb-4">
  <div class="d-flex justify-between align-center mb-3">
  <h3 class="mb-0">カード設定</h3>
@@ -33,20 +33,64 @@
  <input type="text" id="card_name" name="card_name" class="form-control"
  value="{{ card_config.card_name }}" maxlength="50">
  </div>
- <div class="form-group col-md-6">
- <label for="card_color">カードカラー</label>
- <input type="color" id="card_color" name="card_color" class="form-control"
- value="{{ card_config.card_color }}" style="height: 42px;">
+ <div class="form-group col-md-3">
+ <label for="max_stamps">スタンプ数</label>
+ <input type="number" id="max_stamps" name="max_stamps" class="form-control"
+ value="{{ card_config.max_stamps or 10 }}" min="1" max="30">
+ <small class="form-help">1枚あたりのスタンプ数</small>
+ </div>
+ <div class="form-group col-md-3">
+ <label for="min_visit_interval_hours">最短来店間隔（時間）</label>
+ <input type="number" id="min_visit_interval_hours" name="min_visit_interval_hours" 
+ class="form-control" value="{{ card_config.min_visit_interval_hours }}" min="0">
+ <small class="form-help">連続付与防止（0で無制限）</small>
  </div>
  </div>
  
- <!-- カード画像設定 -->
  <div class="form-group">
- <label for="card_image">カード画像</label>
+ <label for="reward_description">特典内容（スタンプ完了時のご褒美）</label>
+ <input type="text" id="reward_description" name="reward_description" class="form-control"
+ value="{{ card_config.reward_description or '' }}" maxlength="200"
+ placeholder="例: ドリンク1杯無料、次回10%OFF など">
+ <small class="form-help">全スタンプが集まったときにお客様に表示される特典内容</small>
+ </div>
+ 
+ <!-- デザイン選択 -->
+ <div class="form-group">
+ <label>カードデザイン</label>
+ <div class="template-grid">
+ {% set templates = [
+ ('bronze', 'ブロンズ', '#CD7F32', 'linear-gradient(135deg, #CD7F32 0%, #A0522D 50%, #8B6914 100%)'),
+ ('silver', 'シルバー', '#C0C0C0', 'linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 50%, #808080 100%)'),
+ ('gold', 'ゴールド', '#FFD700', 'linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #B8860B 100%)'),
+ ('platinum', 'プラチナ', '#E5E4E2', 'linear-gradient(135deg, #E5E4E2 0%, #BDC3C7 50%, #95A5A6 100%)'),
+ ('custom', 'カスタム画像', '#6366f1', 'linear-gradient(135deg, #6366f1, #8b5cf6)')
+ ] %}
+ {% for tpl_id, tpl_name, tpl_color, tpl_bg in templates %}
+ <label class="template-option">
+ <input type="radio" name="card_template" value="{{ tpl_id }}" 
+ {{ 'checked' if (card_config.card_template or 'bronze') == tpl_id }}>
+ <div class="template-preview" style="background: {{ tpl_bg }};">
+ <div class="template-stamps">
+ {% for i in range(5) %}
+ <div class="stamp-circle mini">{{ i + 1 }}</div>
+ {% endfor %}
+ </div>
+ <div class="template-label">{{ tpl_name }}</div>
+ </div>
+ </label>
+ {% endfor %}
+ </div>
+ </div>
+ 
+ <!-- カスタム画像（custom選択時に表示） -->
+ <div class="form-group custom-image-section" id="customImageSection" 
+ style="{{ '' if (card_config.card_template or 'bronze') == 'custom' else 'display:none;' }}">
+ <label for="card_image">カスタムカード画像</label>
  {% if card_config.card_image_url %}
  <div class="current-card-image mb-2">
  <img src="{{ get_image_url(card_config.card_image_url, 'point_cards') }}" 
- alt="カード画像" style="max-width: 200px; border-radius: 8px; border: 1px solid var(--color-border);">
+ alt="カード画像" style="max-width: 300px; border-radius: 12px; border: 1px solid var(--color-border);">
  <div class="mt-1">
  <label class="checkbox-label">
  <input type="checkbox" name="delete_card_image" value="1">
@@ -56,41 +100,35 @@
  </div>
  {% endif %}
  <input type="file" id="card_image" name="card_image" class="form-control" accept="image/*">
- <small class="form-help">推奨サイズ: 600x400px（JPG/PNG/WebP）</small>
+ <small class="form-help">
+ テンプレ画像をDLして加工するか、オリジナル画像をアップロード<br>
+ 推奨サイズ: 600x380px（JPG/PNG/WebP）
+ </small>
  </div>
  
- <div class="form-row">
- <div class="form-group col-md-4">
- <label for="visit_points">来店ポイント</label>
- <input type="number" id="visit_points" name="visit_points" class="form-control"
- value="{{ card_config.visit_points }}" min="1">
- <small class="form-help">1回の来店で付与するポイント</small>
- </div>
- <div class="form-group col-md-4">
- <label for="min_visit_interval_hours">最短来店間隔（時間）</label>
- <input type="number" id="min_visit_interval_hours" name="min_visit_interval_hours" 
- class="form-control" value="{{ card_config.min_visit_interval_hours }}" min="0">
- <small class="form-help">連続付与防止（0で無制限）</small>
- </div>
- <div class="form-group col-md-4">
- <label for="reward_threshold">特典交換ポイント</label>
- <input type="number" id="reward_threshold" name="reward_threshold" class="form-control"
- value="{{ card_config.reward_threshold }}" min="0">
- <small class="form-help">特典と交換に必要なポイント</small>
- </div>
- </div>
- 
+ <!-- 番号表示 -->
  <div class="form-group">
- <label for="reward_description">特典内容</label>
- <input type="text" id="reward_description" name="reward_description" class="form-control"
- value="{{ card_config.reward_description or '' }}" maxlength="200"
- placeholder="例: ドリンク1杯無料">
+ <label class="checkbox-label">
+ <input type="checkbox" name="show_stamp_numbers" 
+ {{ 'checked' if card_config.show_stamp_numbers != False }}>
+ スタンプに番号を表示する
+ </label>
+ </div>
+
+ <!-- カードカラー（テンプレート以外の場合） -->
+ <div class="form-row" id="colorSection"
+ style="{{ '' if (card_config.card_template or 'bronze') == 'custom' else 'display:none;' }}">
+ <div class="form-group col-md-6">
+ <label for="card_color">カードカラー</label>
+ <input type="color" id="card_color" name="card_color" class="form-control"
+ value="{{ card_config.card_color }}" style="height: 42px;">
+ </div>
  </div>
  
  <div class="form-group">
  <label class="checkbox-label">
  <input type="checkbox" name="is_active" {% if card_config.is_active %}checked{% endif %}>
- ポイントカード機能を有効にする
+ スタンプカード機能を有効にする
  </label>
  </div>
  
@@ -98,19 +136,61 @@
  </form>
  </div>
  
- <!-- 来店ポイント付与 -->
+ <!-- カードプレビュー -->
  <div class="card mb-4">
- <h3 class="mb-3"> 来店ポイントを付与</h3>
+ <h3 class="mb-3">カードプレビュー</h3>
+ <div class="stamp-card-preview" id="cardPreview">
+ {% set tpl = card_config.card_template or 'bronze' %}
+ {% set max_s = card_config.max_stamps or 10 %}
+ <div class="preview-card" style="
+ {% if tpl == 'custom' and card_config.card_image_url %}
+ background-image: url('{{ get_image_url(card_config.card_image_url, 'point_cards') }}');
+ background-size: cover; background-position: center;
+ {% elif tpl == 'bronze' %}
+ background: linear-gradient(135deg, #CD7F32 0%, #A0522D 50%, #8B6914 100%);
+ {% elif tpl == 'silver' %}
+ background: linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 50%, #808080 100%);
+ {% elif tpl == 'gold' %}
+ background: linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #B8860B 100%);
+ {% elif tpl == 'platinum' %}
+ background: linear-gradient(135deg, #E5E4E2 0%, #BDC3C7 50%, #95A5A6 100%);
+ {% else %}
+ background: linear-gradient(135deg, {{ card_config.card_color }}, {{ card_config.card_color }}dd);
+ {% endif %}
+ ">
+ <div class="preview-overlay"></div>
+ <div class="preview-header">
+ <div class="preview-shop-name">{{ shop.name }}</div>
+ <div class="preview-card-name">{{ card_config.card_name }}</div>
+ </div>
+ <div class="preview-stamps">
+ {% for i in range(max_s) %}
+ <div class="stamp-circle {{ 'stamped' if i < 3 else '' }}">
+ {% if card_config.show_stamp_numbers != False %}{{ i + 1 }}{% endif %}
+ </div>
+ {% endfor %}
+ </div>
+ <div class="preview-footer">
+ <span>特典: {{ card_config.reward_description or '未設定' }}</span>
+ <span class="preview-logo">Night-Walk</span>
+ </div>
+ </div>
+ </div>
+ </div>
+ 
+ <!-- スタンプ付与 -->
+ <div class="card mb-4">
+ <h3 class="mb-3">スタンプを付与</h3>
  <p class="text-muted mb-3">
- お客様のメールアドレスを入力して、来店ポイントを付与します。
+ お客様のメールアドレスまたは番号を入力してスタンプを付与します。
  </p>
  
- <form action="{{ url_for('shop_admin.grant_visit_points') }}" method="POST" class="d-flex gap-2">
+ <form action="{{ url_for('shop_admin.grant_visit_points') }}" method="POST" class="d-flex gap-2 flex-wrap">
  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
  <input type="email" name="customer_email" class="form-control" 
  placeholder="お客様のメールアドレス" required style="max-width: 300px;">
  <button type="submit" class="btn btn-success">
- {{ card_config.visit_points }}pt付与
+ スタンプ付与
  </button>
  </form>
  </div>
@@ -119,14 +199,14 @@
  <!-- 最近の来店者 -->
  <div class="col-md-6">
  <div class="card mb-4">
- <h3 class="mb-3"> 最近の来店</h3>
+ <h3 class="mb-3">最近の来店</h3>
  {% if recent_visitors %}
  <div class="visitor-list">
  {% for visitor in recent_visitors %}
  <div class="visitor-item">
  <div class="visitor-info">
  <span class="visitor-name">{{ visitor.customer.nickname or visitor.customer.email }}</span>
- <span class="visitor-points">{{ visitor.point_balance }}pt</span>
+ <span class="visitor-stamps">{{ visitor.point_balance }}個</span>
  </div>
  <div class="visitor-meta">
  {{ visitor.last_visit_at.strftime('%m/%d %H:%M') if visitor.last_visit_at else '-' }}
@@ -141,17 +221,18 @@
  </div>
  </div>
  
- <!-- ランキング -->
+ <!-- 常連ランキング -->
  <div class="col-md-6">
  <div class="card mb-4">
- <h3 class="mb-3"> 常連ランキング</h3>
+ <h3 class="mb-3">常連ランキング</h3>
  {% if top_customers %}
  <div class="ranking-list">
- {% for rank, customer in enumerate(top_customers, 1) %}
+ {% for customer in top_customers %}
+ {% set loop_rank = loop.index %}
  <div class="ranking-item">
- <span class="rank {% if rank <= 3 %}top{{ rank }}{% endif %}">{{ rank }}</span>
+ <span class="rank {% if loop_rank <= 3 %}top{{ loop_rank }}{% endif %}">{{ loop_rank }}</span>
  <span class="name">{{ customer.customer.nickname or customer.customer.email }}</span>
- <span class="score">{{ '{:,}'.format(customer.total_earned) }}pt</span>
+ <span class="score">{{ customer.visit_count }}回来店</span>
  </div>
  {% endfor %}
  </div>
@@ -165,6 +246,157 @@
 </div>
 
 <style>
+/* テンプレート選択グリッド */
+.template-grid {
+ display: grid;
+ grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+ gap: 0.75rem;
+ margin-top: 0.5rem;
+}
+
+.template-option {
+ cursor: pointer;
+}
+
+.template-option input[type="radio"] {
+ display: none;
+}
+
+.template-preview {
+ border-radius: 10px;
+ padding: 0.75rem 0.5rem;
+ color: #fff;
+ text-align: center;
+ transition: transform 0.2s, box-shadow 0.2s;
+ border: 3px solid transparent;
+ min-height: 80px;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: center;
+}
+
+.template-option input[type="radio"]:checked + .template-preview {
+ border-color: var(--color-primary);
+ transform: scale(1.05);
+ box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+}
+
+.template-stamps {
+ display: flex;
+ gap: 4px;
+ margin-bottom: 0.5rem;
+}
+
+.stamp-circle.mini {
+ width: 18px;
+ height: 18px;
+ border-radius: 50%;
+ border: 1.5px solid rgba(255,255,255,0.6);
+ font-size: 0.55rem;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ color: rgba(255,255,255,0.7);
+}
+
+.template-label {
+ font-size: 0.8rem;
+ font-weight: 600;
+}
+
+/* カードプレビュー */
+.stamp-card-preview {
+ display: flex;
+ justify-content: center;
+}
+
+.preview-card {
+ width: 100%;
+ max-width: 400px;
+ aspect-ratio: 1.6 / 1;
+ border-radius: 16px;
+ padding: 1.25rem;
+ color: #fff;
+ position: relative;
+ overflow: hidden;
+ display: flex;
+ flex-direction: column;
+ justify-content: space-between;
+ box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.preview-overlay {
+ position: absolute;
+ inset: 0;
+ background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.3) 100%);
+ z-index: 0;
+}
+
+.preview-card > * {
+ position: relative;
+ z-index: 1;
+}
+
+.preview-header {
+ margin-bottom: 0.5rem;
+}
+
+.preview-shop-name {
+ font-size: 1.1rem;
+ font-weight: 700;
+ text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.preview-card-name {
+ font-size: 0.75rem;
+ opacity: 0.85;
+}
+
+.preview-stamps {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 8px;
+ justify-content: center;
+ margin: 0.5rem 0;
+}
+
+.stamp-circle {
+ width: 36px;
+ height: 36px;
+ border-radius: 50%;
+ border: 2px solid rgba(255,255,255,0.5);
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-size: 0.75rem;
+ font-weight: 600;
+ color: rgba(255,255,255,0.7);
+ transition: all 0.3s;
+ background: rgba(255,255,255,0.08);
+}
+
+.stamp-circle.stamped {
+ background: rgba(255,255,255,0.3);
+ border-color: rgba(255,255,255,0.9);
+ color: #fff;
+ box-shadow: 0 0 8px rgba(255,255,255,0.3);
+}
+
+.preview-footer {
+ display: flex;
+ justify-content: space-between;
+ align-items: flex-end;
+ font-size: 0.7rem;
+ opacity: 0.8;
+}
+
+.preview-logo {
+ font-style: italic;
+ font-weight: 600;
+}
+
+/* 来店者リスト */
 .visitor-list, .ranking-list {
  max-height: 400px;
  overflow-y: auto;
@@ -175,9 +407,7 @@
  border-bottom: 1px solid var(--color-border);
 }
 
-.visitor-item:last-child {
- border-bottom: none;
-}
+.visitor-item:last-child { border-bottom: none; }
 
 .visitor-info {
  display: flex;
@@ -186,20 +416,11 @@
  margin-bottom: 0.25rem;
 }
 
-.visitor-name {
- font-weight: 500;
-}
+.visitor-name { font-weight: 500; }
+.visitor-stamps { color: var(--color-primary); font-weight: 600; }
+.visitor-meta { font-size: 0.85rem; color: var(--color-text-muted); }
 
-.visitor-points {
- color: var(--color-primary);
- font-weight: 600;
-}
-
-.visitor-meta {
- font-size: 0.85rem;
- color: var(--color-text-muted);
-}
-
+/* ランキング */
 .ranking-item {
  display: flex;
  align-items: center;
@@ -207,63 +428,46 @@
  border-bottom: 1px solid var(--color-border);
 }
 
-.ranking-item:last-child {
- border-bottom: none;
-}
+.ranking-item:last-child { border-bottom: none; }
 
 .ranking-item .rank {
- width: 30px;
- height: 30px;
- display: flex;
- align-items: center;
- justify-content: center;
+ width: 30px; height: 30px;
+ display: flex; align-items: center; justify-content: center;
  border-radius: 50%;
  background: var(--color-bg);
  font-weight: 600;
  margin-right: 0.75rem;
 }
 
-.ranking-item .rank.top1 {
- background: linear-gradient(135deg, #ffd700, #ff8c00);
- color: #000;
-}
+.ranking-item .rank.top1 { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; }
+.ranking-item .rank.top2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #000; }
+.ranking-item .rank.top3 { background: linear-gradient(135deg, #cd7f32, #8b4513); color: #fff; }
+.ranking-item .name { flex: 1; }
+.ranking-item .score { color: var(--color-primary); font-weight: 600; }
 
-.ranking-item .rank.top2 {
- background: linear-gradient(135deg, #c0c0c0, #a0a0a0);
- color: #000;
-}
-
-.ranking-item .rank.top3 {
- background: linear-gradient(135deg, #cd7f32, #8b4513);
- color: #fff;
-}
-
-.ranking-item .name {
- flex: 1;
-}
-
-.ranking-item .score {
- color: var(--color-primary);
- font-weight: 600;
-}
-
-.row {
- display: flex;
- flex-wrap: wrap;
- margin: 0 -0.75rem;
-}
-
-.col-md-6 {
- flex: 0 0 50%;
- max-width: 50%;
- padding: 0 0.75rem;
-}
+.row { display: flex; flex-wrap: wrap; margin: 0 -0.75rem; }
+.col-md-6 { flex: 0 0 50%; max-width: 50%; padding: 0 0.75rem; }
 
 @media (max-width: 768px) {
- .col-md-6 {
- flex: 0 0 100%;
- max-width: 100%;
- }
+ .col-md-6 { flex: 0 0 100%; max-width: 100%; }
+ .template-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
 }
 </style>
+
+<script>
+// テンプレート選択時にカスタム画像セクションの表示切替
+document.querySelectorAll('input[name="card_template"]').forEach(function(radio) {
+ radio.addEventListener('change', function() {
+ var customSection = document.getElementById('customImageSection');
+ var colorSection = document.getElementById('colorSection');
+ if (this.value === 'custom') {
+ customSection.style.display = '';
+ colorSection.style.display = '';
+ } else {
+ customSection.style.display = 'none';
+ colorSection.style.display = 'none';
+ }
+ });
+});
+</script>
 {% endblock %}

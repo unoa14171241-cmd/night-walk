@@ -6,9 +6,9 @@
 <div class="shop-admin-layout">
  <div class="shop-admin-content">
  <div class="d-flex justify-between align-center mb-4">
- <h1 class="mb-0"> ランク制度設定</h1>
+ <h1 class="mb-0">ランク制度設定</h1>
  <a href="{{ url_for('shop_admin.point_card') }}" class="btn btn-outline-secondary btn-sm">
- ← ポイントカード管理
+ ← スタンプカード管理
  </a>
  </div>
 
@@ -18,7 +18,8 @@
  <div>
  <h3 class="mb-1">ランク制度</h3>
  <p class="text-muted mb-0" style="font-size:0.85rem;">
- 累計ポイントに応じてお客様のランクが上がり、ポイント倍率などの特典が付きます。
+ 累計来店回数に応じてお客様のカードデザインがランクアップします。<br>
+ 各ランクの特典内容を自由に設定できます。
  </p>
  </div>
  <span class="badge {{ 'badge-success' if card_config.rank_system_enabled else 'badge-secondary' }}" style="font-size:0.9rem;">
@@ -63,12 +64,11 @@
  <thead>
  <tr>
  <th style="width:40px;">Lv</th>
- <th style="width:40px;">Icon</th>
  <th>ランク名</th>
- <th>必要累計pt</th>
- <th>pt倍率</th>
+ <th>必要来店回数</th>
  <th>カラー</th>
- <th>特典説明</th>
+ <th>テンプレート</th>
+ <th>特典内容（自由入力）</th>
  <th style="width:50px;"></th>
  </tr>
  </thead>
@@ -81,32 +81,34 @@
  class="form-control form-control-sm" min="1" style="width:60px;">
  </td>
  <td>
- <input type="text" name="rank_icon[]" value="{{ rank.rank_icon }}"
- class="form-control form-control-sm" style="width:50px; text-align:center; font-size:1.2rem;">
- </td>
- <td>
  <input type="text" name="rank_name[]" value="{{ rank.rank_name }}"
  class="form-control form-control-sm" required maxlength="50">
  </td>
  <td>
  <input type="number" name="min_total_points[]" value="{{ rank.min_total_points }}"
  class="form-control form-control-sm" min="0">
- </td>
- <td>
- <input type="number" name="point_multiplier[]" value="{{ rank.point_multiplier }}"
- class="form-control form-control-sm" step="0.1" min="1.0" style="width:80px;">
+ <small class="form-help">回</small>
  </td>
  <td>
  <input type="color" name="rank_color[]" value="{{ rank.rank_color }}"
  class="form-control form-control-sm" style="width:50px; height:32px; padding:2px;">
  </td>
  <td>
+ <select name="card_template[]" class="form-control form-control-sm">
+ <option value="bronze" {{ 'selected' if rank.card_template == 'bronze' }}>ブロンズ</option>
+ <option value="silver" {{ 'selected' if rank.card_template == 'silver' }}>シルバー</option>
+ <option value="gold" {{ 'selected' if rank.card_template == 'gold' }}>ゴールド</option>
+ <option value="platinum" {{ 'selected' if rank.card_template == 'platinum' }}>プラチナ</option>
+ </select>
+ </td>
+ <td>
  <input type="text" name="bonus_description[]" value="{{ rank.bonus_description or '' }}"
- class="form-control form-control-sm" maxlength="200" placeholder="例: ポイント1.5倍">
+ class="form-control form-control-sm" maxlength="200" 
+ placeholder="例: ドリンク1杯無料、VIP席ご案内 など">
  </td>
  <td>
  <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRank(this)" title="削除">
- 
+ x
  </button>
  </td>
  </tr>
@@ -117,7 +119,7 @@
 
  <div class="d-flex gap-2 mt-3">
  <button type="button" class="btn btn-outline-primary btn-sm" onclick="addRank()">
- ＋ ランクを追加
+ + ランクを追加
  </button>
  <button type="submit" class="btn btn-primary">設定を保存</button>
  </div>
@@ -126,19 +128,37 @@
 
  <!-- プレビュー -->
  <div class="card mb-4">
- <h3 class="mb-3"> プレビュー</h3>
+ <h3 class="mb-3">ランクプレビュー</h3>
  <p class="text-muted mb-3" style="font-size:0.85rem;">
- お客様に表示されるランクバッジのプレビューです。
+ 来店回数に応じてカードデザインが変わります。特典内容はお客様に表示されます。
  </p>
  <div class="rank-preview-grid" id="rankPreview">
+ {% set template_bgs = {
+ 'bronze': 'linear-gradient(135deg, #CD7F32 0%, #A0522D 50%, #8B6914 100%)',
+ 'silver': 'linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 50%, #808080 100%)',
+ 'gold': 'linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #B8860B 100%)',
+ 'platinum': 'linear-gradient(135deg, #E5E4E2 0%, #BDC3C7 50%, #95A5A6 100%)'
+ } %}
  {% for rank in ranks %}
- <div class="rank-preview-badge" style="--rank-color: {{ rank.rank_color }};">
- <span class="rank-badge-icon">{{ rank.rank_icon }}</span>
- <span class="rank-badge-name">{{ rank.rank_name }}</span>
- <span class="rank-badge-pts">{{ '{:,}'.format(rank.min_total_points) }}pt〜</span>
- {% if rank.point_multiplier > 1.0 %}
- <span class="rank-badge-bonus">×{{ rank.point_multiplier }}</span>
+ <div class="rank-preview-card" 
+ style="background: {{ template_bgs.get(rank.card_template or 'bronze', template_bgs['bronze']) }};">
+ <div class="rank-card-overlay"></div>
+ <div class="rank-card-header">
+ <span class="rank-card-name">{{ rank.rank_name }}</span>
+ <span class="rank-card-level">Lv.{{ rank.rank_level }}</span>
+ </div>
+ <div class="rank-card-stamps">
+ {% for i in range(5) %}
+ <div class="rank-stamp-dot">{{ i + 1 }}</div>
+ {% endfor %}
+ <span class="rank-stamp-dots-more">...</span>
+ </div>
+ <div class="rank-card-footer">
+ <div class="rank-card-condition">{{ rank.min_total_points }}回来店〜</div>
+ {% if rank.bonus_description %}
+ <div class="rank-card-bonus">{{ rank.bonus_description }}</div>
  {% endif %}
+ </div>
  </div>
  {% endfor %}
  {% if not ranks %}
@@ -151,14 +171,9 @@
 </div>
 
 <style>
-.rank-table-wrapper {
- overflow-x: auto;
-}
+.rank-table-wrapper { overflow-x: auto; }
 
-.rank-table {
- width: 100%;
- border-collapse: collapse;
-}
+.rank-table { width: 100%; border-collapse: collapse; }
 
 .rank-table th,
 .rank-table td {
@@ -178,121 +193,115 @@
  background: rgba(99, 102, 241, 0.05);
 }
 
+/* ランクプレビューカード */
 .rank-preview-grid {
- display: flex;
- flex-wrap: wrap;
+ display: grid;
+ grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
  gap: 1rem;
 }
 
-.rank-preview-badge {
+.rank-preview-card {
+ position: relative;
+ border-radius: 12px;
+ padding: 1rem;
+ color: #fff;
+ min-height: 130px;
  display: flex;
  flex-direction: column;
+ justify-content: space-between;
+ overflow: hidden;
+ box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.rank-card-overlay {
+ position: absolute;
+ inset: 0;
+ background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.25) 100%);
+}
+
+.rank-preview-card > * { position: relative; z-index: 1; }
+
+.rank-card-header {
+ display: flex;
+ justify-content: space-between;
  align-items: center;
- justify-content: center;
- min-width: 120px;
- padding: 1rem;
- border-radius: var(--radius-lg);
- background: linear-gradient(135deg, var(--rank-color), color-mix(in srgb, var(--rank-color) 60%, black));
- color: #fff;
- text-align: center;
- box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
-.rank-badge-icon {
- font-size: 2rem;
- margin-bottom: 0.25rem;
+.rank-card-name { font-weight: 700; font-size: 1rem; }
+.rank-card-level { font-size: 0.75rem; opacity: 0.8; }
+
+.rank-card-stamps {
+ display: flex;
+ gap: 6px;
+ align-items: center;
+ margin: 0.5rem 0;
 }
 
-.rank-badge-name {
- font-weight: 700;
- font-size: 1rem;
- margin-bottom: 0.25rem;
+.rank-stamp-dot {
+ width: 24px; height: 24px;
+ border-radius: 50%;
+ border: 1.5px solid rgba(255,255,255,0.5);
+ font-size: 0.6rem;
+ display: flex; align-items: center; justify-content: center;
+ color: rgba(255,255,255,0.6);
 }
 
-.rank-badge-pts {
- font-size: 0.75rem;
- opacity: 0.85;
-}
-
-.rank-badge-bonus {
+.rank-stamp-dots-more {
  font-size: 0.8rem;
- background: rgba(255,255,255,0.25);
- padding: 0.15rem 0.5rem;
- border-radius: 1rem;
- margin-top: 0.35rem;
- font-weight: 600;
+ opacity: 0.6;
+}
+
+.rank-card-footer { font-size: 0.75rem; }
+.rank-card-condition { opacity: 0.8; margin-bottom: 2px; }
+.rank-card-bonus {
+ background: rgba(255,255,255,0.2);
+ padding: 0.15rem 0.4rem;
+ border-radius: 0.5rem;
+ font-size: 0.7rem;
+ display: inline-block;
 }
 
 @media (max-width: 768px) {
- .rank-table {
- font-size: 0.85rem;
- }
- .rank-preview-grid {
- justify-content: center;
- }
+ .rank-table { font-size: 0.85rem; }
+ .rank-preview-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 }
 </style>
 
 <script>
 function addRank() {
- const tbody = document.getElementById('rankBody');
- const rows = tbody.querySelectorAll('tr');
- const nextLevel = rows.length + 1;
+ var tbody = document.getElementById('rankBody');
+ var rows = tbody.querySelectorAll('tr');
+ var nextLevel = rows.length + 1;
 
- const tr = document.createElement('tr');
- tr.innerHTML = `
- <td>
- <input type="hidden" name="rank_id[]" value="">
- <input type="number" name="rank_level[]" value="${nextLevel}"
- class="form-control form-control-sm" min="1" style="width:60px;">
- </td>
- <td>
- <input type="text" name="rank_icon[]" value=""
- class="form-control form-control-sm" style="width:50px; text-align:center; font-size:1.2rem;">
- </td>
- <td>
- <input type="text" name="rank_name[]" value=""
- class="form-control form-control-sm" required maxlength="50" placeholder="ランク名">
- </td>
- <td>
- <input type="number" name="min_total_points[]" value="0"
- class="form-control form-control-sm" min="0">
- </td>
- <td>
- <input type="number" name="point_multiplier[]" value="1.0"
- class="form-control form-control-sm" step="0.1" min="1.0" style="width:80px;">
- </td>
- <td>
- <input type="color" name="rank_color[]" value="#6366f1"
- class="form-control form-control-sm" style="width:50px; height:32px; padding:2px;">
- </td>
- <td>
- <input type="text" name="bonus_description[]" value=""
- class="form-control form-control-sm" maxlength="200" placeholder="例: ポイント2倍">
- </td>
- <td>
- <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRank(this)" title="削除">
- 
- </button>
- </td>
- `;
+ var tr = document.createElement('tr');
+ tr.innerHTML = 
+ '<td>' +
+ '<input type="hidden" name="rank_id[]" value="">' +
+ '<input type="number" name="rank_level[]" value="' + nextLevel + '" class="form-control form-control-sm" min="1" style="width:60px;">' +
+ '</td>' +
+ '<td><input type="text" name="rank_name[]" value="" class="form-control form-control-sm" required maxlength="50" placeholder="ランク名"></td>' +
+ '<td><input type="number" name="min_total_points[]" value="0" class="form-control form-control-sm" min="0"><small class="form-help">回</small></td>' +
+ '<td><input type="color" name="rank_color[]" value="#6366f1" class="form-control form-control-sm" style="width:50px; height:32px; padding:2px;"></td>' +
+ '<td><select name="card_template[]" class="form-control form-control-sm">' +
+ '<option value="bronze">ブロンズ</option><option value="silver">シルバー</option>' +
+ '<option value="gold">ゴールド</option><option value="platinum">プラチナ</option>' +
+ '</select></td>' +
+ '<td><input type="text" name="bonus_description[]" value="" class="form-control form-control-sm" maxlength="200" placeholder="例: VIP席ご案内"></td>' +
+ '<td><button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRank(this)" title="削除">x</button></td>';
  tbody.appendChild(tr);
 }
 
 function removeRank(btn) {
- const tr = btn.closest('tr');
- const rankId = tr.querySelector('input[name="rank_id[]"]').value;
-
+ var tr = btn.closest('tr');
+ var rankId = tr.querySelector('input[name="rank_id[]"]').value;
  if (rankId) {
- // 既存ランクは削除リストに追加
- const container = document.getElementById('deleteContainer');
- const input = document.createElement('input');
+ var container = document.getElementById('deleteContainer');
+ var input = document.createElement('input');
  input.type = 'hidden';
  input.name = 'delete_rank_id[]';
  input.value = rankId;
  container.appendChild(input);
  }
-
  tr.remove();
 }
 </script>

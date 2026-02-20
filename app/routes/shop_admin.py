@@ -1097,7 +1097,7 @@ def _shop_has_point_card_feature(shop_id):
 @login_required
 @owner_required
 def point_card():
-    """ポイントカード設定ページ"""
+    """スタンプカード設定ページ"""
     from ..models.shop_point import ShopPointCard, CustomerShopPoint
     
     shop = g.current_shop
@@ -1105,7 +1105,7 @@ def point_card():
     # 有料プランチェック
     has_feature = _shop_has_point_card_feature(shop.id)
     if not has_feature:
-        flash('ポイントカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        flash('スタンプカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
         return redirect(url_for('shop_admin.plan'))
     
     # ポイントカード設定を取得（なければ作成）
@@ -1117,10 +1117,10 @@ def point_card():
         shop_id=shop.id
     ).order_by(CustomerShopPoint.last_visit_at.desc()).limit(20).all()
     
-    # ランキング
+    # ランキング（来店回数順）
     top_customers = CustomerShopPoint.query.filter_by(
         shop_id=shop.id
-    ).order_by(CustomerShopPoint.total_earned.desc()).limit(10).all()
+    ).order_by(CustomerShopPoint.visit_count.desc()).limit(10).all()
     
     return render_template('shop_admin/point_card.html',
                           shop=shop,
@@ -1134,40 +1134,47 @@ def point_card():
 @login_required
 @owner_required
 def point_card_settings():
-    """ポイントカード設定を更新"""
+    """スタンプカード設定を更新"""
     from ..models.shop_point import ShopPointCard
     
     shop = g.current_shop
     
     # 有料プランチェック
     if not _shop_has_point_card_feature(shop.id):
-        flash('ポイントカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        flash('スタンプカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
         return redirect(url_for('shop_admin.plan'))
     
     card_config = ShopPointCard.get_or_create(shop.id)
     
     card_config.is_active = request.form.get('is_active') == 'on'
-    card_config.card_name = request.form.get('card_name', 'ポイントカード').strip() or 'ポイントカード'
+    card_config.card_name = request.form.get('card_name', 'スタンプカード').strip() or 'スタンプカード'
     
+    # スタンプ数
     try:
-        card_config.visit_points = max(1, int(request.form.get('visit_points', 100)))
+        card_config.max_stamps = max(1, min(30, int(request.form.get('max_stamps', 10))))
     except (ValueError, TypeError):
-        card_config.visit_points = 100
+        card_config.max_stamps = 10
+    
+    # スタンプ数 = 特典交換しきい値と同期
+    card_config.visit_points = 1
+    card_config.reward_threshold = card_config.max_stamps
     
     try:
         card_config.min_visit_interval_hours = max(0, int(request.form.get('min_visit_interval_hours', 4)))
     except (ValueError, TypeError):
         card_config.min_visit_interval_hours = 4
     
-    try:
-        card_config.reward_threshold = max(0, int(request.form.get('reward_threshold', 1000)))
-    except (ValueError, TypeError):
-        card_config.reward_threshold = 1000
-    
     card_config.reward_description = request.form.get('reward_description', '').strip() or None
+    
+    # テンプレート選択
+    card_template = request.form.get('card_template', 'bronze').strip()
+    if card_template in ('bronze', 'silver', 'gold', 'platinum', 'custom'):
+        card_config.card_template = card_template
+    
+    card_config.show_stamp_numbers = request.form.get('show_stamp_numbers') == 'on'
     card_config.card_color = request.form.get('card_color', '#6366f1').strip() or '#6366f1'
     
-    # カード画像アップロード処理
+    # カード画像アップロード処理（customテンプレート用）
     if 'card_image' in request.files:
         file = request.files['card_image']
         if file and file.filename and allowed_file(file.filename):
@@ -1179,12 +1186,11 @@ def point_card_settings():
                 else:
                     result = cloud_upload(file, 'point_cards', filename_prefix=f"pc_{shop.id}_")
                 if result:
-                    # 古い画像があれば削除
                     if card_config.card_image_url:
                         cloud_delete(card_config.card_image_url, 'point_cards')
                     card_config.card_image_url = result['filename']
             except Exception as e:
-                current_app.logger.error(f"Point card image upload failed: {e}")
+                current_app.logger.error(f"Stamp card image upload failed: {e}")
     
     # 画像削除リクエスト
     if request.form.get('delete_card_image') == '1' and card_config.card_image_url:
@@ -1193,7 +1199,7 @@ def point_card_settings():
     
     db.session.commit()
     
-    flash('ポイントカード設定を更新しました。', 'success')
+    flash('スタンプカード設定を更新しました。', 'success')
     return redirect(url_for('shop_admin.point_card'))
 
 
@@ -1201,7 +1207,7 @@ def point_card_settings():
 @login_required
 @shop_access_required
 def grant_visit_points():
-    """来店ポイントを付与"""
+    """スタンプを付与"""
     from ..services.shop_point_service import ShopPointService
     from ..models import Customer
     
@@ -1209,7 +1215,7 @@ def grant_visit_points():
     
     # 有料プランチェック
     if not _shop_has_point_card_feature(shop.id):
-        flash('ポイントカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        flash('スタンプカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
         return redirect(url_for('shop_admin.plan'))
     
     # 顧客を検索（メールで）
@@ -1225,8 +1231,8 @@ def grant_visit_points():
         flash('お客様が見つかりません。', 'danger')
         return redirect(url_for('shop_admin.point_card'))
     
-    # ポイント付与
-    success, message, points = ShopPointService.grant_visit_points(
+    # スタンプ付与
+    success, message, stamps = ShopPointService.grant_stamp(
         customer_id=customer.id,
         shop_id=shop.id,
         verified_by=current_user.id,
@@ -1257,7 +1263,7 @@ def point_card_ranks():
     
     # 有料プランチェック
     if not _shop_has_point_card_feature(shop.id):
-        flash('ポイントカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        flash('スタンプカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
         return redirect(url_for('shop_admin.plan'))
     
     card_config = ShopPointCard.get_or_create(shop.id)
@@ -1282,7 +1288,7 @@ def toggle_rank_system():
     shop = g.current_shop
     
     if not _shop_has_point_card_feature(shop.id):
-        flash('ポイントカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        flash('スタンプカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
         return redirect(url_for('shop_admin.plan'))
     
     card_config = ShopPointCard.get_or_create(shop.id)
@@ -1312,7 +1318,7 @@ def save_ranks():
     shop = g.current_shop
     
     if not _shop_has_point_card_feature(shop.id):
-        flash('ポイントカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        flash('スタンプカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
         return redirect(url_for('shop_admin.plan'))
     
     # フォームからランクデータを取得
@@ -1320,9 +1326,8 @@ def save_ranks():
     rank_names = request.form.getlist('rank_name[]')
     rank_levels = request.form.getlist('rank_level[]')
     min_points_list = request.form.getlist('min_total_points[]')
-    multipliers = request.form.getlist('point_multiplier[]')
     colors = request.form.getlist('rank_color[]')
-    icons = request.form.getlist('rank_icon[]')
+    templates = request.form.getlist('card_template[]')
     descriptions = request.form.getlist('bonus_description[]')
     
     # 削除対象
@@ -1342,12 +1347,11 @@ def save_ranks():
         try:
             level = int(rank_levels[i]) if i < len(rank_levels) else i + 1
             min_pts = int(min_points_list[i]) if i < len(min_points_list) else 0
-            mult = float(multipliers[i]) if i < len(multipliers) else 1.0
         except (ValueError, IndexError):
             continue
         
         color = colors[i].strip() if i < len(colors) else '#6366f1'
-        icon = icons[i].strip() if i < len(icons) else ''
+        tpl = templates[i].strip() if i < len(templates) else 'bronze'
         desc = descriptions[i].strip() if i < len(descriptions) else ''
         
         rid = rank_ids[i] if i < len(rank_ids) else ''
@@ -1359,9 +1363,8 @@ def save_ranks():
                 rank.rank_name = name
                 rank.rank_level = level
                 rank.min_total_points = min_pts
-                rank.point_multiplier = mult
                 rank.rank_color = color
-                rank.rank_icon = icon
+                rank.card_template = tpl
                 rank.bonus_description = desc
         else:
             # 新規ランク
@@ -1370,9 +1373,8 @@ def save_ranks():
                 rank_name=name,
                 rank_level=level,
                 min_total_points=min_pts,
-                point_multiplier=mult,
                 rank_color=color,
-                rank_icon=icon,
+                card_template=tpl,
                 bonus_description=desc
             )
             db.session.add(rank)
@@ -1392,7 +1394,7 @@ def reset_default_ranks():
     shop = g.current_shop
     
     if not _shop_has_point_card_feature(shop.id):
-        flash('ポイントカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        flash('スタンプカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
         return redirect(url_for('shop_admin.plan'))
     
     # 既存削除

@@ -1,6 +1,6 @@
 {% extends "customer/base.html" %}
 
-{% block title %}ポイントカード - Night-Walk{% endblock %}
+{% block title %}スタンプカード - Night-Walk{% endblock %}
 
 {% block content %}
 <div class="container wallet-container">
@@ -24,19 +24,44 @@
  </div>
  {% endif %}
  
- <!-- ウォレット風カードスタック -->
+ <!-- ウォレット風スタンプカードスタック -->
  {% if cards %}
  <div class="wallet-stack" id="walletStack">
  {% for card in cards %}
+ {% set card_config = card.shop.point_card %}
+ {% set max_stamps = card_config.max_stamps if card_config else 10 %}
+ {% set current_stamps = card.point_balance % max_stamps if max_stamps > 0 else card.point_balance %}
+ {% set show_numbers = card_config.show_stamp_numbers if card_config else True %}
+ {% set tpl = card_config.card_template if card_config else 'bronze' %}
+ 
+ {# ランクによるテンプレート上書き #}
+ {% if rank_map.get(card.shop_id) and rank_map[card.shop_id].rank %}
+ {% set rank_tpl = rank_map[card.shop_id].rank.card_template %}
+ {% if rank_tpl %}{% set tpl = rank_tpl %}{% endif %}
+ {% endif %}
+ 
+ {% set template_bgs = {
+ 'bronze': 'linear-gradient(135deg, #CD7F32 0%, #A0522D 50%, #8B6914 100%)',
+ 'silver': 'linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 50%, #808080 100%)',
+ 'gold': 'linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #B8860B 100%)',
+ 'platinum': 'linear-gradient(135deg, #E5E4E2 0%, #BDC3C7 50%, #95A5A6 100%)'
+ } %}
+ 
  <a href="{{ url_for('customer.point_card_detail', shop_id=card.shop_id) }}" 
  class="wallet-card" 
- style="--card-index: {{ loop.index0 }}; --card-total: {{ cards|length }}; {% if card.shop.point_card and card.shop.point_card.card_image_url %}--card-bg: url('{{ get_image_url(card.shop.point_card.card_image_url, 'point_cards') }}');{% else %}--card-bg: linear-gradient(135deg, {{ card.shop.point_card.card_color if card.shop.point_card else '#6366f1' }}, {{ card.shop.point_card.card_color if card.shop.point_card else '#6366f1' }}dd);{% endif %}">
- <div class="wallet-card-inner">
- <!-- カードヘッダー（常に見える部分） -->
+ style="--card-index: {{ loop.index0 }}; --card-total: {{ cards|length }};
+ {% if tpl == 'custom' and card_config and card_config.card_image_url %}
+ --card-bg: url('{{ get_image_url(card_config.card_image_url, 'point_cards') }}');
+ {% else %}
+ --card-bg: {{ template_bgs.get(tpl, template_bgs['bronze']) }};
+ {% endif %}
+ ">
+ <div class="wallet-card-inner {% if tpl == 'custom' and card_config and card_config.card_image_url %}has-image{% endif %}">
+ <!-- カードヘッダー -->
  <div class="wallet-card-top">
  <div class="wallet-card-top-left">
  <div class="wallet-shop-name">{{ card.shop.name }}</div>
- <div class="wallet-card-label">{{ card.shop.point_card.card_name if card.shop.point_card else 'ポイントカード' }}</div>
+ <div class="wallet-card-label">{{ card_config.card_name if card_config else 'スタンプカード' }}</div>
  </div>
  <div class="wallet-card-top-right">
  {% if rank_map.get(card.shop_id) %}
@@ -47,25 +72,19 @@
  </div>
  </div>
  
- <!-- カード本体（展開時に見える部分） -->
- <div class="wallet-card-content">
- <div class="wallet-points">
- <span class="wallet-points-value">{{ '{:,}'.format(card.point_balance) }}</span>
- <span class="wallet-points-unit">pt</span>
+ <!-- スタンプ表示 -->
+ <div class="wallet-stamps">
+ {% for i in range(max_stamps) %}
+ <div class="wallet-stamp {{ 'stamped' if i < current_stamps else '' }}">
+ {% if show_numbers %}{{ i + 1 }}{% endif %}
  </div>
+ {% endfor %}
+ </div>
+ 
+ <!-- カードフッター -->
  <div class="wallet-card-footer">
  <div class="wallet-visits">{{ card.visit_count }}回来店</div>
- {% if card.shop.point_card and card.shop.point_card.reward_threshold > 0 %}
- <div class="wallet-progress-wrap">
- <div class="wallet-progress-bar">
- <div class="wallet-progress-fill" style="width: {{ card.progress_to_reward }}%;"></div>
- </div>
- <div class="wallet-progress-text">
- 特典まで {{ '{:,}'.format(card.shop.point_card.reward_threshold - card.point_balance) }}pt
- </div>
- </div>
- {% endif %}
- </div>
+ <div class="wallet-stamp-count">{{ current_stamps }}/{{ max_stamps }}</div>
  </div>
  </div>
  </a>
@@ -73,8 +92,8 @@
  </div>
  {% else %}
  <div class="empty-state">
- <p>まだポイントカードがありません</p>
- <p class="text-muted">店舗で来店ポイントを獲得すると、<br>自動的にカードが作成されます。</p>
+ <p>まだスタンプカードがありません</p>
+ <p class="text-muted">店舗で口コミを投稿すると、<br>自動的にカードが発行されます。</p>
  <a href="{{ url_for('public.index') }}" class="btn btn-primary">店舗を探す</a>
  </div>
  {% endif %}
@@ -106,7 +125,7 @@
  color: #fff;
  position: relative;
  width: 100%;
- min-height: 200px;
+ aspect-ratio: 1.6 / 1;
  border-radius: 16px;
  overflow: hidden;
  box-shadow: 
@@ -118,15 +137,15 @@
  z-index: calc(var(--card-total) - var(--card-index));
 }
 
-/* スタック時の重なり（2枚目以降は上のカードに被る） */
 .wallet-card:not(:first-child) {
- margin-top: -140px;
+ margin-top: -160px;
 }
 
 /* 背景 */
 .wallet-card-inner {
  position: relative;
- min-height: 200px;
+ width: 100%;
+ height: 100%;
  padding: 1.25rem;
  display: flex;
  flex-direction: column;
@@ -136,7 +155,12 @@
  background-position: center;
 }
 
-/* 画像背景の場合のオーバーレイ */
+.wallet-card-inner.has-image {
+ background-image: var(--card-bg);
+ background-size: cover;
+ background-position: center;
+}
+
 .wallet-card-inner::before {
  content: '';
  position: absolute;
@@ -145,7 +169,7 @@
  180deg, 
  rgba(0, 0, 0, 0.25) 0%, 
  rgba(0, 0, 0, 0.05) 40%,
- rgba(0, 0, 0, 0.35) 100%
+ rgba(0, 0, 0, 0.3) 100%
  );
  z-index: 0;
 }
@@ -155,7 +179,7 @@
  z-index: 1;
 }
 
-/* ---- カード上部（常に見える） ---- */
+/* ---- カード上部 ---- */
 .wallet-card-top {
  display: flex;
  justify-content: space-between;
@@ -163,17 +187,15 @@
 }
 
 .wallet-shop-name {
- font-size: 1.1rem;
+ font-size: 1rem;
  font-weight: 700;
- letter-spacing: 0.02em;
  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .wallet-card-label {
- font-size: 0.75rem;
+ font-size: 0.7rem;
  opacity: 0.85;
  margin-top: 2px;
- text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .wallet-rank-badge {
@@ -182,34 +204,44 @@
  -webkit-backdrop-filter: blur(8px);
  padding: 0.2rem 0.65rem;
  border-radius: 1rem;
- font-size: 0.75rem;
+ font-size: 0.7rem;
  font-weight: 600;
  white-space: nowrap;
  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-/* ---- カード本体 ---- */
-.wallet-card-content {
- margin-top: auto;
+/* ---- スタンプ表示 ---- */
+.wallet-stamps {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 6px;
+ justify-content: center;
+ padding: 0.25rem 0;
 }
 
-.wallet-points {
- margin-bottom: 0.5rem;
+.wallet-stamp {
+ width: 30px;
+ height: 30px;
+ border-radius: 50%;
+ border: 2px solid rgba(255,255,255,0.4);
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-size: 0.65rem;
+ font-weight: 600;
+ color: rgba(255,255,255,0.5);
+ background: rgba(255,255,255,0.06);
+ transition: all 0.3s;
 }
 
-.wallet-points-value {
- font-size: 2.5rem;
- font-weight: 700;
- letter-spacing: -0.02em;
- text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+.wallet-stamp.stamped {
+ background: rgba(255,255,255,0.35);
+ border-color: rgba(255,255,255,0.9);
+ color: #fff;
+ box-shadow: 0 0 6px rgba(255,255,255,0.25);
 }
 
-.wallet-points-unit {
- font-size: 1rem;
- opacity: 0.85;
- margin-left: 2px;
-}
-
+/* ---- カードフッター ---- */
 .wallet-card-footer {
  display: flex;
  justify-content: space-between;
@@ -217,44 +249,23 @@
 }
 
 .wallet-visits {
- font-size: 0.8rem;
+ font-size: 0.75rem;
  opacity: 0.85;
  background: rgba(255, 255, 255, 0.15);
  padding: 0.15rem 0.5rem;
  border-radius: 0.5rem;
 }
 
-.wallet-progress-wrap {
- text-align: right;
- flex: 1;
- max-width: 160px;
- margin-left: 0.75rem;
+.wallet-stamp-count {
+ font-size: 0.85rem;
+ font-weight: 700;
+ text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
-.wallet-progress-bar {
- height: 5px;
- background: rgba(255, 255, 255, 0.25);
- border-radius: 3px;
- overflow: hidden;
- margin-bottom: 3px;
-}
-
-.wallet-progress-fill {
- height: 100%;
- background: rgba(255, 255, 255, 0.9);
- border-radius: 3px;
- transition: width 0.6s ease;
-}
-
-.wallet-progress-text {
- font-size: 0.7rem;
- opacity: 0.8;
-}
-
-/* ========== ホバー/タッチ展開 ========== */
+/* ========== ホバー/展開 ========== */
 .wallet-stack:hover .wallet-card:not(:first-child),
 .wallet-stack.expanded .wallet-card:not(:first-child) {
- margin-top: -80px;
+ margin-top: -100px;
 }
 
 .wallet-card:hover {
@@ -265,9 +276,8 @@
  z-index: 100;
 }
 
-/* タップでさらに開く */
 .wallet-stack.fan-out .wallet-card:not(:first-child) {
- margin-top: -40px;
+ margin-top: -60px;
 }
 
 /* ========== 特典セクション ========== */
@@ -295,23 +305,9 @@
  padding: 0.75rem;
 }
 
-.reward-shop {
- font-weight: 600;
- margin-bottom: 0.25rem;
- font-size: 0.9rem;
-}
-
-.reward-description {
- color: #f59e0b;
- font-weight: 500;
- font-size: 0.85rem;
-}
-
-.reward-expires {
- font-size: 0.75rem;
- color: var(--color-text-muted);
- margin-top: 0.25rem;
-}
+.reward-shop { font-weight: 600; margin-bottom: 0.25rem; font-size: 0.9rem; }
+.reward-description { color: #f59e0b; font-weight: 500; font-size: 0.85rem; }
+.reward-expires { font-size: 0.75rem; color: var(--color-text-muted); margin-top: 0.25rem; }
 
 /* ========== 空状態 ========== */
 .empty-state {
@@ -319,47 +315,39 @@
  padding: 4rem 1rem;
 }
 
-.empty-state p {
- margin-bottom: 0.5rem;
-}
+.empty-state p { margin-bottom: 0.5rem; }
 
 /* ========== モバイル調整 ========== */
 @media (max-width: 480px) {
  .wallet-card {
- min-height: 180px;
  border-radius: 14px;
  }
  
  .wallet-card:not(:first-child) {
- margin-top: -120px;
+ margin-top: -140px;
  }
  
  .wallet-stack:hover .wallet-card:not(:first-child),
  .wallet-stack.expanded .wallet-card:not(:first-child) {
- margin-top: -70px;
+ margin-top: -90px;
  }
  
- .wallet-points-value {
- font-size: 2.2rem;
+ .wallet-stamp {
+ width: 26px; height: 26px;
+ font-size: 0.6rem;
  }
  
- .wallet-card-inner {
- padding: 1rem;
- min-height: 180px;
- }
+ .wallet-card-inner { padding: 1rem; }
 }
 </style>
 
 <script>
-// タッチデバイスでスタックをタップして展開
 document.addEventListener('DOMContentLoaded', function() {
  var stack = document.getElementById('walletStack');
  if (!stack) return;
  
- // モバイルでスタック領域をタップすると展開/収縮
  var expanded = false;
  stack.addEventListener('click', function(e) {
- // リンククリックは通常どおり遷移
  if (e.target.closest('.wallet-card')) return;
  expanded = !expanded;
  stack.classList.toggle('fan-out', expanded);

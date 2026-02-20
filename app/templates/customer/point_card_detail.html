@@ -1,14 +1,38 @@
 {% extends "customer/base.html" %}
 
-{% block title %}{{ shop.name }} ポイントカード - Night-Walk{% endblock %}
+{% block title %}{{ shop.name }} スタンプカード - Night-Walk{% endblock %}
 
 {% block content %}
 <div class="container">
- <a href="{{ url_for('customer.point_cards') }}" class="back-link">← ポイントカード一覧に戻る</a>
+ <a href="{{ url_for('customer.point_cards') }}" class="back-link">← スタンプカード一覧に戻る</a>
  
- <!-- ポイントカード -->
- <div class="main-card {{ 'main-card-image' if card_config.card_image_url else '' }}" 
- style="--card-color: {{ card_config.card_color }}; {% if card_config.card_image_url %}--card-bg-image: url('{{ get_image_url(card_config.card_image_url, 'point_cards') }}');{% endif %}">
+ {% set max_stamps = card_config.max_stamps or 10 %}
+ {% set current_stamps = customer_point.point_balance % max_stamps if max_stamps > 0 else customer_point.point_balance %}
+ {% set show_numbers = card_config.show_stamp_numbers if card_config.show_stamp_numbers is not none else True %}
+ {% set tpl = card_config.card_template or 'bronze' %}
+ 
+ {# ランクによるテンプレート上書き #}
+ {% if current_rank and current_rank.rank %}
+ {% set rank_tpl = current_rank.rank.card_template %}
+ {% if rank_tpl %}{% set tpl = rank_tpl %}{% endif %}
+ {% endif %}
+ 
+ {% set template_bgs = {
+ 'bronze': 'linear-gradient(135deg, #CD7F32 0%, #A0522D 50%, #8B6914 100%)',
+ 'silver': 'linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 50%, #808080 100%)',
+ 'gold': 'linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #B8860B 100%)',
+ 'platinum': 'linear-gradient(135deg, #E5E4E2 0%, #BDC3C7 50%, #95A5A6 100%)'
+ } %}
+ 
+ <!-- スタンプカード -->
+ <div class="main-card {% if tpl == 'custom' and card_config.card_image_url %}main-card-image{% endif %}" 
+ style="
+ {% if tpl == 'custom' and card_config.card_image_url %}
+ --card-bg-image: url('{{ get_image_url(card_config.card_image_url, 'point_cards') }}');
+ {% else %}
+ --card-bg: {{ template_bgs.get(tpl, template_bgs['bronze']) }};
+ {% endif %}
+ ">
  <div class="card-header">
  <div class="shop-info">
  <h1 class="shop-name">{{ shop.name }}</h1>
@@ -17,7 +41,7 @@
  <div class="header-badges">
  {% if current_rank %}
  <div class="rank-badge-on-card">
- {{ current_rank.rank_icon }} {{ current_rank.rank_name }}
+ {{ current_rank.rank_name }}
  </div>
  {% endif %}
  <div class="visit-badge">
@@ -27,50 +51,46 @@
  </div>
  
  <div class="card-body">
- <div class="point-display">
- <div class="current-points">
- <span class="value">{{ '{:,}'.format(customer_point.point_balance) }}</span>
- <span class="unit">pt</span>
+ <!-- スタンプ表示 -->
+ <div class="stamp-grid">
+ {% for i in range(max_stamps) %}
+ <div class="stamp-slot {{ 'stamped' if i < current_stamps else '' }}">
+ {% if show_numbers %}{{ i + 1 }}{% endif %}
  </div>
- </div>
- 
- {% if card_config.reward_threshold > 0 %}
- <div class="reward-progress">
- <div class="progress-label">
- <span>特典まで</span>
- <span class="remaining">あと {{ '{:,}'.format(card_config.reward_threshold - customer_point.point_balance) }}pt</span>
- </div>
- <div class="progress-bar-container">
- <div class="progress-bar" style="width: {{ customer_point.progress_to_reward }}%;"></div>
- </div>
+ {% endfor %}
  </div>
  
- <!-- 特典交換ボタン -->
- {% if customer_point.point_balance >= card_config.reward_threshold %}
+ <div class="stamp-count-display">
+ <span class="stamp-count-value">{{ current_stamps }}</span>
+ <span class="stamp-count-separator">/</span>
+ <span class="stamp-count-max">{{ max_stamps }}</span>
+ </div>
+ 
+ <!-- 特典情報 -->
+ {% if current_stamps >= max_stamps or customer_point.point_balance >= max_stamps %}
  <div class="reward-exchange">
  <div class="reward-available">
- 特典と交換できます！
+ スタンプカード完了！ 特典と交換できます
  </div>
  <div class="reward-description">
  {{ card_config.reward_description }}
  </div>
  <form action="{{ url_for('customer.exchange_reward', shop_id=shop.id) }}" method="POST"
- onsubmit="return confirm('{{ card_config.reward_threshold }}ポイントを使って特典と交換しますか？');">
+ onsubmit="return confirm('スタンプカードを使って特典と交換しますか？');">
  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
  <button type="submit" class="btn btn-primary btn-block btn-lg">
- {{ '{:,}'.format(card_config.reward_threshold) }}ptで交換する
+ 特典と交換する
  </button>
  </form>
  </div>
- {% else %}
+ {% elif card_config.reward_description %}
  <div class="reward-info">
  <div class="reward-label">特典</div>
- <div class="reward-content">{{ card_config.reward_description or '設定なし' }}</div>
+ <div class="reward-content">{{ card_config.reward_description }}</div>
  <div class="reward-threshold">
- 必要ポイント: {{ '{:,}'.format(card_config.reward_threshold) }}pt
+ あと{{ max_stamps - current_stamps }}個で交換
  </div>
  </div>
- {% endif %}
  {% endif %}
  </div>
  </div>
@@ -78,12 +98,13 @@
  <!-- ランク情報 -->
  {% if all_ranks %}
  <div class="section rank-section">
- <h2> ランク</h2>
+ <h2>ランク</h2>
  
  {% if current_rank %}
- <div class="current-rank-display" style="--rank-color: {{ current_rank.rank.rank_color if current_rank.rank else '#6366f1' }};">
- <div class="current-rank-icon">{{ current_rank.rank_icon }}</div>
- <div class="current-rank-info">
+ {% set rank_bg = template_bgs.get(current_rank.rank.card_template if current_rank.rank else 'bronze', template_bgs['bronze']) %}
+ <div class="current-rank-display" style="background: {{ rank_bg }};">
+ <div class="current-rank-overlay"></div>
+ <div class="current-rank-info-wrap">
  <div class="current-rank-name">{{ current_rank.rank_name }}</div>
  {% if current_rank.rank and current_rank.rank.bonus_description %}
  <div class="current-rank-bonus">{{ current_rank.rank.bonus_description }}</div>
@@ -92,17 +113,17 @@
  </div>
  {% else %}
  <div class="no-rank-yet">
- <p class="text-muted">まだランクがありません。ポイントを貯めてランクアップしましょう！</p>
+ <p class="text-muted">まだランクがありません。来店してランクアップしましょう！</p>
  </div>
  {% endif %}
  
  {% if next_rank %}
  <div class="next-rank-progress">
  <div class="next-rank-label">
- 次のランク: <strong>{{ next_rank.rank_icon }} {{ next_rank.rank_name }}</strong>
- （あと <strong>{{ '{:,}'.format(remaining_points) }}</strong> pt）
+ 次のランク: <strong>{{ next_rank.rank_name }}</strong>
+ （あと <strong>{{ remaining_points }}</strong> 回来店）
  </div>
- {% set progress = ((customer_point.total_earned / next_rank.min_total_points) * 100) | int %}
+ {% set progress = ((customer_point.visit_count / next_rank.min_total_points) * 100) | int if next_rank.min_total_points > 0 else 0 %}
  <div class="rank-progress-bar-container">
  <div class="rank-progress-bar" style="width: {{ [progress, 100] | min }}%;"></div>
  </div>
@@ -116,22 +137,23 @@
  <!-- 全ランク一覧 -->
  <div class="all-ranks-list">
  {% for rank in all_ranks %}
+ {% set r_bg = template_bgs.get(rank.card_template or 'bronze', template_bgs['bronze']) %}
  <div class="rank-list-item {{ 'rank-current' if current_rank and current_rank.rank_level == rank.rank_level else ('rank-achieved' if current_rank and current_rank.rank_level > rank.rank_level else 'rank-locked') }}"
- style="--rank-color: {{ rank.rank_color }};">
- <div class="rank-item-icon">{{ rank.rank_icon }}</div>
+ style="--rank-bg: {{ r_bg }}; --rank-color: {{ rank.rank_color }};">
+ <div class="rank-item-swatch" style="background: {{ r_bg }};"></div>
  <div class="rank-item-info">
  <div class="rank-item-name">{{ rank.rank_name }}</div>
- <div class="rank-item-threshold">{{ '{:,}'.format(rank.min_total_points) }}pt〜</div>
- </div>
- {% if rank.point_multiplier > 1.0 %}
- <div class="rank-item-bonus">×{{ rank.point_multiplier }}</div>
+ <div class="rank-item-threshold">{{ rank.min_total_points }}回来店〜</div>
+ {% if rank.bonus_description %}
+ <div class="rank-item-bonus-text">{{ rank.bonus_description }}</div>
  {% endif %}
+ </div>
  {% if current_rank and current_rank.rank_level == rank.rank_level %}
  <div class="rank-item-current-badge">NOW</div>
  {% elif current_rank and current_rank.rank_level > rank.rank_level %}
- <div class="rank-item-check"></div>
+ <div class="rank-item-check">&#10003;</div>
  {% else %}
- <div class="rank-item-lock"></div>
+ <div class="rank-item-lock">&#128274;</div>
  {% endif %}
  </div>
  {% endfor %}
@@ -142,7 +164,7 @@
  <!-- 有効な特典 -->
  {% if rewards %}
  <div class="section">
- <h2> 交換済み特典（未使用）</h2>
+ <h2>交換済み特典（未使用）</h2>
  <div class="rewards-list">
  {% for reward in rewards %}
  <div class="reward-item">
@@ -160,7 +182,7 @@
  
  <!-- 取引履歴 -->
  <div class="section">
- <h2> 履歴</h2>
+ <h2>履歴</h2>
  {% if transactions %}
  <div class="transaction-list">
  {% for tx in transactions %}
@@ -168,12 +190,12 @@
  <div class="tx-main">
  <div class="tx-type">{{ tx.type_label }}</div>
  <div class="tx-amount">
- {% if tx.is_credit %}+{% endif %}{{ '{:,}'.format(tx.amount) }}pt
+ {% if tx.is_credit %}+{% endif %}{{ tx.amount }}個
  </div>
  </div>
  <div class="tx-meta">
  <span class="tx-date">{{ tx.created_at.strftime('%Y/%m/%d %H:%M') }}</span>
- <span class="tx-balance">残高: {{ '{:,}'.format(tx.balance_after) }}pt</span>
+ <span class="tx-balance">残: {{ tx.balance_after }}個</span>
  </div>
  </div>
  {% endfor %}
@@ -185,19 +207,19 @@
  
  <!-- 統計 -->
  <div class="section stats-section">
- <h2> 統計</h2>
+ <h2>統計</h2>
  <div class="stats-grid">
  <div class="stat-item">
  <div class="stat-value">{{ customer_point.visit_count }}</div>
  <div class="stat-label">来店回数</div>
  </div>
  <div class="stat-item">
- <div class="stat-value">{{ '{:,}'.format(customer_point.total_earned) }}</div>
- <div class="stat-label">累計獲得pt</div>
+ <div class="stat-value">{{ customer_point.total_earned }}</div>
+ <div class="stat-label">累計スタンプ</div>
  </div>
  <div class="stat-item">
- <div class="stat-value">{{ '{:,}'.format(customer_point.total_used) }}</div>
- <div class="stat-label">累計使用pt</div>
+ <div class="stat-value">{{ customer_point.completed_cards }}</div>
+ <div class="stat-label">完了カード</div>
  </div>
  </div>
  </div>
@@ -210,28 +232,29 @@
  color: var(--color-text-muted);
 }
 
+/* ============ メインカード ============ */
 .main-card {
- background: linear-gradient(135deg, var(--card-color), color-mix(in srgb, var(--card-color) 70%, black));
- border-radius: var(--radius-lg);
+ background: var(--card-bg);
+ border-radius: 16px;
  color: #fff;
  margin-bottom: 1.5rem;
  overflow: hidden;
+ position: relative;
 }
 
 .main-card-image {
  background: var(--card-bg-image) center / cover no-repeat;
- position: relative;
 }
 
-.main-card-image::before {
+.main-card::before {
  content: '';
  position: absolute;
  inset: 0;
- background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.65) 100%);
+ background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.3) 100%);
  z-index: 0;
 }
 
-.main-card-image > * {
+.main-card > * {
  position: relative;
  z-index: 1;
 }
@@ -241,18 +264,19 @@
  display: flex;
  justify-content: space-between;
  align-items: flex-start;
- border-bottom: 1px solid rgba(255,255,255,0.2);
+ border-bottom: 1px solid rgba(255,255,255,0.15);
 }
 
 .shop-name {
  font-size: 1.25rem;
  font-weight: 700;
  margin: 0;
+ text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .card-name {
- font-size: 0.85rem;
- opacity: 0.9;
+ font-size: 0.8rem;
+ opacity: 0.85;
  margin-top: 0.25rem;
 }
 
@@ -264,75 +288,89 @@
 }
 
 .rank-badge-on-card {
- background: rgba(255,255,255,0.3);
+ background: rgba(255,255,255,0.25);
+ backdrop-filter: blur(8px);
  padding: 0.2rem 0.65rem;
  border-radius: 1rem;
- font-size: 0.8rem;
+ font-size: 0.75rem;
  font-weight: 600;
  white-space: nowrap;
 }
 
 .visit-badge {
- background: rgba(255,255,255,0.2);
- padding: 0.25rem 0.75rem;
+ background: rgba(255,255,255,0.15);
+ padding: 0.2rem 0.6rem;
  border-radius: 1rem;
- font-size: 0.85rem;
+ font-size: 0.8rem;
 }
 
 .main-card .card-body {
- padding: 1.5rem;
+ padding: 1.25rem;
 }
 
-.point-display {
- text-align: center;
- margin-bottom: 1.5rem;
-}
-
-.current-points .value {
- font-size: 3rem;
- font-weight: 700;
-}
-
-.current-points .unit {
- font-size: 1.25rem;
- opacity: 0.9;
-}
-
-.reward-progress {
+/* ============ スタンプグリッド ============ */
+.stamp-grid {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 10px;
+ justify-content: center;
  margin-bottom: 1rem;
 }
 
-.progress-label {
+.stamp-slot {
+ width: 42px;
+ height: 42px;
+ border-radius: 50%;
+ border: 2.5px solid rgba(255,255,255,0.4);
  display: flex;
- justify-content: space-between;
- font-size: 0.85rem;
- margin-bottom: 0.5rem;
- opacity: 0.9;
+ align-items: center;
+ justify-content: center;
+ font-size: 0.8rem;
+ font-weight: 600;
+ color: rgba(255,255,255,0.5);
+ background: rgba(255,255,255,0.06);
+ transition: all 0.3s;
 }
 
-.progress-bar-container {
- height: 10px;
- background: rgba(255,255,255,0.3);
- border-radius: 5px;
- overflow: hidden;
+.stamp-slot.stamped {
+ background: rgba(255,255,255,0.35);
+ border-color: rgba(255,255,255,0.95);
+ color: #fff;
+ box-shadow: 0 0 10px rgba(255,255,255,0.3);
 }
 
-.progress-bar {
- height: 100%;
- background: #fff;
- border-radius: 5px;
- transition: width 0.5s ease;
+.stamp-count-display {
+ text-align: center;
+ margin-bottom: 1rem;
 }
 
+.stamp-count-value {
+ font-size: 2.5rem;
+ font-weight: 700;
+ text-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.stamp-count-separator {
+ font-size: 1.5rem;
+ opacity: 0.6;
+ margin: 0 0.15rem;
+}
+
+.stamp-count-max {
+ font-size: 1.25rem;
+ opacity: 0.8;
+}
+
+/* ============ 特典 ============ */
 .reward-exchange {
  background: rgba(255,255,255,0.15);
- border-radius: var(--radius);
+ border-radius: 12px;
  padding: 1rem;
  text-align: center;
 }
 
 .reward-available {
- font-size: 1.1rem;
+ font-size: 1.05rem;
  font-weight: 600;
  margin-bottom: 0.5rem;
 }
@@ -344,19 +382,19 @@
 
 .reward-exchange .btn {
  background: #fff;
- color: var(--card-color);
+ color: #333;
  font-weight: 600;
 }
 
 .reward-info {
  background: rgba(255,255,255,0.1);
- border-radius: var(--radius);
+ border-radius: 12px;
  padding: 1rem;
 }
 
 .reward-label {
- font-size: 0.85rem;
- opacity: 0.9;
+ font-size: 0.8rem;
+ opacity: 0.85;
  margin-bottom: 0.25rem;
 }
 
@@ -367,9 +405,10 @@
 
 .reward-threshold {
  font-size: 0.85rem;
- opacity: 0.9;
+ opacity: 0.85;
 }
 
+/* ============ セクション共通 ============ */
 .section {
  margin-bottom: 1.5rem;
 }
@@ -379,131 +418,37 @@
  margin-bottom: 1rem;
 }
 
-.rewards-list .reward-item {
- background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(236, 72, 153, 0.1));
- border: 1px solid rgba(245, 158, 11, 0.3);
- border-radius: var(--radius);
- padding: 1rem;
- margin-bottom: 0.75rem;
-}
-
-.reward-desc {
- font-weight: 600;
- color: #f59e0b;
- margin-bottom: 0.5rem;
-}
-
-.reward-meta {
- display: flex;
- gap: 1rem;
- font-size: 0.85rem;
- color: var(--color-text-muted);
-}
-
-.reward-note {
- font-size: 0.8rem;
- color: var(--color-text-muted);
- margin-top: 0.5rem;
-}
-
-.transaction-list {
- background: var(--color-bg-elevated);
- border-radius: var(--radius);
+/* ============ ランクセクション ============ */
+.current-rank-display {
+ position: relative;
+ border-radius: 14px;
+ color: #fff;
+ padding: 1.25rem;
+ margin-bottom: 1rem;
  overflow: hidden;
 }
 
-.transaction-item {
- padding: 0.75rem 1rem;
- border-bottom: 1px solid var(--color-border);
+.current-rank-overlay {
+ position: absolute;
+ inset: 0;
+ background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.25) 100%);
 }
 
-.transaction-item:last-child {
- border-bottom: none;
-}
-
-.tx-main {
- display: flex;
- justify-content: space-between;
- align-items: center;
- margin-bottom: 0.25rem;
-}
-
-.tx-type {
- font-weight: 500;
-}
-
-.tx-amount {
- font-weight: 600;
-}
-
-.transaction-item.credit .tx-amount {
- color: var(--color-success);
-}
-
-.transaction-item.debit .tx-amount {
- color: var(--color-danger);
-}
-
-.tx-meta {
- display: flex;
- justify-content: space-between;
- font-size: 0.8rem;
- color: var(--color-text-muted);
-}
-
-.stats-grid {
- display: grid;
- grid-template-columns: repeat(3, 1fr);
- gap: 1rem;
-}
-
-.stat-item {
- background: var(--color-bg-elevated);
- border-radius: var(--radius);
- padding: 1rem;
- text-align: center;
-}
-
-.stat-item .stat-value {
- font-size: 1.5rem;
- font-weight: 700;
- color: var(--color-primary);
-}
-
-.stat-item .stat-label {
- font-size: 0.8rem;
- color: var(--color-text-muted);
-}
-
-/* ====== ランクセクション ====== */
-.rank-section {
- margin-bottom: 1.5rem;
-}
-
-.current-rank-display {
- display: flex;
- align-items: center;
- gap: 1rem;
- padding: 1rem;
- background: linear-gradient(135deg, var(--rank-color), color-mix(in srgb, var(--rank-color) 65%, black));
- border-radius: var(--radius-lg);
- color: #fff;
- margin-bottom: 1rem;
-}
-
-.current-rank-icon {
- font-size: 2.5rem;
+.current-rank-info-wrap {
+ position: relative;
+ z-index: 1;
 }
 
 .current-rank-name {
  font-size: 1.25rem;
  font-weight: 700;
+ text-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .current-rank-bonus {
  font-size: 0.85rem;
  opacity: 0.9;
- margin-top: 0.15rem;
+ margin-top: 0.25rem;
 }
 
 .no-rank-yet {
@@ -513,7 +458,7 @@
 
 .next-rank-progress {
  background: var(--color-bg-elevated);
- border-radius: var(--radius);
+ border-radius: 12px;
  padding: 1rem;
  margin-bottom: 1rem;
 }
@@ -541,7 +486,7 @@
  text-align: center;
  padding: 0.75rem;
  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(236, 72, 153, 0.15));
- border-radius: var(--radius);
+ border-radius: 12px;
  font-weight: 600;
  margin-bottom: 1rem;
 }
@@ -557,14 +502,12 @@
  align-items: center;
  gap: 0.75rem;
  padding: 0.75rem 1rem;
- border-radius: var(--radius);
+ border-radius: 12px;
  background: var(--color-bg-elevated);
- border-left: 4px solid var(--rank-color);
  transition: opacity 0.2s;
 }
 
 .rank-list-item.rank-current {
- background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(236, 72, 153, 0.08));
  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
@@ -572,32 +515,17 @@
  opacity: 0.5;
 }
 
-.rank-item-icon {
- font-size: 1.5rem;
+.rank-item-swatch {
+ width: 36px;
+ height: 36px;
+ border-radius: 8px;
+ flex-shrink: 0;
 }
 
-.rank-item-info {
- flex: 1;
-}
-
-.rank-item-name {
- font-weight: 600;
- font-size: 0.95rem;
-}
-
-.rank-item-threshold {
- font-size: 0.8rem;
- color: var(--color-text-muted);
-}
-
-.rank-item-bonus {
- background: rgba(245, 158, 11, 0.15);
- color: #f59e0b;
- padding: 0.15rem 0.5rem;
- border-radius: 1rem;
- font-size: 0.8rem;
- font-weight: 600;
-}
+.rank-item-info { flex: 1; }
+.rank-item-name { font-weight: 600; font-size: 0.95rem; }
+.rank-item-threshold { font-size: 0.8rem; color: var(--color-text-muted); }
+.rank-item-bonus-text { font-size: 0.75rem; color: #f59e0b; margin-top: 2px; }
 
 .rank-item-current-badge {
  background: var(--color-primary);
@@ -617,6 +545,88 @@
 .rank-item-lock {
  font-size: 0.9rem;
  opacity: 0.6;
+}
+
+/* ============ 特典リスト ============ */
+.rewards-list .reward-item {
+ background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(236, 72, 153, 0.1));
+ border: 1px solid rgba(245, 158, 11, 0.3);
+ border-radius: 12px;
+ padding: 1rem;
+ margin-bottom: 0.75rem;
+}
+
+.reward-desc { font-weight: 600; color: #f59e0b; margin-bottom: 0.5rem; }
+
+.reward-meta {
+ display: flex;
+ gap: 1rem;
+ font-size: 0.85rem;
+ color: var(--color-text-muted);
+}
+
+.reward-note {
+ font-size: 0.8rem;
+ color: var(--color-text-muted);
+ margin-top: 0.5rem;
+}
+
+/* ============ 取引履歴 ============ */
+.transaction-list {
+ background: var(--color-bg-elevated);
+ border-radius: 12px;
+ overflow: hidden;
+}
+
+.transaction-item {
+ padding: 0.75rem 1rem;
+ border-bottom: 1px solid var(--color-border);
+}
+
+.transaction-item:last-child { border-bottom: none; }
+
+.tx-main {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ margin-bottom: 0.25rem;
+}
+
+.tx-type { font-weight: 500; }
+.tx-amount { font-weight: 600; }
+.transaction-item.credit .tx-amount { color: var(--color-success); }
+.transaction-item.debit .tx-amount { color: var(--color-danger); }
+
+.tx-meta {
+ display: flex;
+ justify-content: space-between;
+ font-size: 0.8rem;
+ color: var(--color-text-muted);
+}
+
+/* ============ 統計 ============ */
+.stats-grid {
+ display: grid;
+ grid-template-columns: repeat(3, 1fr);
+ gap: 1rem;
+}
+
+.stat-item {
+ background: var(--color-bg-elevated);
+ border-radius: 12px;
+ padding: 1rem;
+ text-align: center;
+}
+
+.stat-item .stat-value {
+ font-size: 1.5rem;
+ font-weight: 700;
+ color: var(--color-primary);
+}
+
+.stat-item .stat-label {
+ font-size: 0.8rem;
+ color: var(--color-text-muted);
 }
 </style>
 {% endblock %}

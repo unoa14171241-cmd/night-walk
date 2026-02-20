@@ -656,7 +656,7 @@ def verify_review(shop_id):
         session.pop('pending_review_id', None)
         
         if result.get('card_issued'):
-            flash('口コミを投稿しました！ この店舗のポイントカードが発行されました！', 'success')
+            flash('口コミを投稿しました！ この店舗のスタンプカードが発行されました！', 'success')
         else:
             flash('口コミを投稿しました！', 'success')
         
@@ -733,7 +733,7 @@ def point_card_detail(shop_id):
     # ポイントカード設定
     card_config = ShopPointCard.query.filter_by(shop_id=shop_id).first()
     if not card_config or not card_config.is_active:
-        flash('この店舗ではポイントカードが利用できません。', 'warning')
+        flash('この店舗ではスタンプカードが利用できません。', 'warning')
         return redirect(url_for('customer.point_cards'))
     
     # 顧客のポイント
