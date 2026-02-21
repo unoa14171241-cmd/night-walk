@@ -729,10 +729,11 @@ def sitemap():
     for shop in published_shops:
         try:
             url = url_for('public.shop_detail', shop_id=shop.id, _external=True)
-            lastmod = shop.updated_at.strftime('%Y-%m-%d') if shop.updated_at else ''
+            lastmod_tag = ''
+            if shop.updated_at:
+                lastmod_tag = f'\n    <lastmod>{shop.updated_at.strftime("%Y-%m-%d")}</lastmod>'
             xml_content.append(f'''  <url>
-    <loc>{url}</loc>
-    <lastmod>{lastmod}</lastmod>
+    <loc>{url}</loc>{lastmod_tag}
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>''')
@@ -744,13 +745,15 @@ def sitemap():
     published_casts = Cast.query.filter_by(is_active=True, is_visible=True).all()
     
     for cast in published_casts:
-        # デモ店舗のキャストは除外
         if cast.shop and cast.shop.is_demo:
             continue
         try:
             url = url_for('public.cast_detail', cast_id=cast.id, _external=True)
+            lastmod_tag = ''
+            if cast.updated_at:
+                lastmod_tag = f'\n    <lastmod>{cast.updated_at.strftime("%Y-%m-%d")}</lastmod>'
             xml_content.append(f'''  <url>
-    <loc>{url}</loc>
+    <loc>{url}</loc>{lastmod_tag}
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>''')
