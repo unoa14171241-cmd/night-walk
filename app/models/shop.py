@@ -242,7 +242,12 @@ class Shop(db.Model):
         self.review_status = self.STATUS_APPROVED
         self.reviewed_at = datetime.utcnow()
         self.reviewed_by = reviewer_id
-        self.review_notes = notes
+        # 既存のreview_notes（仮パスワード等）を保持し、承認メモを追記
+        if notes:
+            if self.review_notes:
+                self.review_notes = self.review_notes + f'\n承認メモ: {notes}'
+            else:
+                self.review_notes = notes
         self.is_published = True  # 自動公開
     
     def reject(self, reviewer_id=None, notes=None):

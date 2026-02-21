@@ -19,6 +19,7 @@ from ..models.gift import Cast, Gift, GiftTransaction
 from ..models.customer import Customer
 from ..models.system import SystemStatus, ContentReport, SystemLog, DemoAccount
 from ..models.shop import ShopImage
+from ..models.email_template import EmailTemplate
 from ..utils.decorators import admin_required
 from ..utils.logger import audit_log
 from ..services.storage_service import upload_image as cloud_upload_image, delete_image as cloud_delete_image
@@ -2748,3 +2749,68 @@ def system_logs():
                           logs=logs,
                           level_filter=level,
                           category_filter=category)
+
+
+# ============================================
+# Email Template Management
+# ============================================
+
+@admin_bp.route('/email-templates')
+@admin_required
+def email_templates():
+    """メールテンプレート一覧"""
+    templates = EmailTemplate.query.order_by(EmailTemplate.key).all()
+    return render_template('admin/email_templates.html', templates=templates)
+
+
+@admin_bp.route('/email-templates/<int:template_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_email_template(template_id):
+    """メールテンプレート編集"""
+    template = EmailTemplate.query.get_or_404(template_id)
+    
+    if request.method == 'POST':
+        template.subject = request.form.get('subject', '').strip()
+        template.body_html = request.form.get('body_html', '')
+        template.updated_by = current_user.id
+        
+        db.session.commit()
+        
+        flash(f'テンプレート「{template.name}」を保存しました。', 'success')
+        return redirect(url_for('admin.email_templates'))
+    
+    placeholders = EmailTemplate.PLACEHOLDERS.get(template.key, {})
+    return render_template('admin/email_template_form.html',
+                          template=template,
+                          placeholders=placeholders)
+
+
+@admin_bp.route('/email-templates/<int:template_id>/preview')
+@admin_required
+def preview_email_template(template_id):
+    """メールテンプレートのプレビュー（サンプルデータで表示）"""
+    template = EmailTemplate.query.get_or_404(template_id)
+    
+    # サンプルデータでプレビュー
+    sample_params = {
+        'owner_name': '山田 太郎',
+        'shop_name': 'Club SAMPLE',
+        'email': 'sample@example.com',
+        'temp_password': 'AbCd1234',
+        'login_url': url_for('auth.login', _external=True),
+        'reason': '申し訳ございませんが、掲載基準を満たしていないため見送りとさせていただきます。',
+    }
+    
+    html_content = template.render_body(**sample_params)
+    return html_content
+
+
+@admin_bp.route('/email-templates/init', methods=['POST'])
+@admin_required
+def init_email_templates():
+    """デフォルトテンプレートを初期化"""
+    for key in EmailTemplate.TEMPLATE_KEYS:
+        EmailTemplate.get_template(key)  # 存在しなければ自動作成
+    
+    flash('デフォルトテンプレートを初期化しました。', 'success')
+    return redirect(url_for('admin.email_templates'))

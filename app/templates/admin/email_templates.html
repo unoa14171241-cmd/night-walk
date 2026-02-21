@@ -1,0 +1,81 @@
+{% extends "admin/base.html" %}
+
+{% block title %}メールテンプレート管理 - Night-Walk{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>📧 メールテンプレート管理</h2>
+    <p class="text-muted">メール通知の文面を編集できます</p>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h3 class="card-title">テンプレート一覧</h3>
+    </div>
+
+    {% if templates %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>テンプレート名</th>
+                    <th>件名</th>
+                    <th>最終更新</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for template in templates %}
+                <tr>
+                    <td>
+                        <strong>{{ template.name }}</strong>
+                        <br><small class="text-muted">キー: {{ template.key }}</small>
+                    </td>
+                    <td>{{ template.subject }}</td>
+                    <td>
+                        {% if template.updated_at %}
+                        {{ template.updated_at.strftime('%Y/%m/%d %H:%M') }}
+                        {% else %}
+                        —
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('admin.edit_email_template', template_id=template.id) }}"
+                            class="btn btn-sm btn-secondary">
+                            ✏️ 編集
+                        </a>
+                        <a href="{{ url_for('admin.preview_email_template', template_id=template.id) }}"
+                            class="btn btn-sm btn-outline" target="_blank">
+                            👁️ プレビュー
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="padding: 2rem; text-align: center; color: var(--color-text-muted);">
+        テンプレートがまだ作成されていません。<br>
+        店舗承認/却下を行うと自動的にデフォルトテンプレートが作成されます。
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">デフォルトテンプレートの初期化</h3>
+    </div>
+    <div style="padding: 1.5rem;">
+        <p class="text-muted" style="margin-bottom: 1rem;">
+            デフォルトのメールテンプレートを作成（既存のテンプレートは上書きされません）
+        </p>
+        <form method="POST" action="{{ url_for('admin.init_email_templates') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-secondary">
+                📥 デフォルトテンプレートを初期化
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

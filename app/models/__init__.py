@@ -37,6 +37,8 @@ from .shop_point_rank import ShopPointRank, CustomerShopRank
 from .system import SystemStatus, ContentReport, SystemLog, DemoAccount, ImageStore
 # 紹介制度
 from .referral import ShopReferral
+# メールテンプレート
+from .email_template import EmailTemplate
 
 __all__ = [
     'User',
@@ -108,4 +110,6 @@ __all__ = [
     'ImageStore',
     # 紹介制度
     'ShopReferral',
+    # メールテンプレート
+    'EmailTemplate',
 ]
