@@ -31,7 +31,10 @@ class EmailService:
             return False
         
         if not from_email:
-            from_email = current_app.config.get('MAIL_DEFAULT_SENDER', 'noreply@night-walk.jp')
+            from_email = current_app.config.get('MAIL_DEFAULT_SENDER')
+            if not from_email:
+                # config['COMPANY_INFO']['email']をフォールバックとして使用
+                from_email = current_app.config.get('COMPANY_INFO', {}).get('email', 'noreply@night-walk.jp')
         
         sg = sendgrid.SendGridAPIClient(api_key=api_key)
         
@@ -46,14 +49,16 @@ class EmailService:
             response = sg.send(message)
             
             if response.status_code in [200, 201, 202]:
-                current_app.logger.info(f"Email sent to {to_email}: {subject}")
+                current_app.logger.info(f"Email sent successfully to {to_email}: {subject}")
                 return True
             else:
-                current_app.logger.error(f"SendGrid error: {response.status_code} - {response.body}")
+                # SendGridからのエラー内容を詳細に記録
+                error_body = response.body.decode('utf-8') if hasattr(response.body, 'decode') else str(response.body)
+                current_app.logger.error(f"SendGrid error: status={response.status_code}, from={from_email}, body={error_body}")
                 return False
                 
         except Exception as e:
-            current_app.logger.error(f"Failed to send email: {e}")
+            current_app.logger.error(f"Failed to send email to {to_email}: {str(e)}")
             return False
     
     @classmethod
