@@ -7,73 +7,243 @@
     <p class="mb-3">
         <a href="{{ url_for('public.shop_detail', shop_id=shop.id) }}">← {{ shop.name }}に戻る</a>
     </p>
-    
+
     <div class="card text-center">
         <div class="card-header">
-            <h2 class="card-title mb-0">電話予約</h2>
+            <h2 class="card-title mb-0">{{ shop.name }}</h2>
         </div>
-        
-        <div class="mb-4">
-            <h3 class="mb-2">{{ shop.name }}</h3>
-            {% if shop.vacancy_status %}
+
+        {% if shop.vacancy_status %}
+        <div class="mb-3">
             <span class="vacancy-badge vacancy-badge-lg vacancy-{{ shop.vacancy_status.color or 'secondary' }}">
                 {{ shop.vacancy_status.label or '−' }}
             </span>
-            {% endif %}
         </div>
-        
-        {% if shop.phone %}
+        {% endif %}
+
         {% if twilio_configured %}
-        <div class="mb-4">
-            <p class="text-muted mb-3">
-                ボタンを押すと自動音声予約システムに接続されます。<br>
-                案内に従ってプッシュ番号を入力してください。
+        <!-- === Twilio 自動音声予約 === -->
+        <div id="twilio-section">
+            <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">自動音声予約</h3>
+            <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 1rem;">
+                電話番号を入力すると、Twilioから自動音声でお電話します。<br>
+                音声ガイドに従い、1を押すと予約確定です。
             </p>
-            
-            <a href="tel:{{ shop.phone }}" class="phone-btn" style="display: inline-block; text-decoration: none;">
-                自動音声で予約する
-            </a>
-            
-            <p class="text-muted mt-3" style="font-size: 0.75rem;">
+
+            <div id="call-form">
+                <div style="margin-bottom: 1rem;">
+                    <input type="tel" id="caller-phone" placeholder="090-1234-5678"
+                        style="width: 100%; max-width: 280px; padding: 0.75rem 1rem; border-radius: 8px;
+                               border: 1px solid rgba(255,215,0,0.3); background: rgba(255,255,255,0.08);
+                               color: #fff; font-size: 1.1rem; text-align: center;"
+                        pattern="[0-9\-]+" inputmode="tel" autocomplete="tel">
+                </div>
+                <button id="call-btn" class="phone-btn"
+                    data-shop-id="{{ shop.id }}"
+                    style="display: inline-block; cursor: pointer; border: none; font-size: 1rem; padding: 0.85rem 2rem;">
+                    自動音声で予約する
+                </button>
+            </div>
+
+            <div id="call-status" style="display: none; margin-top: 1rem;">
+                <div id="call-status-spinner" style="margin-bottom: 0.5rem;">
+                    <div style="display: inline-block; width: 24px; height: 24px; border: 3px solid rgba(255,215,0,0.3);
+                                border-top-color: #ffd700; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                </div>
+                <p id="call-status-text" style="font-size: 0.9rem; color: #ffd700;"></p>
+            </div>
+
+            <div id="call-result" style="display: none; margin-top: 1rem;"></div>
+
+            <p class="text-muted" style="font-size: 0.7rem; margin-top: 1rem;">
                 通話料はお客様負担となります
             </p>
         </div>
-        
-        <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
-        
-        <p class="text-muted mb-2">または直接電話する</p>
+
+        <hr style="border-color: var(--color-border); margin: 1.5rem 0;">
+        <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 0.75rem;">または店舗に直接電話する</p>
         {% else %}
-        <p class="text-muted mb-3">
+        <!-- Twilio未設定時 -->
+        <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">電話予約</h3>
+        <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 1rem;">
             ボタンを押すと店舗に直接電話がかかります。
         </p>
         {% endif %}
-        
-        <a href="tel:{{ shop.phone }}" class="btn btn-secondary btn-lg btn-block" style="display: inline-block; text-decoration: none;">
+
+        <!-- === 直接電話 === -->
+        {% if shop.phone %}
+        <a href="tel:{{ shop.phone }}" class="btn btn-secondary btn-lg btn-block"
+            style="display: inline-block; text-decoration: none; font-size: 1rem; padding: 0.75rem 2rem;">
             {{ shop.phone }} に電話する
         </a>
-        <p class="text-muted mt-2" style="font-size: 0.75rem;">
-            タップで発信されます
-        </p>
+        <p class="text-muted" style="font-size: 0.7rem; margin-top: 0.5rem;">タップで発信されます</p>
         {% else %}
-        <div class="mb-4">
-            <p class="text-muted">
-                この店舗の電話番号はまだ登録されていません。<br>
-                店舗に直接お問い合わせください。
-            </p>
-        </div>
+        <p class="text-muted">
+            この店舗の電話番号はまだ登録されていません。
+        </p>
         {% endif %}
     </div>
-    
-    {% if shop.phone %}
-    <div class="card mt-4">
-        <h4 class="mb-3">予約の流れ</h4>
-        <ol style="padding-left: var(--space-lg); color: var(--color-text-muted);">
-            <li class="mb-2">上の電話ボタンをタップ</li>
-            <li class="mb-2">店舗スタッフが対応します</li>
-            <li class="mb-2">ご希望の来店時間と人数をお伝えください</li>
-            <li class="mb-2">予約完了です</li>
+
+    <!-- 予約の流れ -->
+    <div class="card" style="margin-top: 1rem;">
+        <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem;">予約の流れ</h4>
+        {% if twilio_configured %}
+        <ol style="padding-left: 1.5rem; color: var(--color-text-muted); font-size: 0.85rem;">
+            <li style="margin-bottom: 0.5rem;">電話番号を入力して「自動音声で予約する」をタップ</li>
+            <li style="margin-bottom: 0.5rem;">お客様の電話にTwilioから着信があります</li>
+            <li style="margin-bottom: 0.5rem;">自動音声で店舗名を案内します</li>
+            <li style="margin-bottom: 0.5rem;">予約確定は「1」、キャンセルは「2」を押してください</li>
+            <li>店舗からの折り返し連絡をお待ちください</li>
         </ol>
+        {% else %}
+        <ol style="padding-left: 1.5rem; color: var(--color-text-muted); font-size: 0.85rem;">
+            <li style="margin-bottom: 0.5rem;">上の電話ボタンをタップ</li>
+            <li style="margin-bottom: 0.5rem;">店舗スタッフが対応します</li>
+            <li style="margin-bottom: 0.5rem;">ご希望の来店時間と人数をお伝えください</li>
+            <li>予約完了です</li>
+        </ol>
+        {% endif %}
     </div>
-    {% endif %}
 </div>
+
+<style>
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.phone-btn {
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #1a0a25;
+    font-weight: 700;
+    border-radius: 12px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+}
+.phone-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+}
+.phone-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+#caller-phone:focus {
+    outline: none;
+    border-color: #ffd700;
+    box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+}
+</style>
+
+{% if twilio_configured %}
+{% block extra_js %}
+<script>
+(function() {
+    const callBtn = document.getElementById('call-btn');
+    const phoneInput = document.getElementById('caller-phone');
+    const callForm = document.getElementById('call-form');
+    const callStatus = document.getElementById('call-status');
+    const callStatusText = document.getElementById('call-status-text');
+    const callResult = document.getElementById('call-result');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
+                      || '{{ csrf_token() }}';
+
+    if (!callBtn) return;
+
+    callBtn.addEventListener('click', async function() {
+        const phone = phoneInput.value.replace(/[\s\-]/g, '');
+
+        if (!phone || !/^(0\d{9,10}|\+81\d{9,10})$/.test(phone)) {
+            alert('有効な電話番号を入力してください（例: 09012345678）');
+            phoneInput.focus();
+            return;
+        }
+
+        callBtn.disabled = true;
+        callStatus.style.display = 'block';
+        callStatusText.textContent = '発信中...お電話をおかけしています';
+
+        try {
+            const res = await fetch('/api/booking/call', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    shop_id: callBtn.dataset.shopId,
+                    phone: phone
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                callStatusText.textContent = 'お電話をおかけしました。着信をお待ちください。';
+                if (data.call_sid) {
+                    pollCallStatus(data.call_sid);
+                }
+            } else {
+                callStatus.style.display = 'none';
+                callResult.style.display = 'block';
+                callResult.innerHTML = '<p style="color: #ef4444;">' + (data.error || '発信に失敗しました') + '</p>';
+                callBtn.disabled = false;
+            }
+        } catch (e) {
+            callStatus.style.display = 'none';
+            callResult.style.display = 'block';
+            callResult.innerHTML = '<p style="color: #ef4444;">通信エラーが発生しました。もう一度お試しください。</p>';
+            callBtn.disabled = false;
+        }
+    });
+
+    function pollCallStatus(callSid) {
+        let attempts = 0;
+        const maxAttempts = 30;
+
+        const interval = setInterval(async () => {
+            attempts++;
+            if (attempts > maxAttempts) {
+                clearInterval(interval);
+                callStatusText.textContent = '通話が完了しました。';
+                document.getElementById('call-status-spinner').style.display = 'none';
+                callBtn.disabled = false;
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/booking/call/status?call_sid=' + callSid);
+                const data = await res.json();
+
+                if (!data.found) return;
+
+                const statusMessages = {
+                    'initiated': '発信中...',
+                    'ringing': '呼び出し中...',
+                    'in-progress': '通話中...',
+                    'answered': '通話中...',
+                    'completed': '通話が完了しました',
+                    'failed': '発信に失敗しました',
+                    'no-answer': '応答がありませんでした',
+                    'busy': '回線が混み合っています'
+                };
+
+                callStatusText.textContent = statusMessages[data.status] || data.status;
+
+                if (['completed', 'failed', 'no-answer', 'busy'].includes(data.status)) {
+                    clearInterval(interval);
+                    document.getElementById('call-status-spinner').style.display = 'none';
+
+                    if (data.digits_pressed === '1') {
+                        callResult.style.display = 'block';
+                        callResult.innerHTML = '<p style="color: #10b981; font-weight: 700; font-size: 1.1rem;">予約が確定しました</p><p class="text-muted" style="font-size: 0.85rem;">店舗からの連絡をお待ちください。</p>';
+                    }
+                    callBtn.disabled = false;
+                }
+            } catch (e) { /* ignore polling errors */ }
+        }, 3000);
+    }
+})();
+</script>
+{% endblock %}
+{% endif %}
 {% endblock %}

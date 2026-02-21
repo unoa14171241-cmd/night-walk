@@ -358,3 +358,66 @@ def get_badges(target_type, target_id):
         'badges': badges,
         'best_badge': best_badge
     })
+
+
+# ============================================
+# Twilio 自動音声予約
+# ============================================
+
+@api_bp.route('/booking/call', methods=['POST'])
+@limiter.limit("5 per hour")
+def initiate_booking_call():
+    """Twilio経由で自動音声予約コールを発信"""
+    from flask import current_app
+    import re
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'リクエストデータがありません'}), 400
+
+    shop_id = data.get('shop_id')
+    phone = data.get('phone', '').strip()
+
+    if not shop_id or not phone:
+        return jsonify({'success': False, 'error': '店舗IDと電話番号は必須です'}), 400
+
+    if not re.match(r'^(\+81|0)\d{9,10}$', phone):
+        return jsonify({'success': False, 'error': '有効な電話番号を入力してください（例: 090-1234-5678）'}), 400
+
+    phone_clean = re.sub(r'[-\s]', '', phone)
+    if phone_clean.startswith('0'):
+        phone_e164 = '+81' + phone_clean[1:]
+    else:
+        phone_e164 = phone_clean
+
+    account_sid = current_app.config.get('TWILIO_ACCOUNT_SID')
+    if not account_sid:
+        return jsonify({'success': False, 'error': '自動音声予約システムは現在準備中です'}), 503
+
+    from ..services.twilio_service import initiate_call
+    result = initiate_call(int(shop_id), phone_e164)
+
+    if result['success']:
+        return jsonify({
+            'success': True,
+            'message': 'お電話をおかけしています。しばらくお待ちください。',
+            'call_sid': result.get('call_sid')
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'error': result.get('error', '発信に失敗しました')
+        }), 500
+
+
+@api_bp.route('/booking/call/status', methods=['GET'])
+@limiter.limit("30 per minute")
+def get_booking_call_status():
+    """通話ステータスを取得"""
+    call_sid = request.args.get('call_sid')
+    if not call_sid:
+        return jsonify({'error': 'call_sid is required'}), 400
+
+    from ..services.twilio_service import get_call_status
+    result = get_call_status(call_sid)
+    return jsonify(result)

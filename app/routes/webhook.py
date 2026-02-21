@@ -253,7 +253,11 @@ def validate_twilio_request():
 @csrf.exempt
 def twilio_voice():
     """Handle incoming Twilio voice callback."""
-    from twilio.twiml.voice_response import VoiceResponse
+    try:
+        from twilio.twiml.voice_response import VoiceResponse
+    except ImportError:
+        current_app.logger.error("twilio package not installed")
+        return Response("Service unavailable", status=503)
     
     # Validate Twilio signature
     if not validate_twilio_request():
