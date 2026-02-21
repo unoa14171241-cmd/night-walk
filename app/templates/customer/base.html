@@ -13,7 +13,7 @@
     <meta name="robots" content="noindex, nofollow">{% else %}
     <meta name="robots" content="index, follow">{% endif %}{% endblock %}
     {% block canonical %}{% if request %}
-    <link rel="canonical" href="{{ request.url_root[:-1] }}{{ request.path }}">{% endif %}{% endblock %}
+    <link rel="canonical" href="{{ seo_base_url }}{{ request.path }}">{% endif %}{% endblock %}
 
     <!-- OGP -->
     <meta property="og:site_name" content="Night-Walk">
@@ -521,6 +521,10 @@
                 style="color: rgba(255,255,255,0.5); text-decoration: none;">ランキング</a>
             <a href="{{ url_for('public.trending', type='shop') }}"
                 style="color: rgba(255,255,255,0.5); text-decoration: none;">急上昇</a>
+            <a href="{{ url_for('public.blog_index') }}"
+                style="color: rgba(255,255,255,0.5); text-decoration: none;">ブログ</a>
+            <a href="{{ url_for('public.faq') }}"
+                style="color: rgba(255,255,255,0.5); text-decoration: none;">よくある質問</a>
             {% if current_user.is_authenticated and current_user.is_customer %}
             <a href="{{ url_for('customer.mypage') }}"
                 style="color: rgba(255,255,255,0.5); text-decoration: none;">マイページ</a>

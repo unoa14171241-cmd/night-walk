@@ -9,7 +9,7 @@
  {% endif %}
  
  {% if shop.main_image_url %}
- <img src="{{ shop.main_image_url }}" alt="{{ shop.name }}" class="shop-card-image">
+ <img src="{{ shop.main_image_url }}" alt="{{ shop.name }}" class="shop-card-image" loading="lazy">
  {% else %}
  <div class="shop-card-image shop-card-placeholder">
  <span></span>

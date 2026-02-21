@@ -236,7 +236,7 @@
  target="_blank"
  rel="noopener">
  {% if ad.display_image_url %}
- <img src="{{ ad.display_image_url }}" alt="{{ ad.title }}">
+ <img src="{{ ad.display_image_url }}" alt="{{ ad.title }}" loading="lazy">
  {% else %}
  <div class="sidebar-ad-placeholder">{{ ad.title }}</div>
  {% endif %}

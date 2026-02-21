@@ -51,7 +51,8 @@
  {% if item.cast.image_url %}
  <img src="{{ item.cast.image_url }}" 
  alt="{{ item.cast.name_display }}"
- style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin: 0 auto var(--space-md); border: 3px solid gold;">
+ style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin: 0 auto var(--space-md); border: 3px solid gold;"
+ loading="lazy">
  {% endif %}
  
  <h4 style="margin: 0;">{{ item.cast.name_display }}</h4>

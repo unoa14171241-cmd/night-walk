@@ -672,6 +672,92 @@ def shop_apply_complete():
     return render_template('public/shop_apply_complete.html')
 
 
+# ==================== FAQ ====================
+
+@public_bp.route('/faq')
+def faq():
+    """FAQページ"""
+    faq_items = [
+        {
+            'q': 'Night-Walkとは何ですか？',
+            'a': 'Night-Walkは岡山・倉敷エリアに特化したナイトレジャー情報ポータルサイトです。キャバクラ、ガールズバー、スナック、ラウンジなどの店舗情報、空席状況のリアルタイム確認、キャストランキング、口コミ情報などを提供しています。'
+        },
+        {
+            'q': '掲載は無料ですか？',
+            'a': '基本的な店舗掲載は無料でご利用いただけます。より多くの集客機能（スタンプカード、優先表示、求人掲載など）をご利用いただける有料プランもご用意しています。'
+        },
+        {
+            'q': '岡山以外のエリアにも対応していますか？',
+            'a': '現在は岡山市・倉敷市エリアを中心にサービスを展開しています。今後、中国・四国地方を中心にエリア拡大を予定しています。'
+        },
+        {
+            'q': '送客管理とは何ですか？',
+            'a': '送客管理は、Night-Walk経由で店舗に来店されたお客様を自動的に記録・管理する機能です。どの経路からの集客が多いかをデータで確認でき、効果的なマーケティング戦略の立案に役立ちます。'
+        },
+        {
+            'q': 'スタンプカード機能とは？',
+            'a': '来店ごとにスタンプが貯まるデジタルスタンプカード機能です。ブロンズ・シルバー・ゴールド・プラチナのランク制度があり、ランクアップで特典が受けられます。有料プランをご契約の店舗様でご利用いただけます。'
+        },
+        {
+            'q': '口コミはどのように投稿しますか？',
+            'a': '各店舗の詳細ページから口コミを投稿できます。SMS認証を行った上で、星評価とコメントを入力して投稿します。投稿された口コミは店舗の評価に反映されます。'
+        },
+        {
+            'q': 'キャストランキングの仕組みは？',
+            'a': 'キャストランキングはページビュー数とギフトポイントを合算して毎月集計されます。エリア別にTOP10を発表し、上位キャストにはバッジが付与されます。'
+        },
+        {
+            'q': '店舗掲載の申し込み方法は？',
+            'a': 'トップページまたはフッターの「店舗掲載申し込み」リンクからお申し込みいただけます。必要情報を入力して送信後、審査を経て掲載が開始されます。'
+        },
+    ]
+
+    return render_template('public/faq.html', faq_items=faq_items)
+
+
+# ==================== Blog ====================
+
+@public_bp.route('/blog')
+def blog_index():
+    """ブログ一覧"""
+    from ..models.blog import BlogPost
+    posts = BlogPost.get_published()
+    return render_template('public/blog_index.html', posts=posts)
+
+
+@public_bp.route('/blog/<slug>')
+def blog_detail(slug):
+    """ブログ記事詳細"""
+    from ..models.blog import BlogPost
+    post = BlogPost.get_by_slug(slug)
+    if not post:
+        from flask import abort
+        abort(404)
+    return render_template('public/blog_detail.html', post=post)
+
+
+# ==================== Slug Routes ====================
+
+@public_bp.route('/shops/s/<slug>')
+def shop_detail_slug(slug):
+    """スラッグベースの店舗詳細（SEO用）"""
+    shop = Shop.query.filter_by(slug=slug, is_published=True, is_active=True).first()
+    if not shop:
+        from flask import abort
+        abort(404)
+    return redirect(url_for('public.shop_detail', shop_id=shop.id), code=301)
+
+
+@public_bp.route('/casts/c/<slug>')
+def cast_detail_slug(slug):
+    """スラッグベースのキャスト詳細（SEO用）"""
+    cast = Cast.query.filter_by(slug=slug, is_active=True).first()
+    if not cast:
+        from flask import abort
+        abort(404)
+    return redirect(url_for('public.cast_detail', cast_id=cast.id), code=301)
+
+
 # ==================== SEO ====================
 
 @public_bp.route('/sitemap.xml')
@@ -693,6 +779,8 @@ def sitemap():
         ('public.search', 'daily', '0.9'),
         ('public.ranking_index', 'daily', '0.8'),
         ('public.trending', 'daily', '0.7'),
+        ('public.faq', 'monthly', '0.6'),
+        ('public.blog_index', 'weekly', '0.7'),
         ('public.shop_apply', 'monthly', '0.5'),
     ]
     
@@ -755,6 +843,23 @@ def sitemap():
             xml_content.append(f'''  <url>
     <loc>{url}</loc>{lastmod_tag}
     <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>''')
+        except Exception:
+            pass
+    
+    # ブログ記事
+    from ..models.blog import BlogPost
+    published_posts = BlogPost.get_published()
+    for post in published_posts:
+        try:
+            url = url_for('public.blog_detail', slug=post.slug, _external=True)
+            lastmod_tag = ''
+            if post.updated_at:
+                lastmod_tag = f'\n    <lastmod>{post.updated_at.strftime("%Y-%m-%d")}</lastmod>'
+            xml_content.append(f'''  <url>
+    <loc>{url}</loc>{lastmod_tag}
+    <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>''')
         except Exception:

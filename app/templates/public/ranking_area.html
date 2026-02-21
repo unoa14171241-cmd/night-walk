@@ -92,7 +92,8 @@
  <img src="{{ ranking.cast.image_url }}" 
  alt="{{ ranking.cast.name_display }}"
  style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;
- {% if ranking.rank == 1 %}border: 2px solid gold;{% elif ranking.rank <= 3 %}border: 2px solid silver;{% endif %}">
+ {% if ranking.rank == 1 %}border: 2px solid gold;{% elif ranking.rank <= 3 %}border: 2px solid silver;{% endif %}"
+ loading="lazy">
  {% else %}
  <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--color-bg-elevated); display: flex; align-items: center; justify-content: center;">
  

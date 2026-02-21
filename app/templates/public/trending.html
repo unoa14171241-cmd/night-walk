@@ -54,12 +54,12 @@
  <div class="trending-image">
  {% if target_type == 'shop' and item.shop %}
  {% if item.shop.main_image_url %}
- <img src="{{ item.shop.main_image_url }}" alt="{{ item.shop.name }}">
+ <img src="{{ item.shop.main_image_url }}" alt="{{ item.shop.name }}" loading="lazy">
  {% else %}
  <div class="no-image"></div>
  {% endif %}
  {% elif target_type == 'cast' and item.cast %}
- <img src="{{ item.cast.image_url }}" alt="{{ item.cast.name_display }}">
+ <img src="{{ item.cast.image_url }}" alt="{{ item.cast.name_display }}" loading="lazy">
  {% endif %}
  </div>
  

@@ -1,0 +1,106 @@
+{% extends "customer/base.html" %}
+
+{% block title %}よくある質問（FAQ）｜Night-Walk - 岡山の夜職ポータル{% endblock %}
+
+{% block meta_description %}Night-Walkに関するよくある質問をまとめました。掲載料金、対応エリア、送客管理、スタンプカードなどの疑問にお答えします。{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "FAQPage",
+ "mainEntity": [
+  {% for item in faq_items %}
+  {
+   "@type": "Question",
+   "name": "{{ item.q }}",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "{{ item.a }}"
+   }
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+ ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 0 auto; padding: 2rem 1rem;">
+ <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">よくある質問（FAQ）</h1>
+ <p style="color: rgba(255,255,255,0.6); font-size: 0.875rem; margin-bottom: 2rem;">Night-Walkについてのよくある質問をまとめました。</p>
+
+ <div style="display: flex; flex-direction: column; gap: 1rem;">
+  {% for item in faq_items %}
+  <details class="faq-item" {% if loop.first %}open{% endif %}>
+   <summary class="faq-question">{{ item.q }}</summary>
+   <div class="faq-answer">{{ item.a }}</div>
+  </details>
+  {% endfor %}
+ </div>
+
+ <div style="margin-top: 3rem; text-align: center;">
+  <p style="color: rgba(255,255,255,0.5); font-size: 0.875rem; margin-bottom: 1rem;">その他ご不明な点がございましたらお気軽にお問い合わせください。</p>
+  <a href="{{ url_for('public.shop_apply') }}" class="btn btn-gold">店舗掲載のお申し込み</a>
+ </div>
+</div>
+
+<style>
+.faq-item {
+ background: rgba(255,255,255,0.05);
+ border: 1px solid rgba(255,215,0,0.15);
+ border-radius: 12px;
+ overflow: hidden;
+ transition: border-color 0.2s;
+}
+.faq-item[open] {
+ border-color: rgba(255,215,0,0.4);
+}
+.faq-question {
+ padding: 1.25rem 1.5rem;
+ font-weight: 600;
+ font-size: 1rem;
+ cursor: pointer;
+ list-style: none;
+ display: flex;
+ align-items: center;
+ gap: 0.75rem;
+ color: #ffd700;
+}
+.faq-question::-webkit-details-marker { display: none; }
+.faq-question::before {
+ content: 'Q';
+ display: inline-flex;
+ align-items: center;
+ justify-content: center;
+ width: 28px;
+ height: 28px;
+ border-radius: 50%;
+ background: linear-gradient(135deg, #ffd700, #ff8c00);
+ color: #1a0a25;
+ font-weight: 700;
+ font-size: 0.875rem;
+ flex-shrink: 0;
+}
+.faq-question::after {
+ content: '+';
+ margin-left: auto;
+ font-size: 1.25rem;
+ color: rgba(255,255,255,0.4);
+ transition: transform 0.2s;
+}
+.faq-item[open] .faq-question::after {
+ content: '-';
+}
+.faq-answer {
+ padding: 0 1.5rem 1.25rem 3.75rem;
+ color: rgba(255,255,255,0.8);
+ font-size: 0.9rem;
+ line-height: 1.7;
+}
+@media (max-width: 768px) {
+ .faq-question { font-size: 0.9rem; padding: 1rem; }
+ .faq-answer { padding: 0 1rem 1rem 2.75rem; font-size: 0.85rem; }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "customer/base.html" %}
+
+{% block title %}ブログ｜Night-Walk - 岡山の夜職・ナイトレジャー情報{% endblock %}
+
+{% block meta_description %}岡山のキャバクラ、ガールズバー、スナックなど夜職・ナイトレジャーに関するお役立ち情報をお届けします。おすすめ店舗、働き方ガイド、初心者向け情報など。{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 0 auto; padding: 2rem 1rem;">
+ <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">ブログ</h1>
+ <p style="color: rgba(255,255,255,0.6); font-size: 0.875rem; margin-bottom: 2rem;">岡山の夜職・ナイトレジャーに関するお役立ち情報</p>
+
+ <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+  {% for post in posts %}
+  <a href="{{ url_for('public.blog_detail', slug=post.slug) }}" class="blog-card">
+   <div class="blog-card-body">
+    <div class="blog-card-date">{{ post.published_at.strftime('%Y.%m.%d') }}</div>
+    <h2 class="blog-card-title">{{ post.title }}</h2>
+    <p class="blog-card-excerpt">{{ post.excerpt }}</p>
+    <span class="blog-card-read">続きを読む →</span>
+   </div>
+  </a>
+  {% endfor %}
+ </div>
+</div>
+
+<style>
+.blog-card {
+ display: block;
+ background: rgba(255,255,255,0.05);
+ border: 1px solid rgba(255,215,0,0.15);
+ border-radius: 12px;
+ text-decoration: none;
+ color: inherit;
+ transition: border-color 0.2s, transform 0.2s;
+ overflow: hidden;
+}
+.blog-card:hover {
+ border-color: rgba(255,215,0,0.4);
+ transform: translateY(-2px);
+}
+.blog-card-body { padding: 1.5rem; }
+.blog-card-date {
+ font-size: 0.75rem;
+ color: rgba(255,255,255,0.4);
+ margin-bottom: 0.5rem;
+}
+.blog-card-title {
+ font-size: 1.125rem;
+ font-weight: 700;
+ color: #fff;
+ margin-bottom: 0.75rem;
+ line-height: 1.4;
+}
+.blog-card-excerpt {
+ font-size: 0.875rem;
+ color: rgba(255,255,255,0.6);
+ line-height: 1.6;
+ margin-bottom: 0.75rem;
+}
+.blog-card-read {
+ font-size: 0.8rem;
+ color: #ffd700;
+ font-weight: 600;
+}
+</style>
+{% endblock %}

@@ -72,7 +72,7 @@ filename='images/ogp-default.png', _external=True) }}{% endif %}{% endblock %}
               {% endif %}
               {% elif shop.image_url %}
               <div class="gallery-main">
-                     <img src="{{ shop.image_url }}" alt="{{ shop.name }}">
+                     <img src="{{ shop.image_url }}" alt="{{ shop.name }}" loading="lazy">
               </div>
               {% else %}
               <div class="gallery-main gallery-placeholder">

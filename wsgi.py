@@ -125,6 +125,7 @@ def auto_create_tables():
             # システム管理モデルを明示的にインポート
             from app.models.system import SystemStatus, ContentReport, SystemLog, DemoAccount  # noqa: F401
             from app.models.email_template import EmailTemplate  # noqa: F401
+            from app.models.blog import BlogPost  # noqa: F401
             db.create_all()
             print("[INFO] Database tables checked/created successfully.")
         except Exception as e:
@@ -181,6 +182,8 @@ def auto_migrate_columns():
                     ("account_type", "VARCHAR(20)"),
                     ("account_number", "VARCHAR(20)"),
                     ("account_holder", "VARCHAR(100)"),
+                    # SEOスラッグ
+                    ("slug", "VARCHAR(200)"),
                 ]
                 
                 for col_name, col_type in shop_columns:
@@ -214,6 +217,8 @@ def auto_migrate_columns():
                     ("tiktok_url", "VARCHAR(255)"),
                     ("video_url", "VARCHAR(255)"),
                     ("gift_appeal", "TEXT"),
+                    # SEOスラッグ
+                    ("slug", "VARCHAR(200)"),
                 ]
                 
                 for col_name, col_type in cast_columns:
@@ -514,8 +519,61 @@ def auto_seed_point_packages():
             print("[SUCCESS] Gifts seeded!")
 
 
+def auto_seed_blog():
+    """ブログ記事の自動シード"""
+    with app.app_context():
+        try:
+            from app.models.blog import BlogPost
+            BlogPost.seed_posts()
+            print("[INFO] Blog posts seeded (if needed).")
+        except Exception as e:
+            print(f"[WARNING] Blog seed error: {e}")
+
+
+def auto_generate_slugs():
+    """既存の店舗・キャストにスラッグを自動生成"""
+    with app.app_context():
+        try:
+            import re
+            from sqlalchemy import text
+
+            def make_slug(name, id_val, prefix=''):
+                s = re.sub(r'[^\w\s-]', '', name.lower().strip())
+                s = re.sub(r'[\s_]+', '-', s)
+                s = re.sub(r'-+', '-', s).strip('-')
+                if not s or not re.search(r'[a-z0-9]', s):
+                    s = f'{prefix}{id_val}'
+                return f'{s}-{id_val}'
+
+            shops_without_slug = Shop.query.filter(
+                (Shop.slug == None) | (Shop.slug == '')
+            ).all()
+            for shop in shops_without_slug:
+                shop.slug = make_slug(shop.name, shop.id, 'shop-')
+            if shops_without_slug:
+                db.session.commit()
+                print(f"[INFO] Generated slugs for {len(shops_without_slug)} shops.")
+
+            from app.models.gift import Cast
+            casts_without_slug = Cast.query.filter(
+                (Cast.slug == None) | (Cast.slug == '')
+            ).all()
+            for cast in casts_without_slug:
+                display = cast.display_name or cast.name
+                cast.slug = make_slug(display, cast.id, 'cast-')
+            if casts_without_slug:
+                db.session.commit()
+                print(f"[INFO] Generated slugs for {len(casts_without_slug)} casts.")
+
+        except Exception as e:
+            print(f"[WARNING] Slug generation error: {e}")
+            db.session.rollback()
+
+
 # ポイントパッケージ・ギフトの自動シード
 auto_seed_point_packages()
+auto_seed_blog()
+auto_generate_slugs()
 
 if __name__ == '__main__':
     app.run()

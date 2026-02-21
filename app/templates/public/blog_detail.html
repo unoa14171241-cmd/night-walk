@@ -1,0 +1,103 @@
+{% extends "customer/base.html" %}
+
+{% block title %}{{ post.title }}｜Night-Walk ブログ{% endblock %}
+
+{% block meta_description %}{{ post.excerpt }}{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "Article",
+ "headline": "{{ post.title }}",
+ "description": "{{ post.excerpt }}",
+ "datePublished": "{{ post.published_at.strftime('%Y-%m-%dT%H:%M:%S+09:00') }}",
+ "dateModified": "{{ post.updated_at.strftime('%Y-%m-%dT%H:%M:%S+09:00') }}",
+ "author": {
+  "@type": "Organization",
+  "name": "Night-Walk"
+ },
+ "publisher": {
+  "@type": "Organization",
+  "name": "Night-Walk",
+  "logo": {
+   "@type": "ImageObject",
+   "url": "{{ url_for('static', filename='images/ogp-default.png', _external=True) }}"
+  }
+ },
+ "mainEntityOfPage": {
+  "@type": "WebPage",
+  "@id": "{{ seo_base_url }}/blog/{{ post.slug }}"
+ }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 0 auto; padding: 2rem 1rem;">
+ <nav style="margin-bottom: 1.5rem; font-size: 0.8rem;">
+  <a href="{{ url_for('public.blog_index') }}" style="color: #ffd700; text-decoration: none;">ブログ</a>
+  <span style="color: rgba(255,255,255,0.3); margin: 0 0.5rem;">›</span>
+  <span style="color: rgba(255,255,255,0.5);">{{ post.title | truncate(30) }}</span>
+ </nav>
+
+ <article class="blog-article">
+  <div class="blog-article-date">{{ post.published_at.strftime('%Y年%m月%d日') }}</div>
+  <h1 class="blog-article-title">{{ post.title }}</h1>
+
+  <div class="blog-article-content">
+   {{ post.content_html | safe }}
+  </div>
+ </article>
+
+ <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(255,215,0,0.15);">
+  <a href="{{ url_for('public.blog_index') }}" style="color: #ffd700; text-decoration: none; font-size: 0.9rem;">← ブログ一覧に戻る</a>
+ </div>
+</div>
+
+<style>
+.blog-article-date {
+ font-size: 0.8rem;
+ color: rgba(255,255,255,0.4);
+ margin-bottom: 0.75rem;
+}
+.blog-article-title {
+ font-size: 1.5rem;
+ font-weight: 700;
+ line-height: 1.4;
+ margin-bottom: 2rem;
+ padding-bottom: 1.5rem;
+ border-bottom: 1px solid rgba(255,215,0,0.15);
+}
+.blog-article-content {
+ font-size: 0.95rem;
+ line-height: 1.8;
+ color: rgba(255,255,255,0.85);
+}
+.blog-article-content h2 {
+ font-size: 1.25rem;
+ font-weight: 700;
+ margin: 2rem 0 1rem;
+ padding-bottom: 0.5rem;
+ border-bottom: 2px solid rgba(255,215,0,0.3);
+ color: #ffd700;
+}
+.blog-article-content h3 {
+ font-size: 1.1rem;
+ font-weight: 600;
+ margin: 1.5rem 0 0.75rem;
+ color: #ffe44d;
+}
+.blog-article-content p { margin-bottom: 1rem; }
+.blog-article-content ul, .blog-article-content ol {
+ margin-bottom: 1rem;
+ padding-left: 1.5rem;
+}
+.blog-article-content li { margin-bottom: 0.5rem; }
+.blog-article-content strong { color: #ffd700; }
+@media (max-width: 768px) {
+ .blog-article-title { font-size: 1.2rem; }
+ .blog-article-content { font-size: 0.9rem; }
+}
+</style>
+{% endblock %}

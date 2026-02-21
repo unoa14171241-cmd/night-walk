@@ -110,6 +110,7 @@ class Shop(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, index=True)
     area = db.Column(db.String(50), nullable=False, index=True)
     phone = db.Column(db.String(20))
     address = db.Column(db.Text)

@@ -16,6 +16,7 @@ class Cast(db.Model):
     shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), nullable=False, index=True)
     
     name = db.Column(db.String(50), nullable=False)
+    slug = db.Column(db.String(200), unique=True, index=True)
     display_name = db.Column(db.String(50))  # 源氏名・表示名
     age = db.Column(db.Integer)  # 年齢
     profile = db.Column(db.Text)  # 自己紹介
