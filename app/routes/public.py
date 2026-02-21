@@ -786,6 +786,16 @@ Sitemap: {base_url}/sitemap.xml
     return Response(content, mimetype='text/plain')
 
 
+@public_bp.route('/google74e3b7f63ee4382f.html')
+def google_verification():
+    """Google Search Console ownership verification"""
+    from flask import Response
+    return Response(
+        'google-site-verification: google74e3b7f63ee4382f.html',
+        mimetype='text/html'
+    )
+
+
 @public_bp.route('/images_db/<path:filename>')
 def serve_db_image(filename):
     """データベースから画像データを読み込んで返す (Render対策)"""
