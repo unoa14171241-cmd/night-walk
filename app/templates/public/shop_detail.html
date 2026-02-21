@@ -350,17 +350,16 @@ filename='images/ogp-default.png', _external=True) }}{% endif %}{% endblock %}
                             </div>
 
                             {% if shop.phone %}
-                            <a href="{{ url_for('public.booking', shop_id=shop.id) }}" class="phone-btn">
-                                   電話で予約
+                            <a href="tel:{{ shop.phone }}" class="phone-btn" style="display: inline-block; text-decoration: none;">
+                                   {{ shop.phone }} に電話
                             </a>
                             <p class="text-muted mt-2" style="font-size: 0.75rem;">
-                                   タップで予約受付へ
-                            </p>
-                            {% else %}
-                            <p class="text-muted">
-                                   電話番号が登録されていません
+                                   タップで発信されます
                             </p>
                             {% endif %}
+                            <a href="{{ url_for('public.booking', shop_id=shop.id) }}" class="btn btn-secondary btn-sm" style="margin-top: 0.5rem; display: inline-block; text-decoration: none;">
+                                   予約ページへ
+                            </a>
                      </div>
               </div>
        </div>
