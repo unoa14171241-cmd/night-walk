@@ -91,11 +91,14 @@
 html {
     font-size: 16px;
     scroll-behavior: smooth;
+    background-color: #0f0515;
 }
 
 body {
     font-family: var(--font-main);
-    background: var(--gradient-bg);
+    background-color: #0f0515;
+    background-image: var(--gradient-bg);
+    background-attachment: fixed;
     color: var(--color-text);
     line-height: 1.6;
     min-height: 100vh;
