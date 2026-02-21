@@ -124,6 +124,7 @@ def auto_create_tables():
             from app import models  # noqa: F401
             # システム管理モデルを明示的にインポート
             from app.models.system import SystemStatus, ContentReport, SystemLog, DemoAccount  # noqa: F401
+            from app.models.email_template import EmailTemplate  # noqa: F401
             db.create_all()
             print("[INFO] Database tables checked/created successfully.")
         except Exception as e:
