@@ -1,71 +1,79 @@
-{% extends "admin/base.html" %}
+{% extends "base.html" %}
 
 {% block title %}メールテンプレート編集 - {{ template.name }} - Night-Walk{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h2>📧 {{ template.name }} を編集</h2>
-    <a href="{{ url_for('admin.email_templates') }}" class="btn btn-secondary btn-sm">← 一覧に戻る</a>
+<div class="admin-layout">
+    {% include "admin/_sidebar.html" %}
+
+    <div class="admin-content">
+        <div class="page-header">
+            <h2>📧 {{ template.name }} を編集</h2>
+            <a href="{{ url_for('admin.email_templates') }}" class="btn btn-secondary btn-sm">← 一覧に戻る</a>
+        </div>
+
+        {% if placeholders %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="card-title">使用可能なプレースホルダー</h3>
+            </div>
+            <div style="padding: 1rem;">
+                <p class="text-muted" style="margin-bottom: 0.5rem; font-size: 0.85rem;">
+                    以下のプレースホルダーを件名・本文内に記載すると、送信時に自動で置換されます。
+                </p>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                    {% for key, desc in placeholders.items() %}
+                    <span
+                        style="background: rgba(255,215,0,0.15); border: 1px solid var(--color-border); border-radius: 4px; padding: 4px 10px; font-size: 0.85rem;">
+                        <code style="color: var(--color-primary);">{{ key }}</code> = {{ desc }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('admin.edit_email_template', template_id=template.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title">件名</h3>
+                </div>
+                <div style="padding: 1rem;">
+                    <input type="text" name="subject" class="form-control" value="{{ template.subject }}" required
+                        placeholder="例: 【Night-Walk】店舗掲載審査完了のお知らせ - {shop_name}">
+                    <small class="form-text"
+                        style="color: var(--color-text-muted); margin-top: 0.5rem; display: block;">
+                        プレースホルダーを含めることができます（例: {shop_name}）
+                    </small>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title">本文（HTML）</h3>
+                </div>
+                <div style="padding: 1rem;">
+                    <textarea name="body_html" class="form-control" rows="25" required
+                        style="font-family: monospace; font-size: 0.85rem; line-height: 1.5;">{{ template.body_html }}</textarea>
+                    <small class="form-text"
+                        style="color: var(--color-text-muted); margin-top: 0.5rem; display: block;">
+                        HTMLタグが使用できます。プレースホルダーは自動で置換されます。
+                    </small>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    💾 保存する
+                </button>
+                <a href="{{ url_for('admin.preview_email_template', template_id=template.id) }}" class="btn btn-outline"
+                    target="_blank">
+                    👁️ プレビュー
+                </a>
+            </div>
+        </form>
+    </div>
 </div>
-
-{% if placeholders %}
-<div class="card mb-4">
-    <div class="card-header">
-        <h3 class="card-title">使用可能なプレースホルダー</h3>
-    </div>
-    <div style="padding: 1rem;">
-        <p class="text-muted" style="margin-bottom: 0.5rem; font-size: 0.85rem;">
-            以下のプレースホルダーを件名・本文内に記載すると、送信時に自動で置換されます。
-        </p>
-        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-            {% for key, desc in placeholders.items() %}
-            <span
-                style="background: rgba(255,215,0,0.15); border: 1px solid var(--color-border); border-radius: 4px; padding: 4px 10px; font-size: 0.85rem;">
-                <code style="color: var(--color-primary);">{{ key }}</code> = {{ desc }}
-            </span>
-            {% endfor %}
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<form method="POST" action="{{ url_for('admin.edit_email_template', template_id=template.id) }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-    <div class="card mb-4">
-        <div class="card-header">
-            <h3 class="card-title">件名</h3>
-        </div>
-        <div style="padding: 1rem;">
-            <input type="text" name="subject" class="form-control" value="{{ template.subject }}" required
-                placeholder="例: 【Night-Walk】店舗掲載審査完了のお知らせ - {shop_name}">
-            <small class="form-text" style="color: var(--color-text-muted); margin-top: 0.5rem; display: block;">
-                プレースホルダーを含めることができます（例: {shop_name}）
-            </small>
-        </div>
-    </div>
-
-    <div class="card mb-4">
-        <div class="card-header">
-            <h3 class="card-title">本文（HTML）</h3>
-        </div>
-        <div style="padding: 1rem;">
-            <textarea name="body_html" class="form-control" rows="25" required
-                style="font-family: monospace; font-size: 0.85rem; line-height: 1.5;">{{ template.body_html }}</textarea>
-            <small class="form-text" style="color: var(--color-text-muted); margin-top: 0.5rem; display: block;">
-                HTMLタグが使用できます。プレースホルダーは自動で置換されます。
-            </small>
-        </div>
-    </div>
-
-    <div style="display: flex; gap: 1rem; align-items: center;">
-        <button type="submit" class="btn btn-primary btn-lg">
-            💾 保存する
-        </button>
-        <a href="{{ url_for('admin.preview_email_template', template_id=template.id) }}" class="btn btn-outline"
-            target="_blank">
-            👁️ プレビュー
-        </a>
-    </div>
-</form>
 {% endblock %}
