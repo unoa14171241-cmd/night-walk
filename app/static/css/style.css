@@ -1347,6 +1347,36 @@ textarea.form-control {
     }
 }
 
+/* Dashboard Quick Actions */
+.dashboard-quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+.dashboard-quick-actions .btn {
+    padding: var(--space-md) var(--space-sm);
+    height: 100%;
+}
+
+.dashboard-quick-actions .btn-outline {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+    .dashboard-quick-actions {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-xs);
+    }
+
+    .dashboard-quick-actions .btn {
+        padding: 0.6rem 0.25rem;
+        font-size: 0.8rem;
+        border-radius: var(--radius-sm);
+    }
+}
+
 /* Hide mobile elements by default */
 .sidebar-toggle-btn,
 .admin-sidebar-header {
