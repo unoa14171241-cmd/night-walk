@@ -549,14 +549,29 @@ def gift_history():
 
 # ==================== 口コミ評価 ====================
 
+@customer_bp.route('/qr/<int:shop_id>')
+def qr_review_entry(shop_id):
+    """QRコード読取エントリ → セッションにQRフラグを立てて口コミ画面へ"""
+    shop = Shop.query.get_or_404(shop_id)
+    session[f'qr_verified_{shop_id}'] = True
+    flash(f'{shop.name} のQRコードを読み取りました。口コミを投稿してスタンプを獲得しましょう！', 'success')
+    return redirect(url_for('customer.submit_review', shop_id=shop_id))
+
+
 @customer_bp.route('/review/<int:shop_id>', methods=['GET', 'POST'])
 @limiter.limit("10 per hour")
 def submit_review(shop_id):
-    """店舗への口コミ投稿"""
+    """店舗への口コミ投稿（QR読取必須）"""
     from ..models.review import ShopReview
     from ..services.review_service import ReviewService
     
     shop = Shop.query.get_or_404(shop_id)
+    
+    # QR読取チェック
+    qr_verified = session.get(f'qr_verified_{shop_id}', False)
+    if not qr_verified:
+        flash('口コミ投稿には店舗のQRコードを読み取る必要があります。', 'warning')
+        return redirect(url_for('public.shop_detail', shop_id=shop_id))
     
     if request.method == 'POST':
         rating = request.form.get('rating', type=int)
@@ -655,13 +670,14 @@ def verify_review(shop_id):
             flash(result['error'], 'danger')
             return render_template('customer/review_verify.html', shop=shop)
         
-        # 成功
+        # 成功: QRフラグとレビューIDをクリア
         session.pop('pending_review_id', None)
+        session.pop(f'qr_verified_{shop_id}', None)
         
         if result.get('card_issued'):
-            flash('口コミを投稿しました！ この店舗のスタンプカードが発行されました！', 'success')
+            flash('口コミを投稿しました！ スタンプカードが発行されました！', 'success')
         else:
-            flash('口コミを投稿しました！', 'success')
+            flash('口コミを投稿しました！ ありがとうございます！', 'success')
         
         return redirect(url_for('public.shop_detail', shop_id=shop_id))
     
@@ -795,8 +811,8 @@ def exchange_reward(shop_id):
 def booking(shop_id):
     """
     直前限定予約ページ
-    - 指名キャスト選択（必須）
-    - 予約時間選択（30〜60分後のみ）
+    - 指名キャスト選択（フリー可）
+    - 予約時間選択（15〜60分後）
     """
     from ..services.booking_service import BookingService
     from ..models.booking import BookingLog
@@ -814,7 +830,9 @@ def booking(shop_id):
     available_times = BookingLog.get_available_times()
     
     if request.method == 'POST':
-        cast_id = request.form.get('cast_id', type=int)
+        cast_id_raw = request.form.get('cast_id', '').strip()
+        is_free = cast_id_raw == 'free'
+        cast_id = None if is_free else request.form.get('cast_id', type=int)
         scheduled_time = request.form.get('scheduled_time')
         customer_phone = request.form.get('phone', '').strip()
         customer_name = request.form.get('name', '').strip()
@@ -824,8 +842,8 @@ def booking(shop_id):
         # バリデーション
         errors = []
         
-        if not cast_id:
-            errors.append('指名キャストを選択してください（必須）')
+        if not cast_id and not is_free:
+            errors.append('指名キャストを選択してください')
         
         if not scheduled_time:
             errors.append('予約時間を選択してください')
@@ -886,7 +904,8 @@ def booking(shop_id):
             customer_name=customer_name,
             party_size=party_size,
             notes=notes,
-            booking_type='web'
+            booking_type='web',
+            is_free_nomination=is_free
         )
         
         if not result['success']:

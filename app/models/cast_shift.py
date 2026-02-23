@@ -142,6 +142,21 @@ class CastShift(db.Model):
         ).order_by(cls.shift_date, cls.start_time).all()
     
     @classmethod
+    def get_range_shifts(cls, shop_id, start_date=None, days=31):
+        """指定期間のシフトを取得（管理画面用: 最大1ヶ月）"""
+        if not start_date:
+            start_date = date.today()
+        
+        end_date = start_date + timedelta(days=days)
+        
+        return cls.query.filter(
+            cls.shop_id == shop_id,
+            cls.shift_date >= start_date,
+            cls.shift_date < end_date,
+            cls.status != cls.STATUS_CANCELED
+        ).order_by(cls.shift_date, cls.start_time).all()
+    
+    @classmethod
     def get_cast_shifts(cls, cast_id, start_date=None, end_date=None):
         """キャストの出勤シフトを取得"""
         query = cls.query.filter(cls.cast_id == cast_id)

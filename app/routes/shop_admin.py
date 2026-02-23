@@ -276,20 +276,23 @@ def billing():
 @login_required
 @shop_access_required
 def shop_qrcode():
-    """店舗専用QRコード発行ページ"""
+    """店舗専用QRコード発行ページ（口コミ導線用）"""
     shop = g.current_shop
     
-    # 店舗詳細ページのURL
+    # QR読取→口コミ→スタンプの導線用URL
+    review_qr_url = url_for('customer.qr_review_entry', shop_id=shop.id, _external=True)
+    
+    # 従来の店舗詳細URL（参考表示）
     shop_url = url_for('public.shop_detail', shop_id=shop.id, _external=True)
     
-    # QRコード生成（高解像度）
-    qr_png_base64 = generate_qrcode_base64(shop_url, size=15)
-    qr_png_high_res = generate_qrcode_base64(shop_url, size=25)  # 印刷用高解像度
-    qr_svg = generate_qrcode_svg(shop_url)
+    qr_png_base64 = generate_qrcode_base64(review_qr_url, size=15)
+    qr_png_high_res = generate_qrcode_base64(review_qr_url, size=25)
+    qr_svg = generate_qrcode_svg(review_qr_url)
     
     return render_template('shop_admin/qrcode.html',
                           shop=shop,
                           shop_url=shop_url,
+                          review_qr_url=review_qr_url,
                           qr_png_base64=qr_png_base64,
                           qr_png_high_res=qr_png_high_res,
                           qr_svg=qr_svg)
@@ -466,7 +469,34 @@ def casts():
     """Cast management page."""
     shop = g.current_shop
     cast_list = Cast.query.filter_by(shop_id=shop.id).order_by(Cast.sort_order, Cast.name).all()
-    return render_template('shop_admin/casts.html', shop=shop, casts=cast_list)
+    pending_casts = [c for c in cast_list if c.approval_status == Cast.APPROVAL_PENDING]
+    return render_template('shop_admin/casts.html', shop=shop, casts=cast_list, pending_casts=pending_casts)
+
+
+@shop_admin_bp.route('/casts/<int:cast_id>/approve', methods=['POST'])
+@login_required
+@shop_access_required
+def approve_cast(cast_id):
+    """キャスト登録承認"""
+    shop = g.current_shop
+    cast = Cast.query.filter_by(id=cast_id, shop_id=shop.id).first_or_404()
+    
+    action = request.form.get('action', 'approve')
+    
+    if action == 'approve':
+        cast.approval_status = Cast.APPROVAL_APPROVED
+        cast.is_active = True
+        cast.is_visible = True
+        db.session.commit()
+        audit_log('cast.approved', 'cast', cast.id, new_value={'shop_id': shop.id})
+        flash(f'{cast.name_display}さんの登録を承認しました。', 'success')
+    elif action == 'reject':
+        cast.approval_status = Cast.APPROVAL_REJECTED
+        db.session.commit()
+        audit_log('cast.rejected', 'cast', cast.id, new_value={'shop_id': shop.id})
+        flash(f'{cast.name_display}さんの登録を拒否しました。', 'warning')
+    
+    return redirect(url_for('shop_admin.casts'))
 
 
 @shop_admin_bp.route('/casts/new', methods=['GET', 'POST'])
@@ -883,17 +913,28 @@ def shifts():
         flash('この機能を利用するには有料プランへのアップグレードが必要です。', 'warning')
         return redirect(url_for('shop_admin.dashboard'))
     
-    # 今週のシフトを取得
     today = date.today()
-    start_of_week = today - timedelta(days=today.weekday())
     
-    week_shifts = CastShift.get_week_shifts(shop.id, start_of_week)
+    # 表示開始日（week_offsetパラメータで週単位の移動に対応）
+    week_offset = request.args.get('week', 0, type=int)
+    start_date = today + timedelta(weeks=week_offset)
+    if start_date < today:
+        start_date = today
+    
+    # 最大1ヶ月先まで管理可能
+    max_date = today + timedelta(days=31)
+    display_days = min(7, (max_date - start_date).days)
+    if display_days <= 0:
+        display_days = 7
+        start_date = today
+    
+    all_shifts = CastShift.get_range_shifts(shop.id, today, days=31)
     
     # キャスト一覧
     casts = Cast.get_active_by_shop(shop.id)
     
-    # 日付リスト（今週）
-    dates = [start_of_week + timedelta(days=i) for i in range(7)]
+    # 日付リスト（表示用: 7日間ずつ）
+    dates = [start_date + timedelta(days=i) for i in range(display_days)]
     
     # シフトをキャスト×日付のマトリックスに整理
     shift_matrix = {}
@@ -902,9 +943,13 @@ def shifts():
         for d in dates:
             shift_matrix[cast.id][d] = None
     
-    for shift in week_shifts:
-        if shift.cast_id in shift_matrix:
+    for shift in all_shifts:
+        if shift.cast_id in shift_matrix and shift.shift_date in shift_matrix[shift.cast_id]:
             shift_matrix[shift.cast_id][shift.shift_date] = shift
+    
+    # 週ナビゲーション
+    can_go_prev = week_offset > 0
+    can_go_next = (start_date + timedelta(days=7)) < max_date
     
     return render_template('shop_admin/shifts.html',
                           shop=shop,
@@ -912,7 +957,10 @@ def shifts():
                           dates=dates,
                           shift_matrix=shift_matrix,
                           today=today,
-                          can_manage_shifts=can_manage_shifts)
+                          can_manage_shifts=can_manage_shifts,
+                          week_offset=week_offset,
+                          can_go_prev=can_go_prev,
+                          can_go_next=can_go_next)
 
 
 @shop_admin_bp.route('/shifts/update', methods=['POST'])
@@ -1770,3 +1818,57 @@ def use_referral_code():
               new_value={'code': code, 'referrer_shop_id': referral.referrer_shop_id})
     
     return redirect(url_for('shop_admin.referral'))
+
+
+# ==================== 予約管理 ====================
+
+@shop_admin_bp.route('/bookings')
+@login_required
+@shop_access_required
+def bookings():
+    """予約一覧"""
+    from ..services.booking_service import BookingService
+    
+    shop = g.current_shop
+    status_filter = request.args.get('status', '')
+    
+    query = BookingLog.query.filter_by(shop_id=shop.id)
+    if status_filter:
+        query = query.filter_by(status=status_filter)
+    
+    booking_list = query.order_by(BookingLog.scheduled_at.desc()).limit(100).all()
+    
+    return render_template('shop_admin/bookings.html',
+                          shop=shop,
+                          bookings=booking_list,
+                          status_filter=status_filter,
+                          statuses=BookingLog.STATUS_LABELS)
+
+
+@shop_admin_bp.route('/bookings/<int:booking_id>/late-cancel', methods=['POST'])
+@login_required
+@shop_access_required
+def late_cancel_booking(booking_id):
+    """遅刻キャンセル（手動）"""
+    shop = g.current_shop
+    booking = BookingLog.query.filter_by(id=booking_id, shop_id=shop.id).first_or_404()
+    
+    if booking.status not in [BookingLog.STATUS_PENDING, BookingLog.STATUS_CONFIRMED]:
+        flash('この予約はキャンセルできません。', 'danger')
+        return redirect(url_for('shop_admin.bookings'))
+    
+    from datetime import datetime as dt
+    now = dt.utcnow()
+    if booking.scheduled_at and (now - booking.scheduled_at).total_seconds() < BookingLog.LATE_CANCEL_MINUTES * 60:
+        flash(f'予約時間から{BookingLog.LATE_CANCEL_MINUTES}分経過していないため、遅刻キャンセルできません。', 'warning')
+        return redirect(url_for('shop_admin.bookings'))
+    
+    booking.status = BookingLog.STATUS_NO_SHOW
+    booking.notes = (booking.notes or '') + ' [遅刻キャンセル: 店舗手動]'
+    db.session.commit()
+    
+    audit_log('booking_late_cancel', 'booking', booking.id,
+              new_value={'reason': '遅刻', 'shop_id': shop.id})
+    
+    flash('予約を遅刻キャンセルしました。', 'success')
+    return redirect(url_for('shop_admin.bookings'))

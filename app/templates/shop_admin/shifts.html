@@ -50,9 +50,19 @@
  </div>
  </div>
  
- <!-- 週間シフト表 -->
+ <!-- シフト表（最大1ヶ月先まで管理可能） -->
  <div class="card">
- <h3 class="mb-3"> 週間シフト</h3>
+ <div class="d-flex justify-between align-center mb-3">
+ <h3 class="mb-0">シフト管理</h3>
+ <div class="d-flex gap-2">
+ {% if can_go_prev %}
+ <a href="{{ url_for('shop_admin.shifts', week=week_offset - 1) }}" class="btn btn-sm btn-outline">&laquo; 前の週</a>
+ {% endif %}
+ {% if can_go_next %}
+ <a href="{{ url_for('shop_admin.shifts', week=week_offset + 1) }}" class="btn btn-sm btn-outline">次の週 &raquo;</a>
+ {% endif %}
+ </div>
+ </div>
  <div class="table-responsive">
  <table class="table shift-table">
  <thead>

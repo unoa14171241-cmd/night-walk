@@ -26,21 +26,38 @@
                     <div class="alert alert-info mb-4">
                         <h6 class="alert-heading"><i class="bi bi-info-circle me-1"></i> 直前限定予約について</h6>
                         <ul class="mb-0 small">
-                            <li><strong>予約可能時間:</strong> 30分〜60分後の時間帯のみ</li>
-                            <li><strong>指名キャスト:</strong> 必ずキャストを選択してください</li>
-                            <li><strong>遅刻について:</strong> 予約時刻から10分超過で自動キャンセルとなります</li>
+                            <li><strong>予約可能時間:</strong> 15分〜60分後の時間帯</li>
+                            <li><strong>指名:</strong> キャストを選択、またはフリー（指名なし）を選択</li>
                         </ul>
+                    </div>
+                    <div class="alert alert-danger mb-4" style="font-weight: 600;">
+                        10分以上の遅刻で自動キャンセルとなる場合があります
                     </div>
                     
                     <form method="POST" action="{{ url_for('customer.booking', shop_id=shop.id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <!-- 指名キャスト選択（必須） -->
+                        <!-- 指名キャスト選択 -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">
                                 <i class="bi bi-person-heart me-1"></i>
                                 指名キャスト <span class="text-danger">*必須</span>
                             </label>
                             <div class="row g-3">
+                                <div class="col-6 col-md-4">
+                                    <div class="cast-select-card">
+                                        <input type="radio" class="btn-check" name="cast_id" 
+                                               id="cast_free" value="free"
+                                               {% if not selected_cast_id %}checked{% endif %}
+                                               required>
+                                        <label class="btn btn-outline-secondary w-100 h-100 p-2" for="cast_free">
+                                            <div class="text-center">
+                                                <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--bs-secondary); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 0.5rem; color: #fff; font-size: 1.5rem;">?</div>
+                                                <div class="fw-bold small">フリー（指名なし）</div>
+                                                <span class="badge bg-info">おまかせ</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
                                 {% for cast in casts %}
                                 <div class="col-6 col-md-4">
                                     <div class="cast-select-card">
@@ -53,7 +70,8 @@
                                                 <img src="{{ cast.image_url }}" 
                                                      alt="{{ cast.name_display }}"
                                                      class="rounded-circle mb-2"
-                                                     style="width: 60px; height: 60px; object-fit: cover;">
+                                                     style="width: 60px; height: 60px; object-fit: cover;"
+                                                     loading="lazy">
                                                 <div class="fw-bold small">{{ cast.name_display }}</div>
                                                 {% if cast.work_status == 'working' %}
                                                 <span class="badge bg-success">出勤中</span>
@@ -84,7 +102,7 @@
                                 </option>
                                 {% endfor %}
                             </select>
-                            <div class="form-text">予約可能: 30分〜60分後</div>
+                            <div class="form-text">予約可能: 15分〜60分後</div>
                         </div>
                         
                         <hr class="my-4">

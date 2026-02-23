@@ -117,7 +117,7 @@
  <div class="plan-column-header">
  <h4>スタンダード</h4>
  <div class="plan-column-price">
- <span class="amount">¥25,000</span>
+ <span class="amount">¥{{ '{:,}'.format(plan_prices.get('standard', 15000)) }}</span>
  <span class="period">/月</span>
  </div>
  </div>
@@ -146,7 +146,7 @@
  <div class="plan-column-header">
  <h4>プレミアム</h4>
  <div class="plan-column-price">
- <span class="amount">¥50,000</span>
+ <span class="amount">¥{{ '{:,}'.format(plan_prices.get('premium', 50000)) }}</span>
  <span class="period">/月</span>
  </div>
  </div>
@@ -181,7 +181,7 @@
  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
  <input type="hidden" name="plan_type" value="premium">
  <button type="submit" class="btn btn-primary">
- プレミアムにアップグレード（+¥25,000/月）
+ プレミアムにアップグレード（+¥{{ '{:,}'.format(plan_prices.get('premium', 50000) - plan_prices.get('standard', 15000)) }}/月）
  </button>
  </form>
  {% endif %}

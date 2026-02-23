@@ -12,8 +12,15 @@ class Cast(db.Model):
     """キャスト"""
     __tablename__ = 'casts'
     
+    # 承認ステータス
+    APPROVAL_PENDING = 'pending'
+    APPROVAL_APPROVED = 'approved'
+    APPROVAL_REJECTED = 'rejected'
+    
     id = db.Column(db.Integer, primary_key=True)
     shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), index=True)
+    approval_status = db.Column(db.String(20), default=APPROVAL_APPROVED)
     
     name = db.Column(db.String(50), nullable=False)
     slug = db.Column(db.String(200), unique=True, index=True)

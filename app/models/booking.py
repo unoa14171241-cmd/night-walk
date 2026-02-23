@@ -73,7 +73,7 @@ class BookingLog(db.Model):
     }
     
     # 予約時間の制限（分）
-    MIN_ADVANCE_MINUTES = 30  # 最低30分前
+    MIN_ADVANCE_MINUTES = 15  # 最低15分前
     MAX_ADVANCE_MINUTES = 60  # 最大60分前
     LATE_CANCEL_MINUTES = 10  # 10分遅刻でキャンセル
     
@@ -81,8 +81,9 @@ class BookingLog(db.Model):
     call_id = db.Column(db.Integer, db.ForeignKey('calls.id', ondelete='SET NULL'), index=True)
     shop_id = db.Column(db.Integer, db.ForeignKey('shops.id', ondelete='CASCADE'), nullable=False, index=True)
     
-    # 指名キャスト（必須）
+    # 指名キャスト（NULLの場合はフリー指名なし）
     cast_id = db.Column(db.Integer, db.ForeignKey('casts.id', ondelete='SET NULL'), index=True)
+    is_free_nomination = db.Column(db.Boolean, default=False)
     
     # 顧客情報
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id', ondelete='SET NULL'), index=True)

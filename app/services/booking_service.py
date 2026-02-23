@@ -1,5 +1,5 @@
 # app/services/booking_service.py
-"""予約サービス - 直前限定予約（30〜60分）＋指名キャスト必須"""
+"""予約サービス - 直前限定予約（15〜60分）＋指名 or フリー"""
 
 from datetime import datetime, timedelta
 from flask import current_app
@@ -16,47 +16,29 @@ class BookingService:
     @classmethod
     def create_booking(cls, shop_id, cast_id, scheduled_at, 
                        customer_id=None, customer_phone=None, customer_name=None,
-                       party_size=1, notes=None, booking_type='web'):
+                       party_size=1, notes=None, booking_type='web',
+                       is_free_nomination=False):
         """
-        予約を作成（直前限定：30〜60分後のみ）
-        
-        Args:
-            shop_id: 店舗ID
-            cast_id: 指名キャストID（必須）
-            scheduled_at: 予約時刻
-            customer_id: 顧客ID（ログインユーザー）
-            customer_phone: 電話番号
-            customer_name: 予約者名
-            party_size: 人数
-            notes: 備考
-            booking_type: 予約タイプ (web/phone)
-        
-        Returns:
-            dict: {'success': bool, 'booking': BookingLog or None, 'error': str or None}
+        予約を作成（直前限定：15〜60分後）
         """
-        # 店舗チェック
         shop = Shop.query.get(shop_id)
         if not shop or not shop.is_active or not shop.is_published:
             return {'success': False, 'booking': None, 'error': '店舗が見つかりません'}
         
-        # キャストチェック（必須）
-        if not cast_id:
-            return {'success': False, 'booking': None, 'error': '指名キャストを選択してください'}
+        if not is_free_nomination:
+            if not cast_id:
+                return {'success': False, 'booking': None, 'error': '指名キャストを選択してください'}
+            cast = Cast.query.get(cast_id)
+            if not cast or not cast.is_active or cast.shop_id != shop_id:
+                return {'success': False, 'booking': None, 'error': '指定されたキャストは選択できません'}
         
-        cast = Cast.query.get(cast_id)
-        if not cast or not cast.is_active or cast.shop_id != shop_id:
-            return {'success': False, 'booking': None, 'error': '指定されたキャストは選択できません'}
-        
-        # 予約時刻バリデーション（30〜60分後のみ）
         is_valid, error = BookingLog.validate_scheduled_time(scheduled_at)
         if not is_valid:
             return {'success': False, 'booking': None, 'error': error}
         
-        # 電話番号必須チェック
         if not customer_phone:
             return {'success': False, 'booking': None, 'error': '電話番号を入力してください'}
         
-        # 重複予約チェック（同じ顧客が同じ店舗に来店待ちの予約がある場合）
         existing = BookingLog.query.filter(
             BookingLog.shop_id == shop_id,
             BookingLog.customer_phone == customer_phone,
@@ -66,10 +48,10 @@ class BookingService:
         if existing:
             return {'success': False, 'booking': None, 'error': 'この店舗に既に予約があります'}
         
-        # 予約作成
         booking = BookingLog(
             shop_id=shop_id,
-            cast_id=cast_id,
+            cast_id=cast_id if not is_free_nomination else None,
+            is_free_nomination=is_free_nomination,
             customer_id=customer_id,
             customer_phone=customer_phone,
             customer_name=customer_name,
@@ -83,8 +65,9 @@ class BookingService:
         db.session.add(booking)
         db.session.commit()
         
+        cast_info = 'フリー' if is_free_nomination else f'cast={cast_id}'
         current_app.logger.info(
-            f"Booking created: shop={shop_id}, cast={cast_id}, "
+            f"Booking created: shop={shop_id}, {cast_info}, "
             f"scheduled={scheduled_at}, phone={customer_phone[:3]}***"
         )
         

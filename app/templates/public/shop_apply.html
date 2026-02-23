@@ -186,6 +186,17 @@
                     </div>
                 </div>
 
+                <div class="form-section">
+                    <h3>紹介コード（任意）</h3>
+                    <div class="form-group">
+                        <label class="form-label" for="referral_code">紹介コード</label>
+                        <input type="text" id="referral_code" name="referral_code" class="form-control"
+                            value="{{ form_data.referral_code if form_data else '' }}" placeholder="例: ABCD1234"
+                            maxlength="20" style="text-transform: uppercase;">
+                        <small class="form-text">既存の掲載店舗から紹介コードをお持ちの場合はご入力ください</small>
+                    </div>
+                </div>
+
                 <div class="form-submit">
                     <button type="submit" class="btn btn-primary btn-lg">
                         申し込む

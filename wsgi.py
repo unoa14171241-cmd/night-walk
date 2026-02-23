@@ -219,6 +219,9 @@ def auto_migrate_columns():
                     ("gift_appeal", "TEXT"),
                     # SEOスラッグ
                     ("slug", "VARCHAR(200)"),
+                    # キャスト権限分離（RBAC）
+                    ("user_id", "INTEGER"),
+                    ("approval_status", "VARCHAR(20) DEFAULT 'approved'"),
                 ]
                 
                 for col_name, col_type in cast_columns:
@@ -288,6 +291,7 @@ def auto_migrate_columns():
                     ("cancel_reason", "VARCHAR(255)"),
                     ("checked_in_at", "TIMESTAMP"),
                     ("updated_at", "TIMESTAMP"),
+                    ("is_free_nomination", "BOOLEAN DEFAULT FALSE"),
                 ]
                 
                 for col_name, col_type in booking_columns:

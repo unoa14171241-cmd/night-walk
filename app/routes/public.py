@@ -524,6 +524,9 @@ def shop_apply():
         account_number = request.form.get('account_number', '').strip()
         account_holder = request.form.get('account_holder', '').strip()
         
+        # 紹介コード（任意）
+        referral_code = request.form.get('referral_code', '').strip().upper()
+        
         # バリデーション
         errors = []
         if not shop_name:
@@ -555,6 +558,16 @@ def shop_apply():
         if not account_holder:
             errors.append('口座名義は必須です。')
         
+        # 紹介コードバリデーション（入力された場合のみ）
+        referral_obj = None
+        if referral_code:
+            from ..models.referral import ShopReferral
+            referral_obj = ShopReferral.get_by_code(referral_code)
+            if not referral_obj:
+                errors.append('紹介コードが見つかりません。')
+            elif not referral_obj.is_valid:
+                errors.append('この紹介コードは無効または期限切れです。')
+        
         # 重複チェック
         existing_shop = Shop.query.filter_by(name=shop_name, area=area).first()
         if existing_shop:
@@ -583,7 +596,8 @@ def shop_apply():
                                        'bank_branch': bank_branch,
                                        'account_type': account_type,
                                        'account_number': account_number,
-                                       'account_holder': account_holder
+                                       'account_holder': account_holder,
+                                       'referral_code': referral_code
                                    })
         
         try:
@@ -629,8 +643,16 @@ def shop_apply():
             )
             db.session.add(shop_member)
             
+            # 紹介コードの紐付け
+            if referral_code and referral_obj and referral_obj.is_valid:
+                from ..models.referral import ShopReferral
+                referral_obj.referred_shop_id = shop.id
+                referral_obj.status = ShopReferral.STATUS_USED
+                referral_obj.used_at = datetime.utcnow()
+            
             # 申込情報を保存（審査完了時のメール送信用）
-            shop.review_notes = f'担当者: {contact_name}\nメール: {email}\n仮パスワード: {temp_password}\n備考: {message}' if message else f'担当者: {contact_name}\nメール: {email}\n仮パスワード: {temp_password}'
+            referral_note = f'\n紹介コード: {referral_code}' if referral_code else ''
+            shop.review_notes = f'担当者: {contact_name}\nメール: {email}\n仮パスワード: {temp_password}\n備考: {message}{referral_note}' if message else f'担当者: {contact_name}\nメール: {email}\n仮パスワード: {temp_password}{referral_note}'
             
             db.session.commit()
             
@@ -656,7 +678,8 @@ def shop_apply():
                                        'bank_branch': bank_branch,
                                        'account_type': account_type,
                                        'account_number': account_number,
-                                       'account_holder': account_holder
+                                       'account_holder': account_holder,
+                                       'referral_code': referral_code
                                    })
     
     return render_template('public/shop_apply.html',

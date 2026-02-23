@@ -11,7 +11,7 @@ class StorePlan(db.Model):
     
     # プランタイプ
     PLAN_FREE = 'free'
-    PLAN_STANDARD = 'standard'   # 月額25,000円+税（検索優先、バッジ、求人、キャスト出勤、スタンプカード等）
+    PLAN_STANDARD = 'standard'   # 月額15,000円+税（検索優先、バッジ、求人、キャスト出勤、スタンプカード等）
     PLAN_PREMIUM = 'premium'     # 月額50,000円+税（スタンダード全機能+トップバナー、最優先表示）
     PLAN_BUSINESS = 'business'   # 後方互換（premiumと同等扱い）
     
@@ -26,7 +26,7 @@ class StorePlan(db.Model):
     
     PLAN_PRICES = {
         PLAN_FREE: 0,
-        PLAN_STANDARD: 25000,   # 25,000円（税抜）
+        PLAN_STANDARD: 15000,   # 15,000円（税抜）
         PLAN_PREMIUM: 50000,    # 50,000円（税抜）
         PLAN_BUSINESS: 50000,   # 後方互換
     }
@@ -76,7 +76,7 @@ class StorePlan(db.Model):
         },
         PLAN_STANDARD: {
             'name': 'スタンダードプラン',
-            'price_display': '¥25,000/月（税抜）',
+            'price_display': '¥15,000/月（税抜）',
             'features': [
                 'ランキング特典・参加権',
                 'スタンプカード機能',

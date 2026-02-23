@@ -15,6 +15,7 @@ class User(UserMixin, db.Model):
     ROLE_ADMIN = 'admin'    # 運営
     ROLE_OWNER = 'owner'    # 店舗オーナー
     ROLE_STAFF = 'staff'    # 店舗スタッフ
+    ROLE_CAST = 'cast'      # キャスト（自分のみ編集可）
     
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
@@ -81,9 +82,21 @@ class User(UserMixin, db.Model):
         return str(self.id)
     
     @property
+    def is_cast(self):
+        """キャストユーザーかどうか"""
+        return self.role == self.ROLE_CAST
+    
+    @property
     def is_customer(self):
         """カスタマーかどうか（Userは常にFalse）"""
         return False
+    
+    def get_cast_profile(self):
+        """キャストユーザーに紐づくCastレコードを取得"""
+        if not self.is_cast:
+            return None
+        from .gift import Cast
+        return Cast.query.filter_by(user_id=self.id).first()
     
     def __repr__(self):
         return f'<User {self.email}>'

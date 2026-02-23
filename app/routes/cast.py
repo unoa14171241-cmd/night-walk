@@ -1,11 +1,14 @@
 """
 Night-Walk MVP - Cast Routes (キャスト用)
 キャストが自分のスマホから情報を更新できる機能
+RBAC: キャスト本人は自分の情報のみ編集可、店舗側は所属キャスト全員編集可
 """
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session, g, current_app
 from ..extensions import db
 from ..models.gift import Cast
+from ..models.shop import Shop
+from ..models.user import User
 from ..models.audit import AuditLog
 from ..models.cast_tag import CastTag
 from ..models.cast_image import CastImage
@@ -81,6 +84,83 @@ def logout():
 
 
 # ============================================
+# キャスト新規登録
+# ============================================
+
+@cast_bp.route('/register', methods=['GET', 'POST'])
+def register():
+    """キャスト新規登録（role: cast）"""
+    from werkzeug.security import generate_password_hash
+    
+    shops = Shop.query.filter_by(is_active=True, is_published=True).order_by(Shop.name).all()
+    
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        display_name = request.form.get('display_name', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        shop_id = request.form.get('shop_id', type=int)
+        
+        errors = []
+        if not name:
+            errors.append('名前を入力してください')
+        if not display_name:
+            errors.append('源氏名を入力してください')
+        if not email:
+            errors.append('メールアドレスを入力してください')
+        elif User.query.filter_by(email=email).first():
+            errors.append('このメールアドレスは既に使用されています')
+        if not password or len(password) < 6:
+            errors.append('パスワードは6文字以上で入力してください')
+        if not shop_id:
+            errors.append('所属店舗を選択してください')
+        
+        if errors:
+            for e in errors:
+                flash(e, 'danger')
+            return render_template('cast/register.html', shops=shops,
+                                   form_data={'name': name, 'display_name': display_name,
+                                              'email': email, 'shop_id': shop_id})
+        
+        try:
+            user = User(email=email, name=name, role=User.ROLE_CAST)
+            user.set_password(password)
+            db.session.add(user)
+            db.session.flush()
+            
+            import secrets
+            login_code = ''.join(secrets.choice('0123456789') for _ in range(8))
+            while Cast.query.filter_by(login_code=login_code).first():
+                login_code = ''.join(secrets.choice('0123456789') for _ in range(8))
+            
+            cast = Cast(
+                name=name,
+                display_name=display_name,
+                shop_id=shop_id,
+                user_id=user.id,
+                approval_status=Cast.APPROVAL_PENDING,
+                login_code=login_code,
+                is_active=False,
+                is_visible=False
+            )
+            db.session.add(cast)
+            db.session.commit()
+            
+            flash('登録が完了しました。店舗の承認後にプロフィール編集が可能になります。', 'success')
+            session['cast_id'] = cast.id
+            return redirect(url_for('cast.dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Cast registration error: {e}")
+            flash('登録処理でエラーが発生しました', 'danger')
+            return render_template('cast/register.html', shops=shops,
+                                   form_data={'name': name, 'display_name': display_name,
+                                              'email': email, 'shop_id': shop_id})
+    
+    return render_template('cast/register.html', shops=shops, form_data=None)
+
+
+# ============================================
 # キャストダッシュボード
 # ============================================
 
@@ -147,8 +227,16 @@ def profile():
 @cast_bp.route('/edit-profile', methods=['GET', 'POST'])
 @cast_login_required
 def edit_profile():
-    """キャスト自身のプロフィール編集"""
+    """キャスト自身のプロフィール編集（承認済みのみ）"""
     cast = g.current_cast
+    
+    if cast.approval_status == Cast.APPROVAL_PENDING:
+        flash('店舗からの承認待ちです。承認後にプロフィール編集が可能になります。', 'warning')
+        return redirect(url_for('cast.dashboard'))
+    
+    if cast.approval_status == Cast.APPROVAL_REJECTED:
+        flash('登録が承認されませんでした。店舗にお問い合わせください。', 'danger')
+        return redirect(url_for('cast.dashboard'))
     
     if request.method == 'POST':
         cast.profile = request.form.get('profile', '').strip()
