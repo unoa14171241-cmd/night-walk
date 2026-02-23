@@ -283,6 +283,8 @@ def logout():
 @customer_login_required
 def mypage():
     """マイページ"""
+    from ..services.qrcode_service import generate_qrcode_base64
+    
     # 最近の取引履歴
     recent_transactions = PointTransaction.query.filter_by(
         customer_id=current_user.id
@@ -293,9 +295,16 @@ def mypage():
         customer_id=current_user.id
     ).order_by(GiftTransaction.created_at.desc()).limit(5).all()
     
+    # チェックインQRコード生成
+    token = current_user.ensure_checkin_token()
+    db.session.commit()
+    checkin_url = url_for('shop_admin.qr_checkin', token=token, _external=True)
+    checkin_qr = generate_qrcode_base64(checkin_url, size=8)
+    
     return render_template('customer/mypage.html',
                            recent_transactions=recent_transactions,
-                           recent_gifts=recent_gifts)
+                           recent_gifts=recent_gifts,
+                           checkin_qr=checkin_qr)
 
 
 @customer_bp.route('/points/history')

@@ -1,6 +1,7 @@
 # app/models/customer.py
 """一般ユーザー（お客様）モデル"""
 
+import uuid
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
@@ -20,6 +21,9 @@ class Customer(UserMixin, db.Model):
     # SMS認証用電話番号
     phone_number = db.Column(db.String(20), unique=True, index=True)
     phone_verified = db.Column(db.Boolean, default=False)  # SMS認証済み
+    
+    # 来店チェックイン用トークン
+    checkin_token = db.Column(db.String(36), unique=True, index=True)
     
     is_active = db.Column(db.Boolean, default=True)
     is_verified = db.Column(db.Boolean, default=False)  # メール認証済み
@@ -66,6 +70,12 @@ class Customer(UserMixin, db.Model):
     def can_use_points(self, amount):
         """ポイントを使用できるか確認"""
         return self.point_balance >= amount
+    
+    def ensure_checkin_token(self):
+        """チェックイントークンがなければ生成"""
+        if not self.checkin_token:
+            self.checkin_token = str(uuid.uuid4())
+        return self.checkin_token
     
     # Flask-Login用（管理者Userと区別するため）
     def get_id(self):

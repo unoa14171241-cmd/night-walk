@@ -60,7 +60,11 @@
                     </td>
                     <td>
                         {% if b.status in ['confirmed', 'pending'] %}
-                        <form action="{{ url_for('shop_admin.late_cancel_booking', booking_id=b.id) }}" method="POST" class="d-inline"
+                        <form action="{{ url_for('shop_admin.manual_checkin', booking_id=b.id) }}" method="POST" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-primary">来店チェック</button>
+                        </form>
+                        <form action="{{ url_for('shop_admin.late_cancel_booking', booking_id=b.id) }}" method="POST" class="d-inline ms-1"
                               onsubmit="return confirm('この予約を遅刻キャンセルしますか？')">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-danger">遅刻キャンセル</button>

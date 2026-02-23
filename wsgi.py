@@ -161,6 +161,15 @@ def auto_migrate_columns():
                     ))
                     db.session.commit()
                     print("[SUCCESS] 'phone_verified' column added to customers table!")
+                
+                # checkin_tokenカラム（来店チェックイン用）
+                if 'checkin_token' not in columns:
+                    print("[INFO] Adding 'checkin_token' column to customers table...")
+                    db.session.execute(text(
+                        "ALTER TABLE customers ADD COLUMN checkin_token VARCHAR(36)"
+                    ))
+                    db.session.commit()
+                    print("[SUCCESS] 'checkin_token' column added to customers table!")
             
             # shopsテーブルのカラムをチェック（審査フロー・振込サイクル・キャンペーン）
             if 'shops' in inspector.get_table_names():

@@ -1872,3 +1872,77 @@ def late_cancel_booking(booking_id):
     
     flash('予約を遅刻キャンセルしました。', 'success')
     return redirect(url_for('shop_admin.bookings'))
+
+
+# ==================== 来店チェックイン ====================
+
+@shop_admin_bp.route('/bookings/<int:booking_id>/checkin', methods=['POST'])
+@login_required
+@shop_access_required
+def manual_checkin(booking_id):
+    """手動来店チェックイン"""
+    from ..services.booking_service import BookingService
+    
+    shop = g.current_shop
+    booking = BookingLog.query.filter_by(id=booking_id, shop_id=shop.id).first_or_404()
+    
+    result = BookingService.complete_booking(booking.id)
+    
+    if not result['success']:
+        flash(result['error'], 'danger')
+    else:
+        audit_log('booking_checkin', 'booking', booking.id,
+                  new_value={'method': 'manual', 'shop_id': shop.id})
+        flash(f'{booking.customer_name or "お客様"}の来店を確認しました。', 'success')
+    
+    return redirect(url_for('shop_admin.bookings'))
+
+
+@shop_admin_bp.route('/checkin/<token>')
+@login_required
+@shop_access_required
+def qr_checkin(token):
+    """QRコード読取による来店チェックイン"""
+    from ..models.customer import Customer
+    
+    shop = g.current_shop
+    customer = Customer.query.filter_by(checkin_token=token).first()
+    
+    if not customer:
+        flash('無効なチェックインコードです。', 'danger')
+        return redirect(url_for('shop_admin.bookings'))
+    
+    # この店舗の予約（confirmed/pending）を検索
+    active_booking = BookingLog.query.filter(
+        BookingLog.shop_id == shop.id,
+        BookingLog.customer_id == customer.id,
+        BookingLog.status.in_([BookingLog.STATUS_PENDING, BookingLog.STATUS_CONFIRMED])
+    ).order_by(BookingLog.scheduled_at.desc()).first()
+    
+    if active_booking:
+        active_booking.complete()
+        db.session.commit()
+        audit_log('booking_checkin', 'booking', active_booking.id,
+                  new_value={'method': 'qr', 'customer_id': customer.id})
+        flash(f'{customer.nickname}さんの来店を確認しました（予約#{active_booking.id}）。', 'success')
+    else:
+        # 予約なし → ウォークイン来店として記録
+        walkin = BookingLog(
+            shop_id=shop.id,
+            customer_id=customer.id,
+            customer_name=customer.nickname,
+            customer_phone=customer.phone_number or customer.phone,
+            party_size=1,
+            booking_type='walk_in',
+            status=BookingLog.STATUS_COMPLETED,
+            checked_in_at=datetime.utcnow(),
+            scheduled_at=datetime.utcnow(),
+            notes='QRチェックイン（予約なし）'
+        )
+        db.session.add(walkin)
+        db.session.commit()
+        audit_log('walkin_checkin', 'booking', walkin.id,
+                  new_value={'method': 'qr', 'customer_id': customer.id})
+        flash(f'{customer.nickname}さんの来店を記録しました（予約なし・ウォークイン）。', 'success')
+    
+    return redirect(url_for('shop_admin.bookings'))
