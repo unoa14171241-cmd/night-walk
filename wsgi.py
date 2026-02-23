@@ -180,6 +180,11 @@ def auto_migrate_columns():
                     ("reviewed_at", "TIMESTAMP"),
                     ("reviewed_by", "INTEGER"),
                     ("review_notes", "TEXT"),
+                    # 風営法対応: 内部実時間と営業種別
+                    ("open_time", "TIME"),
+                    ("close_time", "TIME"),
+                    ("business_type", "VARCHAR(30) DEFAULT 'other'"),
+                    ("permit_number", "VARCHAR(100)"),
                     ("payout_cycle", "VARCHAR(20) DEFAULT 'month_end'"),
                     ("payout_day", "INTEGER DEFAULT 5"),
                     ("campaign_free_months", "INTEGER DEFAULT 0"),
@@ -203,6 +208,12 @@ def auto_migrate_columns():
                         ))
                         db.session.commit()
                         print(f"[SUCCESS] '{col_name}' column added to shops table!")
+
+                # 既存データの営業種別初期値を補完
+                db.session.execute(text(
+                    "UPDATE shops SET business_type = 'other' WHERE business_type IS NULL OR business_type = ''"
+                ))
+                db.session.commit()
             
             # castsテーブルのカラムをチェック（キャストログイン・出勤状況）
             if 'casts' in inspector.get_table_names():

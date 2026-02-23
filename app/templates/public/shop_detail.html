@@ -3,7 +3,7 @@
 {% block title %}{{ shop.name }} | {{ shop.area }}の{{ shop.category_label or '店舗' }} - Night-Walk{% endblock %}
 
 {% block meta_description %}{{ shop.name }}は{{ shop.area }}にある{{ shop.category_label or '店舗' }}です。{% if
-shop.business_hours %}営業時間: {{ shop.business_hours }}{% endif %}{% if shop.price_range %} 料金: {{ shop.price_range }}{%
+shop.public_business_hours %}営業時間: {{ shop.public_business_hours }}{% endif %}{% if shop.price_range %} 料金: {{ shop.price_range }}{%
 endif %} 空席状況をリアルタイムで確認できます。{% endblock %}
 
 {% block og_type %}place{% endblock %}
@@ -28,8 +28,8 @@ filename='images/ogp-default.png', _external=True) }}{% endif %}{% endblock %}
  {%- if shop.phone %},
  "telephone": "{{ shop.phone }}"
  {%- endif %}
- {%- if shop.business_hours %},
- "openingHours": "{{ shop.business_hours }}"
+ {%- if shop.public_business_hours %},
+ "openingHours": "{{ shop.public_business_hours }}"
  {%- endif %}
  {%- if images and images|length > 0 %},
  "image": "{{ images[0].url }}"
@@ -148,10 +148,10 @@ filename='images/ogp-default.png', _external=True) }}{% endif %}{% endblock %}
                             <h3>店舗情報</h3>
                             <div class="card">
                                    <table class="table" style="margin: 0;">
-                                          {% if shop.business_hours %}
+                                          {% if shop.public_business_hours %}
                                           <tr>
                                                  <th style="width: 100px;">営業時間</th>
-                                                 <td>{{ shop.business_hours }}</td>
+                                                 <td>{{ shop.public_business_hours }}</td>
                                           </tr>
                                           {% endif %}
                                           {% if shop.price_range %}
@@ -196,9 +196,9 @@ filename='images/ogp-default.png', _external=True) }}{% endif %}{% endblock %}
                                           </div>
                                           <div class="cast-preview-info">
                                                  <span class="cast-preview-name">{{ shift.cast.name_display }}</span>
-                                                 {% if shift.end_time %}
-                                                 <span style="font-size: 0.7rem; color: var(--color-text-muted);">〜{{
-                                                        shift.end_time.strftime('%H:%M') }}</span>
+                                                 {% if shift.public_time_display %}
+                                                 <span style="font-size: 0.7rem; color: var(--color-text-muted);">{{
+                                                        shift.public_time_display }}</span>
                                                  {% endif %}
                                           </div>
                                    </a>

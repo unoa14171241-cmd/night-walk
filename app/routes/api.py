@@ -113,7 +113,8 @@ def get_shops():
             'id': shop.id,
             'name': shop.name,
             'area': shop.area,
-            'business_hours': shop.business_hours,
+            # 公開APIでは終了時刻を出さない
+            'business_hours': shop.public_business_hours,
             'price_range': shop.price_range,
             'image_url': shop.image_url,
             'vacancy': {

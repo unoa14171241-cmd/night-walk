@@ -1,7 +1,7 @@
 """
 Night-Walk MVP - Shop Models
 """
-from datetime import datetime
+from datetime import datetime, time
 from ..extensions import db
 
 
@@ -107,6 +107,20 @@ class Shop(db.Model):
     # 振込サイクル
     PAYOUT_CYCLE_MONTH_END = 'month_end'  # 月末締め
     PAYOUT_CYCLES = [PAYOUT_CYCLE_MONTH_END]
+
+    # 営業種別（風営法対応）
+    BUSINESS_TYPE_FUEI_1 = 'fuei_1'
+    BUSINESS_TYPE_LATE_NIGHT_FOOD = 'late_night_food'
+    BUSINESS_TYPE_OTHER = 'other'
+    BUSINESS_TYPES = [BUSINESS_TYPE_FUEI_1, BUSINESS_TYPE_LATE_NIGHT_FOOD, BUSINESS_TYPE_OTHER]
+    BUSINESS_TYPE_LABELS = {
+        BUSINESS_TYPE_FUEI_1: '風俗営業1号',
+        BUSINESS_TYPE_LATE_NIGHT_FOOD: '深夜酒類提供飲食店',
+        BUSINESS_TYPE_OTHER: 'その他',
+    }
+
+    # 風俗営業1号の運用上の注意喚起基準（必要に応じて調整）
+    FUEI_1_WARNING_CLOSE_TIME = time(0, 0)
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
@@ -115,6 +129,10 @@ class Shop(db.Model):
     phone = db.Column(db.String(20))
     address = db.Column(db.Text)
     business_hours = db.Column(db.String(100))  # 例: '20:00-02:00'
+    open_time = db.Column(db.Time)              # 内部管理用（実時間）
+    close_time = db.Column(db.Time)             # 内部管理用（実時間）
+    business_type = db.Column(db.String(30), nullable=False, default=BUSINESS_TYPE_OTHER, index=True)
+    permit_number = db.Column(db.String(100))   # 許可番号（任意）
     price_range = db.Column(db.String(100))     # 例: '5,000円〜' (表示用)
     price_min = db.Column(db.Integer)           # 最低料金（検索用）
     price_max = db.Column(db.Integer)           # 最高料金（検索用）
@@ -217,6 +235,61 @@ class Shop(db.Model):
     def category_label(self):
         """Get category display label."""
         return self.CATEGORY_LABELS.get(self.category, '')
+
+    @property
+    def business_type_label(self):
+        """Get business type display label."""
+        return self.BUSINESS_TYPE_LABELS.get(self.business_type, self.BUSINESS_TYPE_LABELS[self.BUSINESS_TYPE_OTHER])
+
+    @property
+    def internal_business_hours(self):
+        """管理画面向けの実時間表示。"""
+        if not self.open_time and not self.close_time:
+            return self.business_hours
+        start = self.open_time.strftime('%H:%M') if self.open_time else '--:--'
+        end = self.close_time.strftime('%H:%M') if self.close_time else '--:--'
+        return f'{start}〜{end}'
+
+    @property
+    def public_business_hours(self):
+        """
+        公開画面向け営業時間。
+        風営法等の観点から外部表示は終了時刻を出さず、必ず「〜LAST」で表示する。
+        """
+        if self.open_time:
+            return f"{self.open_time.strftime('%H:%M')}〜LAST"
+        # 旧データ互換: 文字列営業時間しかない場合は開始時刻のみ抽出してLAST表示
+        if self.business_hours:
+            start_token = self.business_hours
+            for separator in ['〜', '~', '-', '―', 'ー']:
+                if separator in self.business_hours:
+                    start_token = self.business_hours.split(separator, 1)[0]
+                    break
+            start_token = start_token.strip()
+            if start_token:
+                return f'{start_token}〜LAST'
+        return '営業時間は店舗へ確認'
+
+    def get_operation_warnings(self, close_time_obj=None):
+        """
+        営業種別に応じた運用上の注意喚起を返す。
+        保存自体は許可し、管理画面で警告表示するためのメッセージを返す。
+        """
+        warnings = []
+        target_close = close_time_obj if close_time_obj is not None else self.close_time
+        if not target_close:
+            return warnings
+
+        if self.business_type == self.BUSINESS_TYPE_FUEI_1:
+            if target_close > self.FUEI_1_WARNING_CLOSE_TIME:
+                warnings.append(
+                    '営業種別が「風俗営業1号」です。終了時刻が運用基準（00:00）を超えている可能性があります。'
+                    ' 地域条例・所轄の指導内容をご確認ください。'
+                )
+        elif self.business_type == self.BUSINESS_TYPE_LATE_NIGHT_FOOD:
+            # 深夜酒類提供飲食店は警告条件を緩める（現在は警告なし）
+            pass
+        return warnings
     
     @property
     def review_status_label(self):

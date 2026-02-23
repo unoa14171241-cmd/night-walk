@@ -99,6 +99,28 @@ def create_app(config_name='default'):
     # Create database tables
     with app.app_context():
         db.create_all()
+        # 既存DB向けの軽量カラム移行（create_allでは既存テーブルへ列追加されないため）
+        try:
+            from sqlalchemy import inspect, text
+            inspector = inspect(db.engine)
+            if 'shops' in inspector.get_table_names():
+                columns = [col['name'] for col in inspector.get_columns('shops')]
+                required_shop_columns = [
+                    ('open_time', 'TIME'),
+                    ('close_time', 'TIME'),
+                    ("business_type", "VARCHAR(30) DEFAULT 'other'"),
+                    ('permit_number', 'VARCHAR(100)'),
+                ]
+                for col_name, col_type in required_shop_columns:
+                    if col_name not in columns:
+                        db.session.execute(text(f"ALTER TABLE shops ADD COLUMN {col_name} {col_type}"))
+                        db.session.commit()
+                db.session.execute(text(
+                    "UPDATE shops SET business_type = 'other' WHERE business_type IS NULL OR business_type = ''"
+                ))
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
     
     return app
 

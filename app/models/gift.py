@@ -287,6 +287,15 @@ class Cast(db.Model):
         elif self.work_start_time:
             return f"{self.work_start_time}〜"
         return None
+
+    @property
+    def public_work_time_display(self):
+        """公開画面向け出勤時間表示（終了時刻は非表示）。"""
+        if self.work_status == self.WORK_STATUS_OFF:
+            return None
+        if self.work_start_time:
+            return f"{self.work_start_time}〜LAST"
+        return None
     
     def __repr__(self):
         return f'<Cast {self.name_display}>'

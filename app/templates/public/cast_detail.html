@@ -102,8 +102,8 @@
  <span class="badge badge-{{ cast.work_status_color }}" style="font-size: 0.9rem;">
  {% if cast.work_status == 'working' %}{% else %}{% endif %} {{ cast.work_status_label }}
  </span>
- {% if cast.work_time_display %}
- <span class="text-muted" style="margin-left: 8px;">{{ cast.work_time_display }}</span>
+{% if cast.public_work_time_display %}
+<span class="text-muted" style="margin-left: 8px;">{{ cast.public_work_time_display }}</span>
  {% endif %}
  </div>
  {% endif %}
@@ -203,8 +203,8 @@
  <div class="shift-day">
  <div class="shift-day-name">{{ day_names[shift.shift_date.weekday()] }}</div>
  <div class="shift-day-date">{{ shift.shift_date.month }}/{{ shift.shift_date.day }}</div>
- {% if shift.start_time %}
- <div class="shift-time">{{ shift.start_time.strftime('%H:%M') }}〜{{ shift.end_time.strftime('%H:%M') if shift.end_time else '' }}</div>
+{% if shift.start_time %}
+<div class="shift-time">{{ shift.public_time_display }}</div>
  {% elif shift.status != 'canceled' %}
  <div class="shift-time" style="color: var(--color-text-muted);">出勤</div>
  {% else %}
@@ -352,8 +352,8 @@
  <p style="margin: 0;"><strong>{{ shop.name }}</strong></p>
  <p class="text-muted mb-2">{{ shop.area }}</p>
  
- {% if shop.business_hours %}
- <p style="margin: 0; font-size: 0.9rem;"> {{ shop.business_hours }}</p>
+{% if shop.public_business_hours %}
+<p style="margin: 0; font-size: 0.9rem;"> {{ shop.public_business_hours }}</p>
  {% endif %}
  
  <div style="margin-top: var(--space-md);">

@@ -81,6 +81,49 @@
                            value="{{ shop.business_hours if shop else '' }}"
                            placeholder="20:00〜02:00">
                 </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                        <label class="form-label" for="open_time">開始時刻（内部管理）</label>
+                        <input type="time"
+                               id="open_time"
+                               name="open_time"
+                               class="form-control"
+                               value="{{ shop.open_time.strftime('%H:%M') if shop and shop.open_time else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="close_time">終了時刻（内部管理）</label>
+                        <input type="time"
+                               id="close_time"
+                               name="close_time"
+                               class="form-control"
+                               value="{{ shop.close_time.strftime('%H:%M') if shop and shop.close_time else '' }}">
+                    </div>
+                </div>
+                <small class="text-muted">公開画面は常に「開始時刻〜LAST」で表示され、終了時刻は表示されません。</small>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                        <label class="form-label" for="business_type">営業種別</label>
+                        <select id="business_type" name="business_type" class="form-control">
+                            {% set current_business_type = shop.business_type if shop else 'other' %}
+                            {% for bt in business_types %}
+                            <option value="{{ bt }}" {% if current_business_type == bt %}selected{% endif %}>
+                                {{ business_type_labels[bt] }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="permit_number">許可番号（任意）</label>
+                        <input type="text"
+                               id="permit_number"
+                               name="permit_number"
+                               class="form-control"
+                               value="{{ shop.permit_number if shop else '' }}"
+                               placeholder="例: 岡○生 第1234号">
+                    </div>
+                </div>
                 
                 <div class="form-group">
                     <label class="form-label" for="price_range">料金目安</label>

@@ -35,6 +35,17 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
+def parse_time_input(value):
+    """HH:MM 文字列を time に変換（不正なら None）。"""
+    value = (value or '').strip()
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, '%H:%M').time()
+    except ValueError:
+        return None
+
 def save_shop_image(file, shop_id):
     """Save uploaded image and return filename (cloud or local)."""
     if not file or not allowed_file(file.filename):
@@ -169,6 +180,11 @@ def edit():
         shop.phone = request.form.get('phone', '').strip()
         shop.address = request.form.get('address', '').strip()
         shop.business_hours = request.form.get('business_hours', '').strip()
+        shop.open_time = parse_time_input(request.form.get('open_time'))
+        shop.close_time = parse_time_input(request.form.get('close_time'))
+        business_type = request.form.get('business_type', Shop.BUSINESS_TYPE_OTHER)
+        shop.business_type = business_type if business_type in Shop.BUSINESS_TYPES else Shop.BUSINESS_TYPE_OTHER
+        shop.permit_number = request.form.get('permit_number', '').strip() or None
         shop.price_range = request.form.get('price_range', '').strip()
         shop.description = request.form.get('description', '').strip()
         # カテゴリは管理者のみ変更可能（店舗側では変更不可）
@@ -191,6 +207,10 @@ def edit():
             shop.price_max = None
         
         db.session.commit()
+
+        # 風営法対応: 保存後に管理画面で注意喚起
+        for warning in shop.get_operation_warnings():
+            flash(warning, 'warning')
         
         audit_log(AuditLog.ACTION_SHOP_EDIT, 'shop', shop.id,
                  old_value=old_values,
@@ -202,6 +222,8 @@ def edit():
     return render_template('shop_admin/edit.html', 
                           shop=shop, 
                           areas=Shop.AREAS,
+                          business_types=Shop.BUSINESS_TYPES,
+                          business_type_labels=Shop.BUSINESS_TYPE_LABELS,
                           categories=Shop.CATEGORIES,
                           category_labels=Shop.CATEGORY_LABELS)
 
@@ -1023,13 +1045,15 @@ def update_shift():
         user_id=current_user.id
     )
     
+    warnings = shop.get_operation_warnings(close_time_obj=end_time)
     db.session.commit()
     
     return jsonify({
         'success': True,
         'shift_id': shift.id,
         'status': shift.status,
-        'time_display': shift.time_display
+        'time_display': shift.time_display,
+        'warnings': warnings
     })
 
 

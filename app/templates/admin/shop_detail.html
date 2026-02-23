@@ -94,7 +94,18 @@
  </tr>
  <tr>
  <th>営業時間</th>
- <td>{{ shop.business_hours or '−' }}</td>
+<td>
+内部: {{ shop.internal_business_hours or '−' }}<br>
+公開: {{ shop.public_business_hours }}
+</td>
+</tr>
+<tr>
+<th>営業種別</th>
+<td>{{ shop.business_type_label }}</td>
+</tr>
+<tr>
+<th>許可番号</th>
+<td>{{ shop.permit_number or '−' }}</td>
  </tr>
  <tr>
  <th>料金目安</th>

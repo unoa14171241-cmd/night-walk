@@ -33,6 +33,17 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def parse_time_input(value):
+    """HH:MM 文字列を time に変換（不正なら None）。"""
+    value = (value or '').strip()
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, '%H:%M').time()
+    except ValueError:
+        return None
+
+
 @admin_bp.route('/')
 @admin_required
 def dashboard():
@@ -100,6 +111,8 @@ def new_shop():
                                   shop=None, 
                                   areas=Shop.AREAS,
                                   categories=Shop.CATEGORIES,
+                                  business_types=Shop.BUSINESS_TYPES,
+                                  business_type_labels=Shop.BUSINESS_TYPE_LABELS,
                                   category_labels=Shop.CATEGORY_LABELS)
         
         shop = Shop(
@@ -109,6 +122,12 @@ def new_shop():
             phone=phone,
             address=request.form.get('address', '').strip(),
             business_hours=request.form.get('business_hours', '').strip(),
+            open_time=parse_time_input(request.form.get('open_time')),
+            close_time=parse_time_input(request.form.get('close_time')),
+            business_type=request.form.get('business_type', Shop.BUSINESS_TYPE_OTHER)
+            if request.form.get('business_type', Shop.BUSINESS_TYPE_OTHER) in Shop.BUSINESS_TYPES
+            else Shop.BUSINESS_TYPE_OTHER,
+            permit_number=request.form.get('permit_number', '').strip() or None,
             price_range=request.form.get('price_range', '').strip(),
             description=request.form.get('description', '').strip(),
         )
@@ -162,6 +181,9 @@ def new_shop():
         db.session.add(staff_membership)
         
         db.session.commit()
+
+        for warning in shop.get_operation_warnings():
+            flash(warning, 'warning')
         
         audit_log(AuditLog.ACTION_SHOP_CREATE, 'shop', shop.id,
                  new_value={'name': name, 'area': area, 'category': category})
@@ -177,6 +199,8 @@ def new_shop():
                           shop=None, 
                           areas=Shop.AREAS,
                           categories=Shop.CATEGORIES,
+                          business_types=Shop.BUSINESS_TYPES,
+                          business_type_labels=Shop.BUSINESS_TYPE_LABELS,
                           category_labels=Shop.CATEGORY_LABELS)
 
 
@@ -204,6 +228,8 @@ def edit_shop(shop_id):
                                   shop=shop, 
                                   areas=Shop.AREAS,
                                   categories=Shop.CATEGORIES,
+                                  business_types=Shop.BUSINESS_TYPES,
+                                  business_type_labels=Shop.BUSINESS_TYPE_LABELS,
                                   category_labels=Shop.CATEGORY_LABELS)
         
         # 変更前の値を記録
@@ -220,10 +246,18 @@ def edit_shop(shop_id):
         shop.phone = request.form.get('phone', '').strip()
         shop.address = request.form.get('address', '').strip()
         shop.business_hours = request.form.get('business_hours', '').strip()
+        shop.open_time = parse_time_input(request.form.get('open_time'))
+        shop.close_time = parse_time_input(request.form.get('close_time'))
+        business_type = request.form.get('business_type', Shop.BUSINESS_TYPE_OTHER)
+        shop.business_type = business_type if business_type in Shop.BUSINESS_TYPES else Shop.BUSINESS_TYPE_OTHER
+        shop.permit_number = request.form.get('permit_number', '').strip() or None
         shop.price_range = request.form.get('price_range', '').strip()
         shop.description = request.form.get('description', '').strip()
         
         db.session.commit()
+
+        for warning in shop.get_operation_warnings():
+            flash(warning, 'warning')
         
         # 監査ログ
         audit_log(AuditLog.ACTION_SHOP_EDIT, 'shop', shop.id,
@@ -237,6 +271,8 @@ def edit_shop(shop_id):
                           shop=shop, 
                           areas=Shop.AREAS,
                           categories=Shop.CATEGORIES,
+                          business_types=Shop.BUSINESS_TYPES,
+                          business_type_labels=Shop.BUSINESS_TYPE_LABELS,
                           category_labels=Shop.CATEGORY_LABELS)
 
 

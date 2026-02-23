@@ -69,6 +69,16 @@ class CastShift(db.Model):
         start = self.start_time.strftime('%H:%M') if self.start_time else '--:--'
         end = self.end_time.strftime('%H:%M') if self.end_time else '--:--'
         return f'{start}〜{end}'
+
+    @property
+    def public_time_display(self):
+        """
+        公開画面向け時間表示。
+        風営法等の観点から終了時刻は外部表示せず、LAST固定にする。
+        """
+        if not self.start_time:
+            return '未定'
+        return f"{self.start_time.strftime('%H:%M')}〜LAST"
     
     @property
     def is_today(self):

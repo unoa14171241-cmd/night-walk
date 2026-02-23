@@ -87,6 +87,49 @@
  value="{{ shop.business_hours or '' }}"
  placeholder="20:00〜02:00">
  </div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+<div class="form-group">
+<label class="form-label" for="open_time">開始時刻（内部管理）</label>
+<input type="time"
+id="open_time"
+name="open_time"
+class="form-control"
+value="{{ shop.open_time.strftime('%H:%M') if shop.open_time else '' }}">
+</div>
+<div class="form-group">
+<label class="form-label" for="close_time">終了時刻（内部管理）</label>
+<input type="time"
+id="close_time"
+name="close_time"
+class="form-control"
+value="{{ shop.close_time.strftime('%H:%M') if shop.close_time else '' }}">
+</div>
+</div>
+<p class="text-muted" style="font-size: 0.75rem; margin-top: var(--space-xs);">
+※ 風営法等の観点から、公開画面は常に「開始時刻〜LAST」で表示されます（終了時刻は非表示）。
+</p>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+<div class="form-group">
+<label class="form-label" for="business_type">営業種別</label>
+<select id="business_type" name="business_type" class="form-control">
+{% set current_business_type = shop.business_type or 'other' %}
+{% for bt in business_types %}
+<option value="{{ bt }}" {% if current_business_type == bt %}selected{% endif %}>{{ business_type_labels[bt] }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="form-group">
+<label class="form-label" for="permit_number">許可番号（任意）</label>
+<input type="text"
+id="permit_number"
+name="permit_number"
+class="form-control"
+value="{{ shop.permit_number or '' }}"
+placeholder="例: 岡○生 第1234号">
+</div>
+</div>
  
  <hr style="border-color: var(--color-border); margin: var(--space-xl) 0;">
  
