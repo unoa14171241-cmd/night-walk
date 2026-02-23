@@ -2,6 +2,7 @@
 Night-Walk MVP - Shop Admin Routes (店舗管理)
 """
 import os
+import calendar
 import uuid
 from datetime import datetime, date, timedelta
 from flask import Blueprint, render_template, redirect, url_for, flash, request, g, session, current_app, jsonify
@@ -936,27 +937,50 @@ def shifts():
         return redirect(url_for('shop_admin.dashboard'))
     
     today = date.today()
-    
-    # 表示開始日（week_offsetパラメータで週単位の移動に対応）
-    week_offset = request.args.get('week', 0, type=int)
-    start_date = today + timedelta(weeks=week_offset)
-    if start_date < today:
-        start_date = today
-    
-    # 最大1ヶ月先まで管理可能
-    max_date = today + timedelta(days=31)
-    display_days = min(7, (max_date - start_date).days)
-    if display_days <= 0:
-        display_days = 7
-        start_date = today
-    
-    all_shifts = CastShift.get_range_shifts(shop.id, today, days=31)
-    
+    view_mode = request.args.get('view', 'week')
+    if view_mode not in ['week', 'month']:
+        view_mode = 'week'
+
     # キャスト一覧
     casts = Cast.get_active_by_shop(shop.id)
-    
-    # 日付リスト（表示用: 7日間ずつ）
-    dates = [start_date + timedelta(days=i) for i in range(display_days)]
+
+    # 表示レンジ生成
+    week_offset = request.args.get('week', 0, type=int)
+    month_param = request.args.get('month', today.strftime('%Y-%m'))
+    can_go_prev = True
+    can_go_next = True
+    month_prev = None
+    month_next = None
+
+    if view_mode == 'month':
+        try:
+            month_anchor = datetime.strptime(month_param, '%Y-%m').date().replace(day=1)
+        except ValueError:
+            month_anchor = today.replace(day=1)
+            month_param = month_anchor.strftime('%Y-%m')
+
+        days_in_month = calendar.monthrange(month_anchor.year, month_anchor.month)[1]
+        start_date = month_anchor
+        end_date = start_date + timedelta(days=days_in_month)
+        dates = [start_date + timedelta(days=i) for i in range(days_in_month)]
+
+        # 月ナビゲーション
+        prev_month_end = start_date - timedelta(days=1)
+        next_month_start = end_date
+        month_prev = prev_month_end.strftime('%Y-%m')
+        month_next = next_month_start.strftime('%Y-%m')
+    else:
+        # 週表示（履歴参照のため過去週も許可）
+        start_date = today + timedelta(weeks=week_offset)
+        end_date = start_date + timedelta(days=7)
+        dates = [start_date + timedelta(days=i) for i in range(7)]
+
+    all_shifts = CastShift.query.filter(
+        CastShift.shop_id == shop.id,
+        CastShift.shift_date >= start_date,
+        CastShift.shift_date < end_date,
+        CastShift.status != CastShift.STATUS_CANCELED
+    ).order_by(CastShift.shift_date, CastShift.start_time).all()
     
     # シフトをキャスト×日付のマトリックスに整理
     shift_matrix = {}
@@ -968,21 +992,37 @@ def shifts():
     for shift in all_shifts:
         if shift.cast_id in shift_matrix and shift.shift_date in shift_matrix[shift.cast_id]:
             shift_matrix[shift.cast_id][shift.shift_date] = shift
-    
-    # 週ナビゲーション
-    can_go_prev = week_offset > 0
-    can_go_next = (start_date + timedelta(days=7)) < max_date
+
+    # 勤怠サマリー（キャスト別）
+    cast_stats = {cast.id: {'days': 0, 'shift_count': 0, 'total_minutes': 0, 'total_hours': 0.0} for cast in casts}
+    cast_day_sets = {cast.id: set() for cast in casts}
+    for shift in all_shifts:
+        if shift.cast_id not in cast_stats:
+            continue
+        cast_stats[shift.cast_id]['shift_count'] += 1
+        cast_day_sets[shift.cast_id].add(shift.shift_date)
+        cast_stats[shift.cast_id]['total_minutes'] += shift.duration_minutes
+
+    for cast in casts:
+        stats = cast_stats[cast.id]
+        stats['days'] = len(cast_day_sets[cast.id])
+        stats['total_hours'] = round(stats['total_minutes'] / 60, 2)
     
     return render_template('shop_admin/shifts.html',
                           shop=shop,
                           casts=casts,
                           dates=dates,
                           shift_matrix=shift_matrix,
+                          cast_stats=cast_stats,
                           today=today,
+                          view_mode=view_mode,
+                          month_param=month_param,
                           can_manage_shifts=can_manage_shifts,
                           week_offset=week_offset,
                           can_go_prev=can_go_prev,
-                          can_go_next=can_go_next)
+                          can_go_next=can_go_next,
+                          month_prev=month_prev,
+                          month_next=month_next)
 
 
 @shop_admin_bp.route('/shifts/update', methods=['POST'])

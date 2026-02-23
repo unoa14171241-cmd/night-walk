@@ -79,6 +79,25 @@ class CastShift(db.Model):
         if not self.start_time:
             return '未定'
         return f"{self.start_time.strftime('%H:%M')}〜LAST"
+
+    @property
+    def duration_minutes(self):
+        """
+        勤務時間（分）を返す。
+        終了時刻が開始時刻より早い場合は日跨ぎとして扱う。
+        """
+        if not self.start_time or not self.end_time:
+            return 0
+        start_dt = datetime.combine(self.shift_date, self.start_time)
+        end_dt = datetime.combine(self.shift_date, self.end_time)
+        if end_dt < start_dt:
+            end_dt += timedelta(days=1)
+        return int((end_dt - start_dt).total_seconds() // 60)
+
+    @property
+    def duration_hours(self):
+        """勤務時間（時間）を返す。"""
+        return round(self.duration_minutes / 60, 2)
     
     @property
     def is_today(self):
