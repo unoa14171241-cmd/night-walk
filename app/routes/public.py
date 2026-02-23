@@ -208,8 +208,15 @@ def shop_detail(shop_id):
     # キャスト出勤表示可能か確認
     can_show_shifts = AdService.can_show_cast_shift(shop_id)
     working_casts = []
+    today_scheduled_shifts = []
+    today_working_cast_ids = set()
+    today_scheduled_cast_ids = set()
     if can_show_shifts:
+        today_shifts = CastShift.get_today_shifts(shop_id)
         working_casts = CastShift.get_working_now(shop_id)
+        today_working_cast_ids = {s.cast_id for s in working_casts}
+        today_scheduled_shifts = [s for s in today_shifts if s.cast_id not in today_working_cast_ids]
+        today_scheduled_cast_ids = {s.cast_id for s in today_scheduled_shifts}
     
     # バッジ情報を取得
     shop_badges = AdService.get_shop_badges(shop_id)
@@ -235,6 +242,9 @@ def shop_detail(shop_id):
                           images=images,
                           casts=casts,
                           working_casts=working_casts,
+                          today_scheduled_shifts=today_scheduled_shifts,
+                          today_working_cast_ids=today_working_cast_ids,
+                          today_scheduled_cast_ids=today_scheduled_cast_ids,
                           can_show_shifts=can_show_shifts,
                           shop_badges=shop_badges,
                           best_badge=best_badge,
