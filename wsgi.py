@@ -510,17 +510,29 @@ def auto_seed_point_packages():
         if Gift.query.count() == 0:
             print("[INFO] Seeding gifts...")
             gifts = [
-                {'name': 'ライト', 'description': '気軽に送れるギフト', 'points': 100, 'cast_rate': 50, 'shop_rate': 20, 'platform_rate': 30, 'sort_order': 1},
-                {'name': 'スタンダード', 'description': '定番のギフト', 'points': 500, 'cast_rate': 50, 'shop_rate': 20, 'platform_rate': 30, 'sort_order': 2},
-                {'name': 'スペシャル', 'description': '特別な応援に', 'points': 1000, 'cast_rate': 50, 'shop_rate': 20, 'platform_rate': 30, 'sort_order': 3},
-                {'name': 'プレミアム', 'description': '本気の応援', 'points': 5000, 'cast_rate': 50, 'shop_rate': 20, 'platform_rate': 30, 'sort_order': 4},
-                {'name': 'ラグジュアリー', 'description': '最高級ギフト', 'points': 10000, 'cast_rate': 50, 'shop_rate': 20, 'platform_rate': 30, 'sort_order': 5},
-                {'name': 'ゴッド', 'description': '伝説のギフト', 'points': 30000, 'cast_rate': 50, 'shop_rate': 20, 'platform_rate': 30, 'sort_order': 6},
+                {'name': 'ライト', 'description': '気軽に送れるギフト', 'points': 100, 'cast_rate': 40, 'shop_rate': 30, 'platform_rate': 30, 'sort_order': 1},
+                {'name': 'スタンダード', 'description': '定番のギフト', 'points': 500, 'cast_rate': 40, 'shop_rate': 30, 'platform_rate': 30, 'sort_order': 2},
+                {'name': 'スペシャル', 'description': '特別な応援に', 'points': 1000, 'cast_rate': 40, 'shop_rate': 30, 'platform_rate': 30, 'sort_order': 3},
+                {'name': 'プレミアム', 'description': '本気の応援', 'points': 5000, 'cast_rate': 40, 'shop_rate': 30, 'platform_rate': 30, 'sort_order': 4},
+                {'name': 'ラグジュアリー', 'description': '最高級ギフト', 'points': 10000, 'cast_rate': 40, 'shop_rate': 30, 'platform_rate': 30, 'sort_order': 5},
+                {'name': 'ゴッド', 'description': '伝説のギフト', 'points': 30000, 'cast_rate': 40, 'shop_rate': 30, 'platform_rate': 30, 'sort_order': 6},
             ]
             for gift_data in gifts:
                 db.session.add(Gift(**gift_data))
             db.session.commit()
             print("[SUCCESS] Gifts seeded!")
+        else:
+            # 既存ギフトの配分率を 40/30/30 に統一
+            updated = Gift.query.filter(
+                (Gift.cast_rate != 40) | (Gift.shop_rate != 30) | (Gift.platform_rate != 30)
+            ).all()
+            if updated:
+                for g in updated:
+                    g.cast_rate = 40
+                    g.shop_rate = 30
+                    g.platform_rate = 30
+                db.session.commit()
+                print(f"[INFO] Updated {len(updated)} gifts to 40/30/30 distribution.")
 
 
 def auto_seed_blog():
