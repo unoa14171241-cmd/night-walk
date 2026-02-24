@@ -482,6 +482,29 @@ def approve_shop(shop_id):
              old_value={'review_status': old_status},
              new_value={'review_status': shop.review_status})
     
+    # 紹介特典の付与（不正防止のため審査承認時のみ実行）
+    referral_reward_message = None
+    try:
+        from ..models.referral import ShopReferral
+        referral = shop.referral_used
+        if referral and referral.status == ShopReferral.STATUS_USED:
+            reward_success, months, reward_error = referral.grant_reward()
+            if reward_success:
+                db.session.commit()
+                referral_reward_message = f'紹介特典として紹介元に{months}ヶ月無料延長を付与しました。'
+                audit_log('referral_reward_granted', 'shop_referral', referral.id,
+                         new_value={'referred_shop_id': shop.id, 'months': months})
+            else:
+                db.session.rollback()
+                referral_reward_message = f'紹介特典の付与に失敗しました: {reward_error}'
+                current_app.logger.warning(
+                    f"Referral reward failed on approval: shop_id={shop.id}, referral_id={referral.id}, error={reward_error}"
+                )
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Referral reward exception on approval: shop_id={shop.id}, error={e}", exc_info=True)
+        referral_reward_message = '紹介特典の付与処理でエラーが発生しました。'
+    
     # 店舗オーナーにメール通知
     email_sent = False
     try:
@@ -513,6 +536,9 @@ def approve_shop(shop_id):
         flash(f'店舗「{shop.name}」を承認しました。ログイン情報をメールで送信しました。', 'success')
     else:
         flash(f'店舗「{shop.name}」を承認しました。管理画面へのログインが可能になりました。', 'success')
+    
+    if referral_reward_message:
+        flash(referral_reward_message, 'info')
     
     return redirect(url_for('admin.shop_detail', shop_id=shop_id))
 
