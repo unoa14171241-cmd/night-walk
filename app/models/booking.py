@@ -45,7 +45,7 @@ class Call(db.Model):
 class BookingLog(db.Model):
     """
     Booking log model - records reservation attempts.
-    直前限定予約（30〜60分前）＋指名キャスト必須対応
+    直前限定予約（15〜60分前）＋指名キャスト必須対応
     """
     __tablename__ = 'booking_logs'
     
@@ -91,7 +91,7 @@ class BookingLog(db.Model):
     customer_name = db.Column(db.String(100))  # 予約者名
     party_size = db.Column(db.Integer, default=1)  # 人数
     
-    # 予約時間（直前限定：30〜60分後）
+    # 予約時間（直前限定：15〜60分後）
     scheduled_at = db.Column(db.DateTime, index=True)  # 予約（来店予定）時刻
     
     booking_type = db.Column(db.String(20), nullable=False, default=TYPE_WEB)
@@ -145,7 +145,7 @@ class BookingLog(db.Model):
     @classmethod
     def validate_scheduled_time(cls, scheduled_at):
         """
-        予約時刻のバリデーション（30〜60分後のみ）
+        予約時刻のバリデーション（15〜60分後のみ）
         
         Returns:
             tuple: (is_valid: bool, error_message: str or None)
@@ -167,7 +167,7 @@ class BookingLog(db.Model):
     @classmethod
     def get_available_times(cls):
         """
-        選択可能な予約時刻リストを取得（30〜60分後、5分刻み）
+        選択可能な予約時刻リストを取得（15〜60分後、5分刻み）
         
         Returns:
             list: datetime objects
@@ -175,7 +175,7 @@ class BookingLog(db.Model):
         now = datetime.utcnow()
         times = []
         
-        # 30分後から60分後まで5分刻み
+        # 15分後から60分後まで5分刻み
         for minutes in range(cls.MIN_ADVANCE_MINUTES, cls.MAX_ADVANCE_MINUTES + 1, 5):
             time = now + timedelta(minutes=minutes)
             # 分を5分単位に丸める

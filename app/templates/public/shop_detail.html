@@ -112,7 +112,7 @@ filename='images/ogp-default.png', _external=True) }}{% endif %}{% endblock %}
                             </span>
                             <!-- 直前予約ボタン -->
                             <a href="{{ url_for('customer.booking', shop_id=shop.id) }}" class="btn btn-primary btn-sm">
-                                   直前予約（30〜60分後）
+                                   直前予約（15〜60分後）
                             </a>
                      </div>
               </div>
@@ -178,11 +178,13 @@ filename='images/ogp-default.png', _external=True) }}{% endif %}{% endblock %}
                             </div>
                      </div>
 
-                     <!-- Working Casts (出勤中) -->
-                     {% if working_casts %}
+                     <!-- Today Shift Summary -->
+                     {% if can_show_shifts %}
                      <div class="info-section">
-                            <h3>出勤中のキャスト</h3>
-                            <div class="cast-grid">
+                            <h3>本日の出勤情報</h3>
+                            {% if working_casts %}
+                            <h4 class="text-muted mb-2" style="font-size: 0.85rem;">出勤中</h4>
+                            <div class="cast-grid mb-3">
                                    {% for shift in working_casts %}
                                    <a href="{{ url_for('customer.cast_detail', cast_id=shift.cast.id) }}"
                                           class="cast-preview-card"
@@ -204,13 +206,9 @@ filename='images/ogp-default.png', _external=True) }}{% endif %}{% endblock %}
                                    </a>
                                    {% endfor %}
                             </div>
-                     </div>
-                     {% endif %}
-
-                     <!-- Today Scheduled Casts (本日出勤予定) -->
-                     {% if today_scheduled_shifts %}
-                     <div class="info-section">
-                            <h3>本日出勤予定のキャスト</h3>
+                            {% endif %}
+                            {% if today_scheduled_shifts %}
+                            <h4 class="text-muted mb-2" style="font-size: 0.85rem;">本日出勤予定</h4>
                             <div class="cast-grid">
                                    {% for shift in today_scheduled_shifts %}
                                    <a href="{{ url_for('customer.cast_detail', cast_id=shift.cast.id) }}"
@@ -233,6 +231,10 @@ filename='images/ogp-default.png', _external=True) }}{% endif %}{% endblock %}
                                    </a>
                                    {% endfor %}
                             </div>
+                            {% endif %}
+                            {% if not working_casts and not today_scheduled_shifts %}
+                            <p class="text-muted">本日の出勤情報はまだ登録されていません。</p>
+                            {% endif %}
                      </div>
                      {% endif %}
 

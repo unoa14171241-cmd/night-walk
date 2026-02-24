@@ -1,5 +1,5 @@
 // Night-Walk Service Worker
-const CACHE_NAME = 'night-walk-v1';
+const CACHE_NAME = 'night-walk-v2';
 const urlsToCache = [
   '/',
   '/static/css/style.css',
@@ -49,6 +49,9 @@ self.addEventListener('fetch', event => {
   
   // Skip API requests (always fetch fresh)
   if (event.request.url.includes('/api/')) return;
+  
+  // Skip HTML navigation requests to avoid stale page content on mobile
+  if (event.request.mode === 'navigate') return;
   
   event.respondWith(
     fetch(event.request)
