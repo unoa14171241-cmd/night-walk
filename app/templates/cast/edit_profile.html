@@ -1,182 +1,185 @@
-{% extends "cast/base.html" %}
+{% extends "base.html" %}
 
 {% block title %}プロフィール編集 - Night-Walk{% endblock %}
 
 {% block content %}
 <div class="container" style="max-width: 600px; padding: var(--space-lg);">
- <h1 class="mb-4"> プロフィール編集</h1>
- 
- <form method="POST" enctype="multipart/form-data">
- <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
- 
- <!-- 自己紹介 -->
- <div class="card mb-4">
- <h3 class="mb-3">自己紹介</h3>
- <div class="form-group">
- <textarea name="profile" class="form-control" rows="5">{{ cast.profile or '' }}</textarea>
- </div>
- </div>
- 
- <!-- タグ -->
- <div class="card mb-4">
- <h3 class="mb-3"> タグ付け</h3>
- <p class="text-muted mb-3" style="font-size: 0.85rem;">プリセットから選択するか、自由に入力してください（カンマ区切り）。</p>
- 
- {% for category in tag_categories %}
- <div class="form-group" style="margin-bottom: var(--space-md);">
- <label>{{ tag_category_labels[category] }}</label>
- <input type="text" name="tags_{{ category }}" class="form-control" 
- id="tags_{{ category }}"
- value="{% if existing_tags is defined and category in existing_tags %}{{ existing_tags[category] | map(attribute='name') | join(', ') }}{% endif %}"
- placeholder="カンマ区切りで入力">
- {% if category in preset_tags %}
- <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
- {% for tag_name in preset_tags[category] %}
- <button type="button" class="preset-tag-btn" 
- onclick="addTag('tags_{{ category }}', '{{ tag_name }}')">{{ tag_name }}</button>
- {% endfor %}
- </div>
- {% endif %}
- </div>
- {% endfor %}
- </div>
- 
- <!-- ギャラリー画像 -->
- <div class="card mb-4">
- <h3 class="mb-3"> ギャラリー写真</h3>
- {% if gallery %}
- <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: var(--space-md);">
- {% for img in gallery %}
- <div style="width: 100px;">
- <img src="{{ img.url }}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;">
- <label style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; margin-top: 4px; color: var(--color-danger); cursor: pointer;">
- <input type="checkbox" name="delete_gallery_image" value="{{ img.id }}"> 削除
- </label>
- </div>
- {% endfor %}
- </div>
- {% endif %}
- <div class="form-group">
- <input type="file" name="gallery_images" class="form-control" accept="image/*" multiple>
- <small class="form-help">複数選択可</small>
- </div>
- </div>
- 
- <!-- ショート動画 -->
- <div class="card mb-4">
- <h3 class="mb-3"> ショート動画</h3>
- <div class="form-group">
- <input type="url" name="video_url" class="form-control" 
- value="{{ cast.video_url or '' }}"
- placeholder="https://www.youtube.com/shorts/...">
- <small class="form-help">YouTube Shorts、TikTok、Instagram Reels等のURL</small>
- </div>
- </div>
- 
- <!-- SNS -->
- <div class="card mb-4">
- <h3 class="mb-3"> SNS</h3>
- <div class="form-group">
- <label>X (Twitter)</label>
- <input type="url" name="twitter_url" class="form-control" 
- value="{{ cast.twitter_url or '' }}" placeholder="https://x.com/username">
- </div>
- <div class="form-group">
- <label>Instagram</label>
- <input type="url" name="instagram_url" class="form-control" 
- value="{{ cast.instagram_url or '' }}" placeholder="https://instagram.com/username">
- </div>
- <div class="form-group">
- <label>TikTok</label>
- <input type="url" name="tiktok_url" class="form-control" 
- value="{{ cast.tiktok_url or '' }}" placeholder="https://tiktok.com/@username">
- </div>
- </div>
- 
- <!-- ギフトへの意気込み -->
- <div class="card mb-4">
- <h3 class="mb-3"> ギフトへの意気込み</h3>
- <div class="form-group">
- <textarea name="gift_appeal" class="form-control" rows="3"
- placeholder="例: 皆さまからのギフトが励みになります！">{{ cast.gift_appeal or '' }}</textarea>
- <small class="form-help">プロフィールのギフトセクションに表示されます</small>
- </div>
- </div>
- 
- <!-- 誕生日 -->
- <div class="card mb-4">
- <h3 class="mb-3"> 誕生日記念日</h3>
- <div id="birthday-container">
- {% if existing_birthdays %}
- {% for bd in existing_birthdays %}
- <div class="birthday-row d-flex gap-2 mb-2" style="align-items: center;">
- <input type="text" name="birthday_date" class="form-control" 
- value="{{ bd.birthday_month }}-{{ bd.birthday_day }}" 
- placeholder="月-日" style="max-width: 120px;">
- <input type="text" name="birthday_label" class="form-control" 
- value="{{ bd.label or '' }}" placeholder="ラベル" style="max-width: 160px;">
- <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()"></button>
- </div>
- {% endfor %}
- {% else %}
- <div class="birthday-row d-flex gap-2 mb-2" style="align-items: center;">
- <input type="text" name="birthday_date" class="form-control" placeholder="月-日（例: 3-15）" style="max-width: 120px;">
- <input type="text" name="birthday_label" class="form-control" placeholder="ラベル" style="max-width: 160px;">
- <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()"></button>
- </div>
- {% endif %}
- </div>
- <button type="button" class="btn btn-sm btn-outline" onclick="addBirthdayRow()">＋ 追加</button>
- </div>
- 
- <div class="form-actions">
- <button type="submit" class="btn btn-primary" style="width: 100%;">更新する</button>
- </div>
- 
- <div style="text-align: center; margin-top: var(--space-md);">
- <a href="{{ url_for('cast.profile') }}">← プロフィールに戻る</a>
- </div>
- </form>
+    <h1 class="mb-4"> プロフィール編集</h1>
+
+    <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- 自己紹介 -->
+        <div class="card mb-4">
+            <h3 class="mb-3">自己紹介</h3>
+            <div class="form-group">
+                <textarea name="profile" class="form-control" rows="5">{{ cast.profile or '' }}</textarea>
+            </div>
+        </div>
+
+        <!-- タグ -->
+        <div class="card mb-4">
+            <h3 class="mb-3"> タグ付け</h3>
+            <p class="text-muted mb-3" style="font-size: 0.85rem;">プリセットから選択するか、自由に入力してください（カンマ区切り）。</p>
+
+            {% for category in tag_categories %}
+            <div class="form-group" style="margin-bottom: var(--space-md);">
+                <label>{{ tag_category_labels[category] }}</label>
+                <input type="text" name="tags_{{ category }}" class="form-control" id="tags_{{ category }}"
+                    value="{% if existing_tags is defined and category in existing_tags %}{{ existing_tags[category] | map(attribute='name') | join(', ') }}{% endif %}"
+                    placeholder="カンマ区切りで入力">
+                {% if category in preset_tags %}
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                    {% for tag_name in preset_tags[category] %}
+                    <button type="button" class="preset-tag-btn"
+                        onclick="addTag('tags_{{ category }}', '{{ tag_name }}')">{{ tag_name }}</button>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- ギャラリー画像 -->
+        <div class="card mb-4">
+            <h3 class="mb-3"> ギャラリー写真</h3>
+            {% if gallery %}
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: var(--space-md);">
+                {% for img in gallery %}
+                <div style="width: 100px;">
+                    <img src="{{ img.url }}"
+                        style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;">
+                    <label
+                        style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; margin-top: 4px; color: var(--color-danger); cursor: pointer;">
+                        <input type="checkbox" name="delete_gallery_image" value="{{ img.id }}"> 削除
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="form-group">
+                <input type="file" name="gallery_images" class="form-control" accept="image/*" multiple>
+                <small class="form-help">複数選択可</small>
+            </div>
+        </div>
+
+        <!-- ショート動画 -->
+        <div class="card mb-4">
+            <h3 class="mb-3"> ショート動画</h3>
+            <div class="form-group">
+                <input type="url" name="video_url" class="form-control" value="{{ cast.video_url or '' }}"
+                    placeholder="https://www.youtube.com/shorts/...">
+                <small class="form-help">YouTube Shorts、TikTok、Instagram Reels等のURL</small>
+            </div>
+        </div>
+
+        <!-- SNS -->
+        <div class="card mb-4">
+            <h3 class="mb-3"> SNS</h3>
+            <div class="form-group">
+                <label>X (Twitter)</label>
+                <input type="url" name="twitter_url" class="form-control" value="{{ cast.twitter_url or '' }}"
+                    placeholder="https://x.com/username">
+            </div>
+            <div class="form-group">
+                <label>Instagram</label>
+                <input type="url" name="instagram_url" class="form-control" value="{{ cast.instagram_url or '' }}"
+                    placeholder="https://instagram.com/username">
+            </div>
+            <div class="form-group">
+                <label>TikTok</label>
+                <input type="url" name="tiktok_url" class="form-control" value="{{ cast.tiktok_url or '' }}"
+                    placeholder="https://tiktok.com/@username">
+            </div>
+        </div>
+
+        <!-- ギフトへの意気込み -->
+        <div class="card mb-4">
+            <h3 class="mb-3"> ギフトへの意気込み</h3>
+            <div class="form-group">
+                <textarea name="gift_appeal" class="form-control" rows="3"
+                    placeholder="例: 皆さまからのギフトが励みになります！">{{ cast.gift_appeal or '' }}</textarea>
+                <small class="form-help">プロフィールのギフトセクションに表示されます</small>
+            </div>
+        </div>
+
+        <!-- 誕生日 -->
+        <div class="card mb-4">
+            <h3 class="mb-3"> 誕生日記念日</h3>
+            <div id="birthday-container">
+                {% if existing_birthdays %}
+                {% for bd in existing_birthdays %}
+                <div class="birthday-row d-flex gap-2 mb-2" style="align-items: center;">
+                    <input type="text" name="birthday_date" class="form-control"
+                        value="{{ bd.birthday_month }}-{{ bd.birthday_day }}" placeholder="月-日"
+                        style="max-width: 120px;">
+                    <input type="text" name="birthday_label" class="form-control" value="{{ bd.label or '' }}"
+                        placeholder="ラベル" style="max-width: 160px;">
+                    <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()"></button>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="birthday-row d-flex gap-2 mb-2" style="align-items: center;">
+                    <input type="text" name="birthday_date" class="form-control" placeholder="月-日（例: 3-15）"
+                        style="max-width: 120px;">
+                    <input type="text" name="birthday_label" class="form-control" placeholder="ラベル"
+                        style="max-width: 160px;">
+                    <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()"></button>
+                </div>
+                {% endif %}
+            </div>
+            <button type="button" class="btn btn-sm btn-outline" onclick="addBirthdayRow()">＋ 追加</button>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">更新する</button>
+        </div>
+
+        <div style="text-align: center; margin-top: var(--space-md);">
+            <a href="{{ url_for('cast.profile') }}">← プロフィールに戻る</a>
+        </div>
+    </form>
 </div>
 
 <style>
-.preset-tag-btn {
- background: var(--color-bg-elevated);
- border: 1px solid var(--color-border);
- border-radius: 16px;
- padding: 4px 10px;
- font-size: 0.75rem;
- cursor: pointer;
- color: var(--color-text);
-}
-.preset-tag-btn:hover {
- background: var(--color-primary);
- color: #fff;
- border-color: var(--color-primary);
-}
+    .preset-tag-btn {
+        background: var(--color-bg-elevated);
+        border: 1px solid var(--color-border);
+        border-radius: 16px;
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        color: var(--color-text);
+    }
+
+    .preset-tag-btn:hover {
+        background: var(--color-primary);
+        color: #fff;
+        border-color: var(--color-primary);
+    }
 </style>
 
 <script>
-function addTag(inputId, tagName) {
- const input = document.getElementById(inputId);
- const current = input.value.split(',').map(t => t.trim()).filter(t => t);
- if (!current.includes(tagName)) {
- current.push(tagName);
- input.value = current.join(', ');
- }
-}
+    function addTag(inputId, tagName) {
+        const input = document.getElementById(inputId);
+        const current = input.value.split(',').map(t => t.trim()).filter(t => t);
+        if (!current.includes(tagName)) {
+            current.push(tagName);
+            input.value = current.join(', ');
+        }
+    }
 
-function addBirthdayRow() {
- const container = document.getElementById('birthday-container');
- const row = document.createElement('div');
- row.className = 'birthday-row d-flex gap-2 mb-2';
- row.style.alignItems = 'center';
- row.innerHTML = `
+    function addBirthdayRow() {
+        const container = document.getElementById('birthday-container');
+        const row = document.createElement('div');
+        row.className = 'birthday-row d-flex gap-2 mb-2';
+        row.style.alignItems = 'center';
+        row.innerHTML = `
  <input type="text" name="birthday_date" class="form-control" placeholder="月-日（例: 3-15）" style="max-width: 120px;">
  <input type="text" name="birthday_label" class="form-control" placeholder="ラベル" style="max-width: 160px;">
  <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()"></button>
  `;
- container.appendChild(row);
-}
+        container.appendChild(row);
+    }
 </script>
 {% endblock %}
