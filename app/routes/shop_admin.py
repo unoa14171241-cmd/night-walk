@@ -937,43 +937,39 @@ def shifts():
         return redirect(url_for('shop_admin.dashboard'))
     
     today = date.today()
-    view_mode = request.args.get('view', 'week')
-    if view_mode not in ['week', 'month']:
-        view_mode = 'week'
-
-    # キャスト一覧
-    casts = Cast.get_active_by_shop(shop.id)
-
-    # 表示レンジ生成
+    # シフト表は週表示のみ
     week_offset = request.args.get('week', 0, type=int)
+    start_date = today + timedelta(weeks=week_offset)
+    end_date = start_date + timedelta(days=7)
+    dates = [start_date + timedelta(days=i) for i in range(7)]
+
+    # 勤怠データ（サマリー）は週次/月次で切り替え
+    summary_mode = request.args.get('summary', 'week')
+    if summary_mode not in ['week', 'month']:
+        summary_mode = 'week'
     month_param = request.args.get('month', today.strftime('%Y-%m'))
-    can_go_prev = True
-    can_go_next = True
     month_prev = None
     month_next = None
 
-    if view_mode == 'month':
+    if summary_mode == 'month':
         try:
             month_anchor = datetime.strptime(month_param, '%Y-%m').date().replace(day=1)
         except ValueError:
             month_anchor = today.replace(day=1)
             month_param = month_anchor.strftime('%Y-%m')
-
         days_in_month = calendar.monthrange(month_anchor.year, month_anchor.month)[1]
-        start_date = month_anchor
-        end_date = start_date + timedelta(days=days_in_month)
-        dates = [start_date + timedelta(days=i) for i in range(days_in_month)]
-
-        # 月ナビゲーション
-        prev_month_end = start_date - timedelta(days=1)
-        next_month_start = end_date
+        summary_start = month_anchor
+        summary_end = summary_start + timedelta(days=days_in_month)
+        prev_month_end = summary_start - timedelta(days=1)
+        next_month_start = summary_end
         month_prev = prev_month_end.strftime('%Y-%m')
         month_next = next_month_start.strftime('%Y-%m')
     else:
-        # 週表示（履歴参照のため過去週も許可）
-        start_date = today + timedelta(weeks=week_offset)
-        end_date = start_date + timedelta(days=7)
-        dates = [start_date + timedelta(days=i) for i in range(7)]
+        summary_start = start_date
+        summary_end = end_date
+
+    # キャスト一覧
+    casts = Cast.get_active_by_shop(shop.id)
 
     all_shifts = CastShift.query.filter(
         CastShift.shop_id == shop.id,
@@ -993,10 +989,17 @@ def shifts():
         if shift.cast_id in shift_matrix and shift.shift_date in shift_matrix[shift.cast_id]:
             shift_matrix[shift.cast_id][shift.shift_date] = shift
 
-    # 勤怠サマリー（キャスト別）
+    # 勤怠サマリー（キャスト別）: 週次/月次レンジで集計
+    summary_shifts = CastShift.query.filter(
+        CastShift.shop_id == shop.id,
+        CastShift.shift_date >= summary_start,
+        CastShift.shift_date < summary_end,
+        CastShift.status != CastShift.STATUS_CANCELED
+    ).order_by(CastShift.shift_date, CastShift.start_time).all()
+
     cast_stats = {cast.id: {'days': 0, 'shift_count': 0, 'total_minutes': 0, 'total_hours': 0.0} for cast in casts}
     cast_day_sets = {cast.id: set() for cast in casts}
-    for shift in all_shifts:
+    for shift in summary_shifts:
         if shift.cast_id not in cast_stats:
             continue
         cast_stats[shift.cast_id]['shift_count'] += 1
@@ -1015,12 +1018,10 @@ def shifts():
                           shift_matrix=shift_matrix,
                           cast_stats=cast_stats,
                           today=today,
-                          view_mode=view_mode,
+                          summary_mode=summary_mode,
                           month_param=month_param,
                           can_manage_shifts=can_manage_shifts,
                           week_offset=week_offset,
-                          can_go_prev=can_go_prev,
-                          can_go_next=can_go_next,
                           month_prev=month_prev,
                           month_next=month_next)
 

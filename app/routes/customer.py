@@ -168,38 +168,25 @@ def register_verify():
                 flash('この電話番号は既に登録されています。', 'danger')
                 return redirect(url_for('customer.register'))
             
-            # ユーザー作成（登録ボーナス500pt付与）
-            bonus = Customer.REGISTRATION_BONUS
+            # ユーザー作成
             customer = Customer(
                 email=email,
                 nickname=nickname,
                 phone_number=phone,
                 phone_verified=True,
-                point_balance=bonus,
-                total_purchased_points=bonus
+                point_balance=0,
+                total_purchased_points=0
             )
             customer.set_password(password)
             
             db.session.add(customer)
-            db.session.flush()  # IDを確定
-            
-            # 登録ボーナスの取引ログ
-            from ..models.point import PointTransaction
-            bonus_tx = PointTransaction(
-                customer_id=customer.id,
-                transaction_type=PointTransaction.TYPE_BONUS,
-                amount=bonus,
-                balance_after=bonus,
-                description='新規会員登録ボーナス'
-            )
-            db.session.add(bonus_tx)
             db.session.commit()
             
-            audit_log('customer_register', f'新規会員登録（SMS認証済み）: {email}, phone: {phone}, bonus: {bonus}pt')
+            audit_log('customer_register', f'新規会員登録（SMS認証済み）: {email}, phone: {phone}')
             
             # 自動ログイン
             login_user(customer, remember=True)
-            flash(f'会員登録が完了しました！ 登録ボーナスとして{bonus}ptをプレゼント！', 'success')
+            flash('会員登録が完了しました！', 'success')
             
             next_page = request.args.get('next')
             if next_page:

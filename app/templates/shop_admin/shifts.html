@@ -10,10 +10,8 @@
  <span class="text-muted">{{ shop.name }}</span>
  </div>
 <div class="d-flex gap-2 mb-3">
- <a href="{{ url_for('shop_admin.shifts', view='week', week=week_offset) }}"
- class="btn btn-sm {{ 'btn-primary' if view_mode == 'week' else 'btn-outline' }}">週表示</a>
- <a href="{{ url_for('shop_admin.shifts', view='month', month=month_param) }}"
- class="btn btn-sm {{ 'btn-primary' if view_mode == 'month' else 'btn-outline' }}">月表示</a>
+ <a href="{{ url_for('shop_admin.shifts', week=week_offset) }}"
+ class="btn btn-sm btn-primary">週表示</a>
 </div>
  
  <!-- 今日の出勤状況 -->
@@ -59,19 +57,10 @@
  <!-- シフト表（最大1ヶ月先まで管理可能） -->
  <div class="card">
  <div class="d-flex justify-between align-center mb-3">
-<h3 class="mb-0">シフト管理{% if view_mode == 'month' %}（{{ month_param }}）{% endif %}</h3>
+<h3 class="mb-0">シフト管理</h3>
  <div class="d-flex gap-2">
-{% if view_mode == 'month' %}
-<a href="{{ url_for('shop_admin.shifts', view='month', month=month_prev) }}" class="btn btn-sm btn-outline">&laquo; 前の月</a>
-<a href="{{ url_for('shop_admin.shifts', view='month', month=month_next) }}" class="btn btn-sm btn-outline">次の月 &raquo;</a>
-{% else %}
-{% if can_go_prev %}
-<a href="{{ url_for('shop_admin.shifts', view='week', week=week_offset - 1) }}" class="btn btn-sm btn-outline">&laquo; 前の週</a>
-{% endif %}
-{% if can_go_next %}
-<a href="{{ url_for('shop_admin.shifts', view='week', week=week_offset + 1) }}" class="btn btn-sm btn-outline">次の週 &raquo;</a>
-{% endif %}
-{% endif %}
+<a href="{{ url_for('shop_admin.shifts', week=week_offset - 1, summary=summary_mode, month=month_param) }}" class="btn btn-sm btn-outline">&laquo; 前の週</a>
+<a href="{{ url_for('shop_admin.shifts', week=week_offset + 1, summary=summary_mode, month=month_param) }}" class="btn btn-sm btn-outline">次の週 &raquo;</a>
  </div>
  </div>
  <div class="table-responsive">
@@ -119,7 +108,19 @@
 
 <!-- 期間サマリー -->
 <div class="card mt-3">
-<h3 class="mb-3">{% if view_mode == 'month' %}月次{% else %}週次{% endif %}勤怠サマリー</h3>
+<div class="d-flex justify-between align-center mb-3">
+<h3 class="mb-0">{% if summary_mode == 'month' %}月次{% else %}週次{% endif %}勤怠サマリー</h3>
+<div class="d-flex gap-2">
+<a href="{{ url_for('shop_admin.shifts', week=week_offset, summary='week') }}"
+class="btn btn-sm {{ 'btn-primary' if summary_mode == 'week' else 'btn-outline' }}">週次</a>
+<a href="{{ url_for('shop_admin.shifts', week=week_offset, summary='month', month=month_param) }}"
+class="btn btn-sm {{ 'btn-primary' if summary_mode == 'month' else 'btn-outline' }}">月次</a>
+{% if summary_mode == 'month' %}
+<a href="{{ url_for('shop_admin.shifts', week=week_offset, summary='month', month=month_prev) }}" class="btn btn-sm btn-outline">&laquo; 前の月</a>
+<a href="{{ url_for('shop_admin.shifts', week=week_offset, summary='month', month=month_next) }}" class="btn btn-sm btn-outline">次の月 &raquo;</a>
+{% endif %}
+</div>
+</div>
 <div class="table-responsive">
 <table class="table">
 <thead>
