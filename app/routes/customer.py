@@ -63,7 +63,7 @@ def validate_phone_number(phone):
 @limiter.limit("10 per hour")
 def register():
     """新規会員登録（Step 1: 情報入力 → SMS認証へ）"""
-    if current_user.is_authenticated and hasattr(current_user, 'is_customer'):
+    if current_user.is_authenticated and hasattr(current_user, 'is_customer') and current_user.is_customer:
         return redirect(url_for('customer.mypage'))
     
     if request.method == 'POST':
@@ -132,7 +132,7 @@ def register():
 @limiter.limit("20 per hour")
 def register_verify():
     """新規会員登録（Step 2: SMS認証）"""
-    if current_user.is_authenticated and hasattr(current_user, 'is_customer'):
+    if current_user.is_authenticated and hasattr(current_user, 'is_customer') and current_user.is_customer:
         return redirect(url_for('customer.mypage'))
     
     # セッションに登録情報があるか確認
@@ -235,7 +235,7 @@ def register_resend():
 @limiter.limit("10 per minute")
 def login():
     """ログイン"""
-    if current_user.is_authenticated and hasattr(current_user, 'is_customer'):
+    if current_user.is_authenticated and hasattr(current_user, 'is_customer') and current_user.is_customer:
         return redirect(url_for('customer.mypage'))
     
     if request.method == 'POST':
@@ -270,7 +270,7 @@ def login():
 @customer_bp.route('/logout')
 def logout():
     """ログアウト"""
-    if current_user.is_authenticated and hasattr(current_user, 'is_customer'):
+    if current_user.is_authenticated and hasattr(current_user, 'is_customer') and current_user.is_customer:
         audit_log('customer_logout', f'ログアウト: {current_user.email}', customer_id=current_user.id)
     logout_user()
     flash('ログアウトしました。', 'info')
@@ -614,7 +614,7 @@ def submit_review(shop_id):
         device_fingerprint = hashlib.sha256(device_fingerprint.encode()).hexdigest()[:32]
         
         # 口コミ投稿
-        customer_id = current_user.id if current_user.is_authenticated and hasattr(current_user, 'is_customer') else None
+        customer_id = current_user.id if current_user.is_authenticated and hasattr(current_user, 'is_customer') and current_user.is_customer else None
         
         result = ReviewService.submit_review(
             shop_id=shop_id,
@@ -667,7 +667,7 @@ def verify_review(shop_id):
             return render_template('customer/review_verify.html', shop=shop)
         
         # 認証実行
-        customer_id = current_user.id if current_user.is_authenticated and hasattr(current_user, 'is_customer') else None
+        customer_id = current_user.id if current_user.is_authenticated and hasattr(current_user, 'is_customer') and current_user.is_customer else None
         
         result = ReviewService.verify_and_complete(
             review_id=review_id,
@@ -973,7 +973,7 @@ def cancel_booking(booking_id):
             customer_phone = normalized_phone
     
     is_owner = False
-    if current_user.is_authenticated and hasattr(current_user, 'is_customer'):
+    if current_user.is_authenticated and hasattr(current_user, 'is_customer') and current_user.is_customer:
         if booking.customer_id == current_user.id:
             is_owner = True
     

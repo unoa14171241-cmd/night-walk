@@ -216,3 +216,46 @@ class ReviewService:
                 return True
             
             return False
+
+    @classmethod
+    def send_verification_sms(cls, phone_number, purpose='signup', target_id=None, ip_address=None):
+        """
+        電話番号認証コードを作成してSMS送信（会員登録向け互換API）
+
+        Returns:
+            tuple: (success: bool, message: str)
+        """
+        verification, error = PhoneVerification.create_verification(
+            phone_number=phone_number,
+            purpose=purpose,
+            target_id=target_id,
+            ip_address=ip_address
+        )
+
+        if error:
+            return False, error
+
+        # コード生成を保存してからSMS送信する
+        db.session.commit()
+
+        sent = cls.send_sms_verification(phone_number, verification.verification_code)
+        if not sent:
+            return False, '認証コードの送信に失敗しました。しばらくしてから再度お試しください。'
+
+        return True, '認証コードを送信しました。'
+
+    @classmethod
+    def verify_phone_number(cls, phone_number, code, purpose='signup'):
+        """
+        電話番号認証コードを検証（会員登録向け互換API）
+
+        Returns:
+            bool: 認証成功ならTrue
+        """
+        verification = PhoneVerification.get_pending(phone_number, purpose)
+        if not verification:
+            return False
+
+        success, _ = verification.verify(code)
+        db.session.commit()
+        return success
