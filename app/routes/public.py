@@ -937,6 +937,18 @@ def google_verification():
     )
 
 
+@public_bp.route('/BingSiteAuth.xml')
+def bing_verification():
+    """Bing Webmaster Tools ownership verification"""
+    from flask import Response
+    xml_content = """<?xml version="1.0"?>
+<users>
+	<user>3C405E92440CCCA00CB8B0B6DECAE504</user>
+</users>
+"""
+    return Response(xml_content, mimetype='application/xml')
+
+
 @public_bp.route('/images_db/<path:filename>')
 def serve_db_image(filename):
     """データベースから画像データを読み込んで返す (Render対策)"""
