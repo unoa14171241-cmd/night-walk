@@ -17,12 +17,12 @@
                     <strong>{{ stats.total }}店舗</strong>
                 </div>
                 <div>
-                    <span class="badge badge-warning">プレミアム</span>
-                    <strong>{{ stats.premium }}</strong>
-                </div>
-                <div>
                     <span class="badge badge-info">スタンダード</span>
                     <strong>{{ stats.standard }}</strong>
+                </div>
+                <div>
+                    <span class="badge badge-success">有料合計</span>
+                    <strong>{{ stats.paid }}</strong>
                 </div>
                 <div>
                     <span class="badge">無料</span>
@@ -77,9 +77,7 @@
                             <small class="text-muted">{{ plan.shop.area if plan.shop else '' }}</small>
                         </td>
                         <td>
-                            {% if plan.plan_type == 'premium' %}
-                            <span class="badge badge-warning">プレミアム</span>
-                            {% elif plan.plan_type == 'standard' %}
+                            {% if plan.plan_type == 'standard' or plan.plan_type == 'premium' or plan.plan_type == 'business' %}
                             <span class="badge badge-info">スタンダード</span>
                             {% else %}
                             <span class="badge">無料</span>

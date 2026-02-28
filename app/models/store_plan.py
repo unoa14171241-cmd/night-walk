@@ -16,6 +16,9 @@ class StorePlan(db.Model):
     PLAN_BUSINESS = 'business'   # 後方互換（premiumと同等扱い）
     
     PLAN_TYPES = [PLAN_FREE, PLAN_STANDARD, PLAN_PREMIUM, PLAN_BUSINESS]
+    # 画面表示・新規申込で利用するプラン（premiumは準備完了まで非表示）
+    VISIBLE_PLAN_TYPES = [PLAN_FREE, PLAN_STANDARD]
+    VISIBLE_PAID_PLAN_TYPES = [PLAN_STANDARD]
     
     PLAN_LABELS = {
         PLAN_FREE: '無料プラン',

@@ -77,9 +77,10 @@ class AdService:
             StorePlan.status.in_([StorePlan.STATUS_ACTIVE, StorePlan.STATUS_TRIAL])
         ).all()
         
+        # premium/business は公開上は standard と同等優先度で扱う
         priority_map = {
-            StorePlan.PLAN_PREMIUM: 20,
-            StorePlan.PLAN_BUSINESS: 20,
+            StorePlan.PLAN_PREMIUM: 10,
+            StorePlan.PLAN_BUSINESS: 10,
             StorePlan.PLAN_STANDARD: 10,
         }
         
@@ -148,9 +149,7 @@ class AdService:
         }
         
         for ent in entitlements:
-            if ent.placement_type == AdPlacement.TYPE_PREMIUM_BADGE:
-                result['premium_badge'] = True
-            elif ent.placement_type == AdPlacement.TYPE_TOP_BADGE:
+            if ent.placement_type == AdPlacement.TYPE_TOP_BADGE:
                 extra = ent.extra_data or {}
                 result['top_badges'].append({
                     'rank': extra.get('rank'),
@@ -221,8 +220,6 @@ class AdService:
                     return {'type': 'top3', 'rank': rank, 'label': f'TOP{rank}', 'color': 'silver'}
                 else:
                     return {'type': 'top10', 'rank': rank, 'label': f'TOP{rank}', 'color': 'bronze'}
-            if badges['premium_badge']:
-                return {'type': 'premium', 'rank': None, 'label': '優良店', 'color': 'premium'}
         else:
             badges = cls.get_cast_badges(target_id)
             if badges['top_badges']:
@@ -327,26 +324,14 @@ class AdService:
             shop_ents = badge_map.get(shop.id, [])
             badge = cls._determine_best_badge(shop_ents)
             
-            # エンタイトルメントでpremium_badgeがあるか、有料プランかどうか
-            has_premium_ent = any(e.placement_type == AdPlacement.TYPE_PREMIUM_BADGE for e in shop_ents)
-            is_paid = shop.id in paid_plan_shops
-            
-            # 有料プラン（standard以上）ならpremium扱い
-            is_premium = has_premium_ent or is_paid
-            
-            # バッジがなくても有料プランならpremiumバッジを付与
-            if badge is None and is_paid:
-                plan_priority = paid_plan_shops[shop.id]
-                if plan_priority >= 20:
-                    badge = {'type': 'premium', 'rank': None, 'label': '優良店', 'color': 'premium'}
-                else:
-                    badge = {'type': 'premium', 'rank': None, 'label': '優良店', 'color': 'premium'}
+            # premium表示は準備完了まで無効化
+            is_premium = False
             
             results.append({
                 'shop': shop,
                 'badge': badge,
                 'is_premium': is_premium,
-                'has_boost': any(e.placement_type == AdPlacement.TYPE_SEARCH_BOOST for e in shop_ents),
+                'has_boost': any(e.placement_type == AdPlacement.TYPE_SEARCH_BOOST for e in shop_ents) or (shop.id in paid_plan_shops),
             })
         
         return results
@@ -355,16 +340,12 @@ class AdService:
     def _determine_best_badge(cls, entitlements):
         """entitlement リストから最良のバッジを決定"""
         top_badge = None
-        premium_badge = False
-        
         for ent in entitlements:
             if ent.placement_type == AdPlacement.TYPE_TOP_BADGE:
                 extra = ent.extra_data or {}
                 rank = extra.get('rank', 999)
                 if top_badge is None or rank < top_badge.get('rank', 999):
                     top_badge = {'rank': rank, 'area': ent.area}
-            elif ent.placement_type == AdPlacement.TYPE_PREMIUM_BADGE:
-                premium_badge = True
         
         if top_badge:
             rank = top_badge['rank']
@@ -374,8 +355,5 @@ class AdService:
                 return {'type': 'top3', 'rank': rank, 'label': f'TOP{rank}', 'color': 'silver'}
             else:
                 return {'type': 'top10', 'rank': rank, 'label': f'TOP{rank}', 'color': 'bronze'}
-        
-        if premium_badge:
-            return {'type': 'premium', 'rank': None, 'label': '優良店', 'color': 'premium'}
         
         return None

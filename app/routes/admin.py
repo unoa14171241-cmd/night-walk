@@ -1928,7 +1928,10 @@ def store_plans():
     # 統計
     stats = {
         'total': StorePlan.query.count(),
-        'premium': StorePlan.query.filter_by(plan_type=StorePlan.PLAN_PREMIUM, status=StorePlan.STATUS_ACTIVE).count(),
+        'paid': StorePlan.query.filter(
+            StorePlan.plan_type.in_([StorePlan.PLAN_STANDARD, StorePlan.PLAN_PREMIUM, StorePlan.PLAN_BUSINESS]),
+            StorePlan.status == StorePlan.STATUS_ACTIVE
+        ).count(),
         'standard': StorePlan.query.filter_by(plan_type=StorePlan.PLAN_STANDARD, status=StorePlan.STATUS_ACTIVE).count(),
         'free': StorePlan.query.filter_by(plan_type=StorePlan.PLAN_FREE).count(),
     }
@@ -1938,7 +1941,7 @@ def store_plans():
                           stats=stats,
                           selected_plan_type=plan_type,
                           selected_status=status,
-                          plan_types=StorePlan.PLAN_TYPES,
+                          plan_types=StorePlan.VISIBLE_PLAN_TYPES,
                           plan_labels=StorePlan.PLAN_LABELS)
 
 
@@ -1950,7 +1953,7 @@ def upgrade_store_plan(shop_id):
     
     new_plan_type = request.form.get('plan_type')
     
-    if new_plan_type not in StorePlan.PLAN_TYPES:
+    if new_plan_type not in StorePlan.VISIBLE_PLAN_TYPES:
         flash('無効なプランタイプです', 'danger')
         return redirect(url_for('admin.store_plans'))
     

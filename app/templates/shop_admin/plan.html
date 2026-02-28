@@ -14,9 +14,7 @@
  <div class="card mb-4">
  <div class="plan-card">
  <div class="plan-header">
- {% if store_plan.plan_type == 'premium' %}
- <span class="plan-badge premium">プレミアム</span>
- {% elif store_plan.plan_type == 'standard' %}
+ {% if store_plan.plan_type == 'standard' or store_plan.plan_type == 'premium' or store_plan.plan_type == 'business' %}
  <span class="plan-badge standard">スタンダード</span>
  {% else %}
  <span class="plan-badge free">無料プラン</span>
@@ -54,12 +52,6 @@
  <li class="disabled"> 検索結果での優先表示</li>
  {% endif %}
  
- {% if 'premium_badge' in plan_features.get(store_plan.plan_type, []) %}
- <li class="enabled"> 優良店バッジ表示</li>
- {% else %}
- <li class="disabled"> 優良店バッジ表示</li>
- {% endif %}
- 
  {% if 'job_board' in plan_features.get(store_plan.plan_type, []) %}
  <li class="enabled"> 求人情報掲載</li>
  {% else %}
@@ -72,11 +64,6 @@
  <li class="disabled"> キャスト出勤表示</li>
  {% endif %}
  
- {% if 'top_banner' in plan_features.get(store_plan.plan_type, []) %}
- <li class="enabled"> トップバナー掲載権</li>
- {% else %}
- <li class="disabled"> トップバナー掲載権</li>
- {% endif %}
  </ul>
  </div>
  </div>
@@ -102,7 +89,6 @@
  <li class="enabled"> 店舗画像（詳細ページ）</li>
  <li class="enabled"> キャスト一覧管理</li>
  <li class="disabled"> 検索優先表示</li>
- <li class="disabled"> 優良店バッジ</li>
  <li class="disabled"> キャスト出勤表示</li>
  <li class="disabled"> 求人掲載</li>
  </ul>
@@ -126,7 +112,6 @@
  <li class="enabled"> 店舗画像（詳細ページ）</li>
  <li class="enabled"> キャスト一覧管理</li>
  <li class="enabled highlight"> 検索優先表示</li>
- <li class="enabled highlight"> 優良店バッジ</li>
  <li class="enabled highlight"> キャスト出勤表示</li>
  <li class="enabled"> 求人掲載</li>
  </ul>
@@ -141,31 +126,6 @@
  </div>
  </div>
  
- <!-- プレミアムプラン -->
- <div class="plan-column premium">
- <div class="plan-column-header">
- <h4>プレミアム</h4>
- <div class="plan-column-price">
- <span class="amount">¥{{ '{:,}'.format(plan_prices.get('premium', 50000)) }}</span>
- <span class="period">/月</span>
- </div>
- </div>
- <ul class="plan-column-features">
- <li class="enabled"> スタンダードの全機能</li>
- <li class="enabled highlight"> トップバナー掲載権</li>
- <li class="enabled highlight"> 検索で最優先表示</li>
- <li class="enabled"> 専任サポート</li>
- </ul>
- <div class="plan-column-action">
- <form action="{{ url_for('shop_admin.subscribe_plan') }}" method="POST">
- <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
- <input type="hidden" name="plan_type" value="premium">
- <button type="submit" class="btn btn-outline btn-block">
- このプランに申し込む
- </button>
- </form>
- </div>
- </div>
  </div>
  </div>
  {% endif %}
@@ -174,17 +134,6 @@
  {% if store_plan.plan_type != 'free' %}
  <div class="card mb-4">
  <h3 class="mb-3"> プラン変更</h3>
- 
- {% if store_plan.plan_type == 'standard' %}
- <p>プレミアムプランにアップグレードすると、トップバナー掲載権と検索での最優先表示が利用できます。</p>
- <form action="{{ url_for('shop_admin.subscribe_plan') }}" method="POST" class="mb-3">
- <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
- <input type="hidden" name="plan_type" value="premium">
- <button type="submit" class="btn btn-primary">
- プレミアムにアップグレード（+¥{{ '{:,}'.format(plan_prices.get('premium', 50000) - plan_prices.get('standard', 15000)) }}/月）
- </button>
- </form>
- {% endif %}
  
  <hr class="my-4">
  
@@ -204,14 +153,6 @@
  <div class="card mb-4">
  <h3 class="mb-3"> 現在のバッジ特典</h3>
  
- {% if badges.premium_badge %}
- <div class="badge-display premium mb-3">
- <span class="badge-icon"></span>
- <span class="badge-label">優良店</span>
- <small class="text-muted">有料プラン特典</small>
- </div>
- {% endif %}
- 
  {% if badges.top_badges %}
  {% for badge in badges.top_badges %}
  <div class="badge-display top{{ badge.rank }} mb-3">
@@ -222,7 +163,7 @@
  {% endfor %}
  {% endif %}
  
- {% if not badges.premium_badge and not badges.top_badges %}
+ {% if not badges.top_badges %}
  <p class="text-muted">現在獲得しているバッジ特典はありません</p>
  {% endif %}
  </div>
@@ -322,7 +263,7 @@
 /* プラン比較表 */
 .plan-comparison {
  display: grid;
- grid-template-columns: repeat(3, 1fr);
+ grid-template-columns: repeat(2, 1fr);
  gap: 1rem;
 }
 

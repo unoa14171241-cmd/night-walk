@@ -1218,7 +1218,7 @@ def point_card():
     # 有料プランチェック
     has_feature = _shop_has_point_card_feature(shop.id)
     if not has_feature:
-        flash('スタンプカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        flash('スタンプカード機能は有料プランでご利用いただけます。', 'warning')
         return redirect(url_for('shop_admin.plan'))
     
     # ポイントカード設定を取得（なければ作成）
@@ -1254,7 +1254,7 @@ def point_card_settings():
     
     # 有料プランチェック
     if not _shop_has_point_card_feature(shop.id):
-        flash('スタンプカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        flash('スタンプカード機能は有料プランでご利用いただけます。', 'warning')
         return redirect(url_for('shop_admin.plan'))
     
     card_config = ShopPointCard.get_or_create(shop.id)
@@ -1328,7 +1328,7 @@ def grant_visit_points():
     
     # 有料プランチェック
     if not _shop_has_point_card_feature(shop.id):
-        flash('スタンプカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        flash('スタンプカード機能は有料プランでご利用いただけます。', 'warning')
         return redirect(url_for('shop_admin.plan'))
     
     # 顧客を検索（メールで）
@@ -1439,7 +1439,7 @@ def point_card_ranks():
     
     # 有料プランチェック
     if not _shop_has_point_card_feature(shop.id):
-        flash('スタンプカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        flash('スタンプカード機能は有料プランでご利用いただけます。', 'warning')
         return redirect(url_for('shop_admin.plan'))
     
     card_config = ShopPointCard.get_or_create(shop.id)
@@ -1464,7 +1464,7 @@ def toggle_rank_system():
     shop = g.current_shop
     
     if not _shop_has_point_card_feature(shop.id):
-        flash('スタンプカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        flash('スタンプカード機能は有料プランでご利用いただけます。', 'warning')
         return redirect(url_for('shop_admin.plan'))
     
     card_config = ShopPointCard.get_or_create(shop.id)
@@ -1494,7 +1494,7 @@ def save_ranks():
     shop = g.current_shop
     
     if not _shop_has_point_card_feature(shop.id):
-        flash('スタンプカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        flash('スタンプカード機能は有料プランでご利用いただけます。', 'warning')
         return redirect(url_for('shop_admin.plan'))
     
     # フォームからランクデータを取得
@@ -1570,7 +1570,7 @@ def reset_default_ranks():
     shop = g.current_shop
     
     if not _shop_has_point_card_feature(shop.id):
-        flash('スタンプカード機能は有料プラン（プレミアム以上）でご利用いただけます。', 'warning')
+        flash('スタンプカード機能は有料プランでご利用いただけます。', 'warning')
         return redirect(url_for('shop_admin.plan'))
     
     # 既存削除
@@ -1594,7 +1594,7 @@ def subscribe_plan():
     shop = g.current_shop
     plan_type = request.form.get('plan_type')
     
-    if plan_type not in [StorePlan.PLAN_STANDARD, StorePlan.PLAN_PREMIUM, StorePlan.PLAN_BUSINESS]:
+    if plan_type not in StorePlan.VISIBLE_PAID_PLAN_TYPES:
         flash('無効なプランです。', 'danger')
         return redirect(url_for('shop_admin.plan'))
     

@@ -222,14 +222,6 @@ def shop_detail(shop_id):
     shop_badges = AdService.get_shop_badges(shop_id)
     best_badge = AdService.get_best_badge('shop', shop_id)
     
-    # 有料プランフォールバック（エンタイトルメント未同期でもバッジ表示）
-    if not shop_badges.get('premium_badge'):
-        paid_plan_shops = AdService.get_paid_plan_shop_ids()
-        if shop_id in paid_plan_shops:
-            shop_badges['premium_badge'] = True
-            if not best_badge:
-                best_badge = {'type': 'premium', 'rank': None, 'label': '優良店', 'color': 'premium'}
-    
     # 口コミ評価データを取得
     from ..services.review_service import ReviewService
     review_data = ReviewService.get_shop_rating_summary(shop_id)

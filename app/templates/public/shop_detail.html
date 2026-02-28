@@ -91,9 +91,6 @@ filename='images/ogp-default.png', _external=True) }}{% endif %}{% endblock %}
                                    {% if shop.is_featured %}
                                    <span class="badge badge-warning">おすすめ</span>
                                    {% endif %}
-                                   {% if shop_badges and shop_badges.premium_badge %}
-                                   <span class="badge badge-premium-detail">優良店</span>
-                                   {% endif %}
                                    {% if best_badge and best_badge.type in ['top1', 'top3', 'top10'] %}
                                    <span class="badge badge-rank-{{ best_badge.color }}">{{ best_badge.label }}</span>
                                    {% endif %}
