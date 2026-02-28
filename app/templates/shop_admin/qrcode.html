@@ -1,25 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}QRコード発行 - {{ shop.name }} - Night-Walk{% endblock %}
+{% block title %}口コミ用QR発行 - {{ shop.name }} - Night-Walk{% endblock %}
 
 {% block content %}
 <div class="container">
  <div class="d-flex justify-between align-center mb-4">
  <div>
- <h1 class="mb-1"> QRコード発行</h1>
- <p class="text-muted mb-0">店舗ページへ直接アクセスできるQRコードです</p>
+ <h1 class="mb-1"> 口コミ用QR発行</h1>
+ <p class="text-muted mb-0">店舗ページ（口コミ投稿導線あり）へ直接アクセスできるQRコードです</p>
  </div>
  <a href="{{ url_for('shop_admin.dashboard') }}" class="btn btn-secondary">← ダッシュボードへ</a>
  </div>
  
  <div class="card mb-4">
- <h3 class="mb-3">{{ shop.name }} のQRコード</h3>
+ <h3 class="mb-3">{{ shop.name }} の口コミ用QRコード</h3>
  
  <!-- QRコードプレビュー -->
  <div class="text-center mb-4" style="padding: 2rem; background: #fff; border-radius: 12px;">
  {% if qr_png_base64 %}
  <img src="data:image/png;base64,{{ qr_png_base64 }}" 
- alt="店舗QRコード" 
+ alt="口コミ用QRコード" 
  style="max-width: 280px; width: 100%; border-radius: 8px;">
  {% endif %}
  </div>
