@@ -36,7 +36,7 @@
  <hr style="border-color: var(--color-border); margin: var(--space-lg) 0;">
  
  <div class="form-group">
- <label class="form-label" for="hourly_wage">時給</label>
+<label class="form-label" for="hourly_wage">最低時給</label>
  <input type="text" 
  id="hourly_wage" 
  name="hourly_wage" 
@@ -99,8 +99,8 @@
  <span class="badge badge-danger">急募</span>
  </div>
  
- {% if job.hourly_wage %}
- <p class="mb-1"><strong>時給:</strong> {{ job.hourly_wage }}</p>
+{% if job.hourly_wage %}
+<p class="mb-1"><strong>最低時給:</strong> {{ job.hourly_wage }}</p>
  {% endif %}
  
  {% if job.benefits %}
