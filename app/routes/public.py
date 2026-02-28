@@ -769,6 +769,20 @@ def blog_detail(slug):
     return render_template('public/blog_detail.html', post=post)
 
 
+# ==================== Legal ====================
+
+@public_bp.route('/terms')
+def terms():
+    """利用規約"""
+    return render_template('public/terms.html')
+
+
+@public_bp.route('/privacy')
+def privacy():
+    """プライバシーポリシー"""
+    return render_template('public/privacy.html')
+
+
 # ==================== Slug Routes ====================
 
 @public_bp.route('/shops/s/<slug>')

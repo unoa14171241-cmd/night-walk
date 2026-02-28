@@ -52,7 +52,7 @@
             <div class="form-group">
                 <label class="checkbox-label">
                     <input type="checkbox" name="agree" required>
-                    <a href="#" target="_blank">利用規約</a>と<a href="#" target="_blank">プライバシーポリシー</a>に同意する
+                    <a href="{{ url_for('public.terms') }}" target="_blank">利用規約</a>と<a href="{{ url_for('public.privacy') }}" target="_blank">プライバシーポリシー</a>に同意する
                 </label>
             </div>
             

@@ -90,10 +90,16 @@
  {% if shift.status == 'working' %}
  <span class="badge badge-success">出勤中</span>
  {% endif %}
+{% if shift.status != 'working' %}
+<button class="btn btn-sm btn-outline edit-shift-btn"
+onclick="openShiftModal('{{ cast.id }}', '{{ d.strftime('%Y-%m-%d') }}', '{{ cast.name_display }}', '{{ shift.start_time.strftime('%H:%M') if shift.start_time else '' }}', '{{ shift.end_time.strftime('%H:%M') if shift.end_time else '' }}', '{{ shift.status }}')">
+編集
+</button>
+{% endif %}
  </div>
  {% else %}
  <button class="btn btn-sm btn-outline add-shift-btn" 
- onclick="openShiftModal('{{ cast.id }}', '{{ d.strftime('%Y-%m-%d') }}', '{{ cast.name_display }}')">
+ onclick="openShiftModal('{{ cast.id }}', '{{ d.strftime('%Y-%m-%d') }}', '{{ cast.name_display }}', '', '', 'confirmed')">
  +
  </button>
  {% endif %}
@@ -233,6 +239,9 @@ class="btn btn-sm {{ 'btn-primary' if summary_mode == 'month' else 'btn-outline'
 .shift-cell:hover .add-shift-btn {
  opacity: 1;
 }
+.edit-shift-btn {
+ margin-top: 0.35rem;
+}
 
 .modal {
  position: fixed;
@@ -256,14 +265,21 @@ class="btn btn-sm {{ 'btn-primary' if summary_mode == 'month' else 'btn-outline'
 </style>
 
 <script>
-function openShiftModal(castId, shiftDate, castName) {
+function openShiftModal(castId, shiftDate, castName, startTime = '', endTime = '', status = 'confirmed') {
  document.getElementById('modal_cast_id').value = castId;
  document.getElementById('modal_shift_date').value = shiftDate;
- document.getElementById('modalTitle').textContent = castName + ' のシフトを追加';
+ document.getElementById('modal_start_time').value = startTime || '';
+ document.getElementById('modal_end_time').value = endTime || '';
+ document.getElementById('shiftForm').dataset.status = status || 'confirmed';
+ document.getElementById('modalTitle').textContent = startTime || endTime
+ ? castName + ' のシフトを編集'
+ : castName + ' のシフトを追加';
  document.getElementById('shiftModal').style.display = 'flex';
 }
 
 function closeShiftModal() {
+ document.getElementById('shiftForm').reset();
+ document.getElementById('shiftForm').dataset.status = 'confirmed';
  document.getElementById('shiftModal').style.display = 'none';
 }
 
@@ -276,7 +292,7 @@ document.getElementById('shiftForm').addEventListener('submit', async function(e
  shift_date: formData.get('shift_date'),
  start_time: formData.get('start_time') || null,
  end_time: formData.get('end_time') || null,
- status: 'confirmed'
+ status: this.dataset.status || 'confirmed'
  };
  
  try {

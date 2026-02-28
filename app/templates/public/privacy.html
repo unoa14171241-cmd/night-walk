@@ -1,0 +1,109 @@
+{% extends "customer/base.html" %}
+
+{% block title %}プライバシーポリシー｜Night-Walk{% endblock %}
+
+{% block meta_description %}Night-Walkのプライバシーポリシーです。取得情報、利用目的、第三者提供、安全管理措置等について記載しています。{% endblock %}
+
+{% block content %}
+<div class="container legal-page">
+  <h1>プライバシーポリシー</h1>
+  <p class="legal-meta">制定日：2026年02月26日 / 最終改定日：2026年02月26日</p>
+
+  <section>
+    <h2>1. 取得する情報</h2>
+    <p>当社は、本サービスの提供にあたり、メールアドレス、電話番号（SMS認証用）、ニックネーム等の登録情報、予約・ギフト・口コミ等の利用履歴、IPアドレス等のログ情報を取得することがあります。</p>
+  </section>
+
+  <section>
+    <h2>2. 利用目的</h2>
+    <ul>
+      <li>本人確認、認証、アカウント管理のため</li>
+      <li>予約、ポイント、ギフト等の機能提供のため</li>
+      <li>不正利用防止、セキュリティ対策のため</li>
+      <li>お問い合わせ対応のため</li>
+      <li>サービス改善および重要なお知らせ配信のため</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. 第三者提供</h2>
+    <p>当社は、法令に基づく場合を除き、本人の同意なく個人情報を第三者に提供しません。</p>
+  </section>
+
+  <section>
+    <h2>4. 外部サービス・委託先</h2>
+    <p>当社は、サービス運営上必要な範囲で外部事業者を利用する場合があります（例：クラウドホスティング、SMS送信、決済代行、メール配信等）。</p>
+  </section>
+
+  <section>
+    <h2>5. Cookie等の利用</h2>
+    <p>本サービスでは、利便性向上、障害対応、利用状況分析のためCookie等を利用する場合があります。</p>
+  </section>
+
+  <section>
+    <h2>6. 保存期間</h2>
+    <p>当社は、利用目的達成に必要な期間、または法令に基づく期間、情報を保持します。</p>
+  </section>
+
+  <section>
+    <h2>7. 安全管理措置</h2>
+    <p>当社は、個人情報の漏えい、滅失、毀損を防止するため、必要かつ適切な安全管理措置を講じます。</p>
+  </section>
+
+  <section>
+    <h2>8. 開示・訂正・削除・利用停止</h2>
+    <p>ユーザーは、自己の個人情報について開示、訂正、削除、利用停止を請求できます。ご希望の際は下記窓口までお問い合わせください。</p>
+  </section>
+
+  <section>
+    <h2>9. 未成年者の利用</h2>
+    <p>未成年者が本サービスを利用する場合、法定代理人の同意を得たうえで利用するものとします。</p>
+  </section>
+
+  <section>
+    <h2>10. 本ポリシーの変更</h2>
+    <p>当社は、法令改正や運営上の必要に応じて本ポリシーを変更できます。変更後の内容は本サービス上に掲示した時点から適用されます。</p>
+  </section>
+
+  <section>
+    <h2>11. お問い合わせ窓口</h2>
+    <p>運営者：Night-Walk運営<br>メール：support@night-walk.jp</p>
+  </section>
+</div>
+
+<style>
+.legal-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+}
+.legal-page h1 {
+  font-size: 1.7rem;
+  margin-bottom: 0.5rem;
+}
+.legal-meta {
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 1.5rem;
+}
+.legal-page section {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 215, 0, 0.18);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 0.9rem;
+}
+.legal-page h2 {
+  font-size: 1.05rem;
+  margin-bottom: 0.55rem;
+  color: #ffd700;
+}
+.legal-page p,
+.legal-page li {
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.88);
+}
+.legal-page ul {
+  margin: 0.3rem 0 0 1.2rem;
+}
+</style>
+{% endblock %}

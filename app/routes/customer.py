@@ -72,6 +72,7 @@ def register():
         password_confirm = request.form.get('password_confirm', '')
         nickname = request.form.get('nickname', '').strip()
         phone_number = request.form.get('phone_number', '').strip()
+        agree = request.form.get('agree')
         
         # バリデーション
         errors = []
@@ -87,6 +88,8 @@ def register():
             errors.append('ニックネームを入力してください。')
         elif len(nickname) > 50:
             errors.append('ニックネームは50文字以内で入力してください。')
+        if not agree:
+            errors.append('利用規約とプライバシーポリシーへの同意が必要です。')
         
         # 電話番号バリデーション
         phone_valid, phone_result = validate_phone_number(phone_number)
