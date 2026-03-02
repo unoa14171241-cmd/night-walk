@@ -54,13 +54,14 @@ class TwilioService:
             return False
 
 
-def initiate_call(shop_id, caller_phone):
+def initiate_call(shop_id, caller_phone, booking_id=None):
     """
     Initiate an automated phone call for reservation.
     
     Args:
         shop_id: Shop ID
         caller_phone: Caller's phone number (E.164 format)
+        booking_id: Optional BookingLog ID to link with the call
     
     Returns:
         dict with call info or error
@@ -116,6 +117,14 @@ def initiate_call(shop_id, caller_phone):
             status='initiated',
         )
         db.session.add(call_log)
+        db.session.flush()
+        
+        # Link booking to call if provided
+        if booking_id:
+            booking = BookingLog.query.get(booking_id)
+            if booking:
+                booking.call_id = call_log.id
+        
         db.session.commit()
         
         return {
@@ -191,3 +200,72 @@ def create_booking_from_call(call_id, shop_id, status='confirmed', notes=None):
         db.session.rollback()
         current_app.logger.error(f"Booking creation error: {e}")
         return None
+
+
+def notify_shop_booking(booking_id):
+    """
+    Notify the shop about a new booking via Twilio phone call.
+    Leaves a voicemail if no one answers.
+    
+    Args:
+        booking_id: BookingLog ID
+    
+    Returns:
+        dict with result info
+    """
+    account_sid = current_app.config.get('TWILIO_ACCOUNT_SID')
+    auth_token = current_app.config.get('TWILIO_AUTH_TOKEN')
+    from_number = current_app.config.get('TWILIO_PHONE_NUMBER')
+    
+    if not all([account_sid, auth_token, from_number]):
+        current_app.logger.warning("Twilio not configured - shop notification skipped")
+        if current_app.debug:
+            current_app.logger.info(f"[DEV] Would notify shop about booking #{booking_id}")
+        return {'success': False, 'error': 'Twilio not configured'}
+    
+    booking = BookingLog.query.get(booking_id)
+    if not booking:
+        return {'success': False, 'error': 'Booking not found'}
+    
+    shop = Shop.query.get(booking.shop_id)
+    if not shop or not shop.phone:
+        return {'success': False, 'error': 'Shop has no phone number'}
+    
+    # Format shop phone to E.164
+    import re
+    shop_phone = re.sub(r'[-\s]', '', shop.phone)
+    if shop_phone.startswith('0'):
+        shop_phone_e164 = '+81' + shop_phone[1:]
+    else:
+        shop_phone_e164 = shop_phone
+    
+    try:
+        from twilio.rest import Client
+        
+        client = Client(account_sid, auth_token)
+        
+        # Build TwiML URL for shop notification voice callback
+        notify_url = url_for('webhook.twilio_shop_notify',
+                            booking_id=booking_id, _external=True)
+        
+        # Call the shop - machine_detection allows voicemail
+        call = client.calls.create(
+            to=shop_phone_e164,
+            from_=from_number,
+            url=notify_url,
+            machine_detection='Enable',
+            async_amd=True,
+            async_amd_status_callback=notify_url,
+            timeout=30,
+        )
+        
+        current_app.logger.info(
+            f"Shop notification call initiated: shop={shop.id}, "
+            f"booking={booking_id}, call_sid={call.sid}"
+        )
+        
+        return {'success': True, 'call_sid': call.sid}
+        
+    except Exception as e:
+        current_app.logger.error(f"Shop notification call error: {e}")
+        return {'success': False, 'error': str(e)}

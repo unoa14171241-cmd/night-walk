@@ -332,7 +332,11 @@ def cast_detail(cast_id):
 
 @public_bp.route('/shops/<int:shop_id>/booking')
 def booking(shop_id):
-    """Booking page - phone reservation."""
+    """Booking page - Twilio automated voice reservation."""
+    from datetime import datetime
+    from ..models.booking import BookingLog
+    from ..services.booking_service import BookingService
+    
     shop = Shop.query.filter_by(
         id=shop_id,
         is_published=True,
@@ -342,9 +346,18 @@ def booking(shop_id):
     # Check if Twilio is configured
     twilio_configured = bool(current_app.config.get('TWILIO_ACCOUNT_SID'))
     
+    # Get available casts for nomination
+    casts = BookingService.get_available_casts(shop_id)
+    
+    # Get available booking times (15-60 min from now, 5-min intervals)
+    available_times = BookingLog.get_available_times()
+    
     return render_template('public/booking.html',
                           shop=shop,
-                          twilio_configured=twilio_configured)
+                          twilio_configured=twilio_configured,
+                          casts=casts or [],
+                          available_times=available_times,
+                          now=datetime.utcnow())
 
 
 @public_bp.route('/ads/<int:ad_id>/click')

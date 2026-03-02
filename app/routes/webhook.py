@@ -284,36 +284,87 @@ def twilio_voice():
         response.hangup()
         return Response(str(response), mimetype='text/xml')
     
+    # Find existing booking linked to this call
+    call_record = Call.query.filter_by(call_sid=call_sid).first()
+    existing_booking = None
+    if call_record:
+        existing_booking = BookingLog.query.filter_by(call_id=call_record.id).first()
+    
     # If digits pressed, process reservation
     if digits:
-        call = Call.query.filter_by(call_sid=call_sid).first()
-        if call:
-            call.digits_pressed = digits
+        if call_record:
+            call_record.digits_pressed = digits
         
         if digits == '1':
-            # Confirm reservation
-            response.say(f"{shop.name}への予約を承りました。店舗からのご連絡をお待ちください。", language='ja-JP')
-            
-            # Create booking log
-            booking = BookingLog(
-                call_id=call.id if call else None,
-                shop_id=shop.id,
-                booking_type='phone',
-                status='confirmed'
-            )
-            db.session.add(booking)
-            db.session.commit()
-            
-            audit_log(AuditLog.ACTION_BOOKING_CREATE, 'shop', shop.id,
-                     new_value={'type': 'phone', 'status': 'confirmed'})
-        else:
+            # Confirm reservation - update existing booking (don't create a new one)
+            if existing_booking:
+                existing_booking.status = BookingLog.STATUS_CONFIRMED
+                db.session.commit()
+                
+                # Build confirmation message with booking details
+                cast_info = ''
+                if existing_booking.is_free_nomination:
+                    cast_info = '、指名はフリーです'
+                elif existing_booking.cast:
+                    cast_info = f'、指名は{existing_booking.cast.name_display}さんです'
+                
+                time_info = ''
+                if existing_booking.scheduled_at:
+                    time_info = f'、来店予定は{existing_booking.scheduled_at.strftime("%H時%M分")}です'
+                
+                party_info = f'、{existing_booking.party_size}名様でのご来店です' if existing_booking.party_size else ''
+                
+                response.say(
+                    f"{shop.name}への予約を承りました{time_info}{party_info}{cast_info}。"
+                    f"予約時刻までにお越しください。",
+                    language='ja-JP'
+                )
+                
+                audit_log(AuditLog.ACTION_BOOKING_CREATE, 'shop', shop.id,
+                         new_value={'type': 'phone', 'status': 'confirmed',
+                                    'booking_id': existing_booking.id})
+                
+                # Notify shop about the new booking via phone call
+                try:
+                    from ..services.twilio_service import notify_shop_booking
+                    notify_shop_booking(existing_booking.id)
+                except Exception as e:
+                    current_app.logger.error(f"Shop notification failed: {e}")
+            else:
+                # Fallback: no existing booking found (shouldn't happen with new flow)
+                response.say(f"{shop.name}への予約を承りました。店舗からのご連絡をお待ちください。", language='ja-JP')
+                current_app.logger.warning(f"No existing booking found for call_sid={call_sid}")
+        
+        elif digits == '2':
+            # Cancel reservation
+            if existing_booking and existing_booking.can_cancel:
+                existing_booking.cancel(reason='ユーザーが通話中にキャンセル')
+                db.session.commit()
             response.say("予約をキャンセルしました。", language='ja-JP')
+        else:
+            response.say("無効な入力です。予約をキャンセルしました。", language='ja-JP')
         
         response.hangup()
     else:
-        # Initial call - provide menu
+        # Initial call - provide menu with booking details
+        booking_detail = ""
+        if existing_booking:
+            time_part = ""
+            if existing_booking.scheduled_at:
+                time_part = f"来店時間は{existing_booking.scheduled_at.strftime('%H時%M分')}、"
+            
+            party_part = f"{existing_booking.party_size}名様、" if existing_booking.party_size else ""
+            
+            cast_part = ""
+            if existing_booking.is_free_nomination:
+                cast_part = "指名はフリーです。"
+            elif existing_booking.cast:
+                cast_part = f"指名は{existing_booking.cast.name_display}さんです。"
+            
+            booking_detail = f"{time_part}{party_part}{cast_part}"
+        
         response.say(
-            f"こちらは{shop.name}の予約受付です。",
+            f"こちらは{shop.name}の予約受付です。{booking_detail}",
             language='ja-JP'
         )
         
@@ -324,7 +375,7 @@ def twilio_voice():
             timeout=10
         )
         gather.say(
-            "予約をご希望の方は1を、キャンセルは2を押してください。",
+            "予約を確定する場合は1を、キャンセルは2を押してください。",
             language='ja-JP'
         )
         
@@ -361,3 +412,81 @@ def twilio_status():
         db.session.commit()
     
     return Response(status=200)
+
+
+@webhook_bp.route('/twilio/shop-notify', methods=['POST'])
+@csrf.exempt
+def twilio_shop_notify():
+    """
+    Handle Twilio voice callback for shop notification.
+    Reads booking details to the shop staff (or leaves a voicemail).
+    """
+    try:
+        from twilio.twiml.voice_response import VoiceResponse
+    except ImportError:
+        current_app.logger.error("twilio package not installed")
+        return Response("Service unavailable", status=503)
+    
+    # Validate Twilio signature
+    if not validate_twilio_request():
+        current_app.logger.error("Twilio shop notify request validation failed")
+        return Response("Forbidden", status=403)
+    
+    booking_id = request.args.get('booking_id')
+    
+    response = VoiceResponse()
+    
+    if not booking_id:
+        response.say("エラーが発生しました。", language='ja-JP')
+        response.hangup()
+        return Response(str(response), mimetype='text/xml')
+    
+    booking = BookingLog.query.get(booking_id)
+    if not booking:
+        response.say("予約情報が見つかりませんでした。", language='ja-JP')
+        response.hangup()
+        return Response(str(response), mimetype='text/xml')
+    
+    shop = Shop.query.get(booking.shop_id)
+    shop_name = shop.name if shop else '店舗'
+    
+    # Build notification message
+    message_parts = [f"ナイトウォークからの予約通知です。{shop_name}に新しい予約が入りました。"]
+    
+    # Time info
+    if booking.scheduled_at:
+        message_parts.append(
+            f"来店予定時刻は{booking.scheduled_at.strftime('%H時%M分')}です。"
+        )
+    
+    # Party size
+    if booking.party_size:
+        message_parts.append(f"人数は{booking.party_size}名様です。")
+    
+    # Cast nomination
+    if booking.is_free_nomination:
+        message_parts.append("指名はフリーです。")
+    elif booking.cast:
+        message_parts.append(f"指名キャストは{booking.cast.name_display}さんです。")
+    
+    # Customer phone
+    if booking.customer_phone:
+        # Read phone number digit by digit for clarity
+        phone_display = booking.customer_phone[-4:]  # Last 4 digits only for privacy
+        message_parts.append(f"お客様の電話番号の下4桁は{phone_display}です。")
+    
+    message_parts.append("予約管理画面でご確認ください。")
+    message_parts.append("繰り返します。")
+    
+    full_message = "".join(message_parts)
+    
+    # Say the message twice (in case they pick up late or voicemail starts late)
+    response.pause(length=1)
+    response.say(full_message, language='ja-JP')
+    response.pause(length=1)
+    response.say(full_message, language='ja-JP')
+    response.hangup()
+    
+    current_app.logger.info(f"Shop notification delivered for booking #{booking_id}")
+    
+    return Response(str(response), mimetype='text/xml')

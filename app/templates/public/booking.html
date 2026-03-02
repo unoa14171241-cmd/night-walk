@@ -11,6 +11,7 @@
     <div class="card text-center">
         <div class="card-header">
             <h2 class="card-title mb-0">{{ shop.name }}</h2>
+            <p class="text-muted mt-1 mb-0" style="font-size: 0.85rem;">直前限定予約（15〜60分後）</p>
         </div>
 
         {% if shop.vacancy_status %}
@@ -21,34 +22,108 @@
         </div>
         {% endif %}
 
-        {% if twilio_configured %}
-        <!-- === Twilio 自動音声予約 === -->
-        <div id="twilio-section">
-            <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">自動音声予約</h3>
-            <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 1rem;">
-                電話番号を入力すると、Twilioから自動音声でお電話します。<br>
-                音声ガイドに従い、1を押すと予約確定です。
-            </p>
+        <!-- === 予約フォーム === -->
+        <div id="booking-form-section">
+            <!-- STEP 1: 指名キャスト選択 -->
+            <div class="booking-step mb-4">
+                <h3 class="booking-step-title">
+                    <span class="step-number">1</span>
+                    キャストを選択
+                </h3>
+                <div class="cast-select-grid" id="cast-select">
+                    <!-- フリー（指名なし）-->
+                    <div class="cast-select-item">
+                        <input type="radio" class="cast-radio-input" name="cast_id" id="cast_free" value="free" checked>
+                        <label class="cast-radio-label" for="cast_free">
+                            <div class="cast-avatar-free">?</div>
+                            <span class="cast-select-name">フリー</span>
+                            <span class="cast-select-badge badge-free">おまかせ</span>
+                        </label>
+                    </div>
+                    {% for cast in casts %}
+                    <div class="cast-select-item">
+                        <input type="radio" class="cast-radio-input" name="cast_id" id="cast_{{ cast.id }}"
+                            value="{{ cast.id }}">
+                        <label class="cast-radio-label" for="cast_{{ cast.id }}">
+                            <img src="{{ cast.image_url }}" alt="{{ cast.name_display }}" class="cast-avatar"
+                                loading="lazy">
+                            <span class="cast-select-name">{{ cast.name_display }}</span>
+                            {% if cast.work_status == 'working' %}
+                            <span class="cast-select-badge badge-working">出勤中</span>
+                            {% elif cast.work_status == 'scheduled' %}
+                            <span class="cast-select-badge badge-scheduled">出勤予定</span>
+                            {% endif %}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
 
-            <div id="call-form">
+            <!-- STEP 2: 予約時間選択 -->
+            <div class="booking-step mb-4">
+                <h3 class="booking-step-title">
+                    <span class="step-number">2</span>
+                    来店時間を選択
+                </h3>
+                <div class="time-select-grid" id="time-select">
+                    {% for time in available_times %}
+                    <div class="time-select-item">
+                        <input type="radio" class="time-radio-input" name="scheduled_time" id="time_{{ loop.index }}"
+                            value="{{ time.strftime('%Y-%m-%d %H:%M') }}" {% if loop.first %}checked{% endif %}>
+                        <label class="time-radio-label" for="time_{{ loop.index }}">
+                            <span class="time-value">{{ time.strftime('%H:%M') }}</span>
+                            <span class="time-offset">約{{ ((time - now).total_seconds() / 60)|int }}分後</span>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+                <p class="text-muted" style="font-size: 0.7rem; margin-top: 0.5rem;">
+                    ※ 予約時刻から10分以上の遅刻で自動キャンセルとなります
+                </p>
+            </div>
+
+            <!-- STEP 3: 人数選択 -->
+            <div class="booking-step mb-4">
+                <h3 class="booking-step-title">
+                    <span class="step-number">3</span>
+                    人数を選択
+                </h3>
+                <div class="party-select-grid" id="party-select">
+                    {% for i in range(1, 7) %}
+                    <div class="party-select-item">
+                        <input type="radio" class="party-radio-input" name="party_size" id="party_{{ i }}"
+                            value="{{ i }}" {% if i==1 %}checked{% endif %}>
+                        <label class="party-radio-label" for="party_{{ i }}">
+                            {{ i }}名
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- STEP 4: 電話番号入力 + 予約実行 -->
+            <div class="booking-step">
+                <h3 class="booking-step-title">
+                    <span class="step-number">4</span>
+                    電話番号を入力して予約
+                </h3>
+                <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 1rem;">
+                    自動音声でお電話します。ガイドに従い1️⃣を押すと予約確定です。
+                </p>
                 <div style="margin-bottom: 1rem;">
-                    <input type="tel" id="caller-phone" placeholder="090-1234-5678"
-                        style="width: 100%; max-width: 280px; padding: 0.75rem 1rem; border-radius: 8px;
-                               border: 1px solid rgba(255,215,0,0.3); background: rgba(255,255,255,0.08);
-                               color: #fff; font-size: 1.1rem; text-align: center;"
+                    <input type="tel" id="caller-phone" placeholder="090-1234-5678" class="phone-input"
                         pattern="[0-9\-]+" inputmode="tel" autocomplete="tel">
                 </div>
-                <button id="call-btn" class="phone-btn"
-                    data-shop-id="{{ shop.id }}"
-                    style="display: inline-block; cursor: pointer; border: none; font-size: 1rem; padding: 0.85rem 2rem;">
-                    自動音声で予約する
+                <button id="call-btn" class="phone-btn" data-shop-id="{{ shop.id }}"
+                    style="display: inline-block; cursor: pointer; border: none; font-size: 1rem; padding: 0.85rem 2rem; width: 100%; max-width: 320px;">
+                    📞 自動音声で予約する
                 </button>
             </div>
 
-            <div id="call-status" style="display: none; margin-top: 1rem;">
+            <!-- 通話ステータス -->
+            <div id="call-status" style="display: none; margin-top: 1.5rem;">
                 <div id="call-status-spinner" style="margin-bottom: 0.5rem;">
-                    <div style="display: inline-block; width: 24px; height: 24px; border: 3px solid rgba(255,215,0,0.3);
-                                border-top-color: #ffd700; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                    <div class="call-spinner"></div>
                 </div>
                 <p id="call-status-text" style="font-size: 0.9rem; color: #ffd700;"></p>
             </div>
@@ -59,191 +134,471 @@
                 通話料はお客様負担となります
             </p>
         </div>
-
-        <hr style="border-color: var(--color-border); margin: 1.5rem 0;">
-        <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 0.75rem;">または店舗に直接電話する</p>
-        {% else %}
-        <!-- Twilio未設定時 -->
-        <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">電話予約</h3>
-        <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 1rem;">
-            ボタンを押すと店舗に直接電話がかかります。
-        </p>
-        {% endif %}
-
-        <!-- === 直接電話 === -->
-        {% if shop.phone %}
-        <a href="tel:{{ shop.phone }}" class="btn btn-secondary btn-lg btn-block"
-            style="display: inline-block; text-decoration: none; font-size: 1rem; padding: 0.75rem 2rem;">
-            {{ shop.phone }} に電話する
-        </a>
-        <p class="text-muted" style="font-size: 0.7rem; margin-top: 0.5rem;">タップで発信されます</p>
-        {% else %}
-        <p class="text-muted">
-            この店舗の電話番号はまだ登録されていません。
-        </p>
-        {% endif %}
     </div>
 
     <!-- 予約の流れ -->
     <div class="card" style="margin-top: 1rem;">
-        <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem;">予約の流れ</h4>
-        {% if twilio_configured %}
-        <ol style="padding-left: 1.5rem; color: var(--color-text-muted); font-size: 0.85rem;">
-            <li style="margin-bottom: 0.5rem;">電話番号を入力して「自動音声で予約する」をタップ</li>
-            <li style="margin-bottom: 0.5rem;">お客様の電話にTwilioから着信があります</li>
-            <li style="margin-bottom: 0.5rem;">自動音声で店舗名を案内します</li>
-            <li style="margin-bottom: 0.5rem;">予約確定は「1」、キャンセルは「2」を押してください</li>
-            <li>店舗からの折り返し連絡をお待ちください</li>
+        <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem;">📋 予約の流れ</h4>
+        <ol class="booking-flow-list">
+            <li>キャスト・時間・人数を選択</li>
+            <li>電話番号を入力して「自動音声で予約する」をタップ</li>
+            <li>お客様の電話にTwilioから着信があります</li>
+            <li>自動音声で予約内容を案内します</li>
+            <li>予約確定は「1」、キャンセルは「2」を押してください</li>
+            <li>予約時刻までにお越しください</li>
         </ol>
-        {% else %}
-        <ol style="padding-left: 1.5rem; color: var(--color-text-muted); font-size: 0.85rem;">
-            <li style="margin-bottom: 0.5rem;">上の電話ボタンをタップ</li>
-            <li style="margin-bottom: 0.5rem;">店舗スタッフが対応します</li>
-            <li style="margin-bottom: 0.5rem;">ご希望の来店時間と人数をお伝えください</li>
-            <li>予約完了です</li>
-        </ol>
-        {% endif %}
+        <div class="booking-warning">
+            ⚠️ 予約時刻から10分以上の遅刻で自動キャンセルとなります
+        </div>
     </div>
 </div>
 
 <style>
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-.phone-btn {
-    background: linear-gradient(135deg, #ffd700, #ff8c00);
-    color: #1a0a25;
-    font-weight: 700;
-    border-radius: 12px;
-    transition: transform 0.2s, box-shadow 0.2s;
-    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
-}
-.phone-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
-}
-.phone-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-#caller-phone:focus {
-    outline: none;
-    border-color: #ffd700;
-    box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
-}
+    /* === Booking Steps === */
+    .booking-step {
+        text-align: left;
+        padding: 0 0.5rem;
+    }
+
+    .booking-step-title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .step-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ffd700, #ff8c00);
+        color: #1a0a25;
+        font-weight: 800;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+    }
+
+    /* === Cast Select Grid === */
+    .cast-select-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+        gap: 0.5rem;
+    }
+
+    .cast-select-item {
+        position: relative;
+    }
+
+    .cast-radio-input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .cast-radio-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0.5rem;
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-bg-elevated);
+        cursor: pointer;
+        transition: all 0.2s;
+        gap: 0.25rem;
+    }
+
+    .cast-radio-input:checked+.cast-radio-label {
+        border-color: #ffd700;
+        background: rgba(255, 215, 0, 0.1);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+    }
+
+    .cast-radio-label:hover {
+        border-color: rgba(255, 215, 0, 0.5);
+        transform: translateY(-1px);
+    }
+
+    .cast-avatar {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .cast-avatar-free {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: var(--color-bg-card);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: var(--color-text-muted);
+        border: 2px dashed var(--color-border);
+    }
+
+    .cast-select-name {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+    }
+
+    .cast-select-badge {
+        font-size: 0.55rem;
+        padding: 1px 5px;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+
+    .badge-free {
+        background: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+    }
+
+    .badge-working {
+        background: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+    }
+
+    .badge-scheduled {
+        background: rgba(251, 191, 36, 0.2);
+        color: #fbbf24;
+    }
+
+    /* === Time Select Grid === */
+    .time-select-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 0.4rem;
+    }
+
+    .time-select-item {
+        position: relative;
+    }
+
+    .time-radio-input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .time-radio-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0.5rem 0.25rem;
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-bg-elevated);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .time-radio-input:checked+.time-radio-label {
+        border-color: #ffd700;
+        background: rgba(255, 215, 0, 0.1);
+        box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+    }
+
+    .time-radio-label:hover {
+        border-color: rgba(255, 215, 0, 0.5);
+    }
+
+    .time-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--color-text);
+    }
+
+    .time-offset {
+        font-size: 0.65rem;
+        color: var(--color-text-muted);
+    }
+
+    /* === Party Size Select === */
+    .party-select-grid {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+    }
+
+    .party-select-item {
+        position: relative;
+    }
+
+    .party-radio-input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .party-radio-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 52px;
+        padding: 0.5rem 0.75rem;
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-bg-elevated);
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .party-radio-input:checked+.party-radio-label {
+        border-color: #ffd700;
+        background: rgba(255, 215, 0, 0.1);
+        box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+    }
+
+    .party-radio-label:hover {
+        border-color: rgba(255, 215, 0, 0.5);
+    }
+
+    /* === Phone Input === */
+    .phone-input {
+        width: 100%;
+        max-width: 280px;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+        font-size: 1.1rem;
+        text-align: center;
+    }
+
+    .phone-input:focus {
+        outline: none;
+        border-color: #ffd700;
+        box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+    }
+
+    /* === Phone Button === */
+    .phone-btn {
+        background: linear-gradient(135deg, #ffd700, #ff8c00);
+        color: #1a0a25;
+        font-weight: 700;
+        border-radius: 12px;
+        transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+    }
+
+    .phone-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+    }
+
+    .phone-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* === Call Spinner === */
+    .call-spinner {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        border: 3px solid rgba(255, 215, 0, 0.3);
+        border-top-color: #ffd700;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* === Booking Flow === */
+    .booking-flow-list {
+        padding-left: 1.5rem;
+        color: var(--color-text-muted);
+        font-size: 0.85rem;
+    }
+
+    .booking-flow-list li {
+        margin-bottom: 0.4rem;
+    }
+
+    .booking-warning {
+        margin-top: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-radius: var(--radius-md);
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #ef4444;
+    }
+
+    /* === Responsive === */
+    @media (max-width: 480px) {
+        .cast-select-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .time-select-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
 </style>
 
-{% if twilio_configured %}
 {% block extra_js %}
 <script>
-(function() {
-    const callBtn = document.getElementById('call-btn');
-    const phoneInput = document.getElementById('caller-phone');
-    const callForm = document.getElementById('call-form');
-    const callStatus = document.getElementById('call-status');
-    const callStatusText = document.getElementById('call-status-text');
-    const callResult = document.getElementById('call-result');
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
-                      || '{{ csrf_token() }}';
+    (function () {
+        const callBtn = document.getElementById('call-btn');
+        const phoneInput = document.getElementById('caller-phone');
+        const callStatus = document.getElementById('call-status');
+        const callStatusText = document.getElementById('call-status-text');
+        const callResult = document.getElementById('call-result');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
+            || '{{ csrf_token() }}';
 
-    if (!callBtn) return;
+        if (!callBtn) return;
 
-    callBtn.addEventListener('click', async function() {
-        const phone = phoneInput.value.replace(/[\s\-]/g, '');
+        callBtn.addEventListener('click', async function () {
+            const phone = phoneInput.value.replace(/[\s\-]/g, '');
 
-        if (!phone || !/^(0\d{9,10}|\+81\d{9,10})$/.test(phone)) {
-            alert('有効な電話番号を入力してください（例: 09012345678）');
-            phoneInput.focus();
-            return;
-        }
-
-        callBtn.disabled = true;
-        callStatus.style.display = 'block';
-        callStatusText.textContent = '発信中...お電話をおかけしています';
-
-        try {
-            const res = await fetch('/api/booking/call', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({
-                    shop_id: callBtn.dataset.shopId,
-                    phone: phone
-                })
-            });
-
-            const data = await res.json();
-
-            if (data.success) {
-                callStatusText.textContent = 'お電話をおかけしました。着信をお待ちください。';
-                if (data.call_sid) {
-                    pollCallStatus(data.call_sid);
-                }
-            } else {
-                callStatus.style.display = 'none';
-                callResult.style.display = 'block';
-                callResult.innerHTML = '<p style="color: #ef4444;">' + (data.error || '発信に失敗しました') + '</p>';
-                callBtn.disabled = false;
-            }
-        } catch (e) {
-            callStatus.style.display = 'none';
-            callResult.style.display = 'block';
-            callResult.innerHTML = '<p style="color: #ef4444;">通信エラーが発生しました。もう一度お試しください。</p>';
-            callBtn.disabled = false;
-        }
-    });
-
-    function pollCallStatus(callSid) {
-        let attempts = 0;
-        const maxAttempts = 30;
-
-        const interval = setInterval(async () => {
-            attempts++;
-            if (attempts > maxAttempts) {
-                clearInterval(interval);
-                callStatusText.textContent = '通話が完了しました。';
-                document.getElementById('call-status-spinner').style.display = 'none';
-                callBtn.disabled = false;
+            if (!phone || !/^(0\d{9,10}|\+81\d{9,10})$/.test(phone)) {
+                alert('有効な電話番号を入力してください（例: 09012345678）');
+                phoneInput.focus();
                 return;
             }
 
+            // Gather form selections
+            const castRadio = document.querySelector('input[name="cast_id"]:checked');
+            const timeRadio = document.querySelector('input[name="scheduled_time"]:checked');
+            const partyRadio = document.querySelector('input[name="party_size"]:checked');
+
+            if (!castRadio) {
+                alert('キャストを選択してください');
+                return;
+            }
+            if (!timeRadio) {
+                alert('来店時間を選択してください');
+                return;
+            }
+            if (!partyRadio) {
+                alert('人数を選択してください');
+                return;
+            }
+
+            const castId = castRadio.value;
+            const scheduledTime = timeRadio.value;
+            const partySize = parseInt(partyRadio.value);
+
+            callBtn.disabled = true;
+            callStatus.style.display = 'block';
+            callStatusText.textContent = '発信中...お電話をおかけしています';
+
             try {
-                const res = await fetch('/api/booking/call/status?call_sid=' + callSid);
+                const res = await fetch('/api/booking/call', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        shop_id: callBtn.dataset.shopId,
+                        phone: phone,
+                        cast_id: castId,
+                        scheduled_time: scheduledTime,
+                        party_size: partySize
+                    })
+                });
+
                 const data = await res.json();
 
-                if (!data.found) return;
-
-                const statusMessages = {
-                    'initiated': '発信中...',
-                    'ringing': '呼び出し中...',
-                    'in-progress': '通話中...',
-                    'answered': '通話中...',
-                    'completed': '通話が完了しました',
-                    'failed': '発信に失敗しました',
-                    'no-answer': '応答がありませんでした',
-                    'busy': '回線が混み合っています'
-                };
-
-                callStatusText.textContent = statusMessages[data.status] || data.status;
-
-                if (['completed', 'failed', 'no-answer', 'busy'].includes(data.status)) {
-                    clearInterval(interval);
-                    document.getElementById('call-status-spinner').style.display = 'none';
-
-                    if (data.digits_pressed === '1') {
-                        callResult.style.display = 'block';
-                        callResult.innerHTML = '<p style="color: #10b981; font-weight: 700; font-size: 1.1rem;">予約が確定しました</p><p class="text-muted" style="font-size: 0.85rem;">店舗からの連絡をお待ちください。</p>';
+                if (data.success) {
+                    callStatusText.textContent = 'お電話をおかけしました。着信をお待ちください。';
+                    if (data.call_sid) {
+                        pollCallStatus(data.call_sid);
                     }
+                } else {
+                    callStatus.style.display = 'none';
+                    callResult.style.display = 'block';
+                    callResult.innerHTML = '<p style="color: #ef4444;">' + (data.error || '発信に失敗しました') + '</p>';
                     callBtn.disabled = false;
                 }
-            } catch (e) { /* ignore polling errors */ }
-        }, 3000);
-    }
-})();
+            } catch (e) {
+                callStatus.style.display = 'none';
+                callResult.style.display = 'block';
+                callResult.innerHTML = '<p style="color: #ef4444;">通信エラーが発生しました。もう一度お試しください。</p>';
+                callBtn.disabled = false;
+            }
+        });
+
+        function pollCallStatus(callSid) {
+            let attempts = 0;
+            const maxAttempts = 30;
+
+            const interval = setInterval(async () => {
+                attempts++;
+                if (attempts > maxAttempts) {
+                    clearInterval(interval);
+                    callStatusText.textContent = '通話が完了しました。';
+                    document.getElementById('call-status-spinner').style.display = 'none';
+                    callBtn.disabled = false;
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/booking/call/status?call_sid=' + callSid);
+                    const data = await res.json();
+
+                    if (!data.found) return;
+
+                    const statusMessages = {
+                        'initiated': '発信中...',
+                        'ringing': '呼び出し中...',
+                        'in-progress': '通話中...',
+                        'answered': '通話中...',
+                        'completed': '通話が完了しました',
+                        'failed': '発信に失敗しました',
+                        'no-answer': '応答がありませんでした',
+                        'busy': '回線が混み合っています'
+                    };
+
+                    callStatusText.textContent = statusMessages[data.status] || data.status;
+
+                    if (['completed', 'failed', 'no-answer', 'busy'].includes(data.status)) {
+                        clearInterval(interval);
+                        document.getElementById('call-status-spinner').style.display = 'none';
+
+                        if (data.digits_pressed === '1') {
+                            callResult.style.display = 'block';
+                            callResult.innerHTML = '<p style="color: #10b981; font-weight: 700; font-size: 1.1rem;">✅ 予約が確定しました</p><p class="text-muted" style="font-size: 0.85rem;">予約時刻までにお越しください。</p>';
+                            // Hide the form
+                            document.getElementById('booking-form-section').querySelectorAll('.booking-step').forEach(el => {
+                                el.style.opacity = '0.4';
+                                el.style.pointerEvents = 'none';
+                            });
+                        }
+                        callBtn.disabled = false;
+                    }
+                } catch (e) { /* ignore polling errors */ }
+            }, 3000);
+        }
+    })();
 </script>
 {% endblock %}
-{% endif %}
 {% endblock %}

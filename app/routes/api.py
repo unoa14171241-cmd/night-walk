@@ -368,8 +368,9 @@ def get_badges(target_type, target_id):
 @api_bp.route('/booking/call', methods=['POST'])
 @limiter.limit("5 per hour")
 def initiate_booking_call():
-    """Twilio経由で自動音声予約コールを発信"""
+    """Twilio経由で自動音声予約コールを発信（予約情報付き）"""
     from flask import current_app
+    from datetime import datetime
     import re
 
     data = request.get_json()
@@ -378,12 +379,36 @@ def initiate_booking_call():
 
     shop_id = data.get('shop_id')
     phone = data.get('phone', '').strip()
+    cast_id_raw = data.get('cast_id', '').strip() if isinstance(data.get('cast_id'), str) else str(data.get('cast_id', ''))
+    scheduled_time = data.get('scheduled_time', '').strip()
+    party_size = data.get('party_size', 1)
 
     if not shop_id or not phone:
         return jsonify({'success': False, 'error': '店舗IDと電話番号は必須です'}), 400
 
     if not re.match(r'^(\+81|0)\d{9,10}$', phone):
         return jsonify({'success': False, 'error': '有効な電話番号を入力してください（例: 090-1234-5678）'}), 400
+
+    if not scheduled_time:
+        return jsonify({'success': False, 'error': '来店時間を選択してください'}), 400
+
+    # Parse scheduled time
+    try:
+        scheduled_at = datetime.strptime(scheduled_time, '%Y-%m-%d %H:%M')
+    except ValueError:
+        return jsonify({'success': False, 'error': '予約時間の形式が正しくありません'}), 400
+
+    # Validate party size
+    try:
+        party_size = int(party_size)
+        if party_size < 1 or party_size > 10:
+            party_size = 1
+    except (ValueError, TypeError):
+        party_size = 1
+
+    # Determine cast selection
+    is_free = cast_id_raw == 'free' or cast_id_raw == ''
+    cast_id = None if is_free else int(cast_id_raw) if cast_id_raw.isdigit() else None
 
     phone_clean = re.sub(r'[-\s]', '', phone)
     if phone_clean.startswith('0'):
@@ -395,16 +420,41 @@ def initiate_booking_call():
     if not account_sid:
         return jsonify({'success': False, 'error': '自動音声予約システムは現在準備中です'}), 503
 
+    # Create booking log first
+    from ..services.booking_service import BookingService
+    booking_result = BookingService.create_booking(
+        shop_id=int(shop_id),
+        cast_id=cast_id,
+        scheduled_at=scheduled_at,
+        customer_phone=phone_clean,
+        customer_name='',
+        party_size=party_size,
+        booking_type='phone',
+        is_free_nomination=is_free,
+        notes='Twilio自動音声予約'
+    )
+
+    if not booking_result['success']:
+        return jsonify({
+            'success': False,
+            'error': booking_result.get('error', '予約の作成に失敗しました')
+        }), 400
+
+    booking = booking_result['booking']
+
     from ..services.twilio_service import initiate_call
-    result = initiate_call(int(shop_id), phone_e164)
+    result = initiate_call(int(shop_id), phone_e164, booking_id=booking.id)
 
     if result['success']:
         return jsonify({
             'success': True,
             'message': 'お電話をおかけしています。しばらくお待ちください。',
-            'call_sid': result.get('call_sid')
+            'call_sid': result.get('call_sid'),
+            'booking_id': booking.id
         })
     else:
+        # Call failed, cancel the booking
+        BookingService.cancel_booking(booking.id, reason='Twilio発信失敗')
         return jsonify({
             'success': False,
             'error': result.get('error', '発信に失敗しました')
