@@ -55,28 +55,21 @@
  <div class="card">
  <h3 class="mb-3">TOP {{ rankings|length }}</h3>
  
- <div style="display: flex; flex-direction: column; gap: var(--space-sm);">
+ <div class="ranking-list">
  {% for ranking in rankings %}
  <a href="{{ url_for('public.shop_detail', shop_id=ranking.cast.shop_id) }}#cast-{{ ranking.cast.id }}" 
- class="d-flex align-center gap-3" 
- style="padding: var(--space-md); border-radius: var(--radius); text-decoration: none; transition: background 0.2s;
- {% if ranking.rank == 1 %}background: linear-gradient(90deg, rgba(255,215,0,0.2), transparent);
- {% elif ranking.rank == 2 %}background: linear-gradient(90deg, rgba(192,192,192,0.2), transparent);
- {% elif ranking.rank == 3 %}background: linear-gradient(90deg, rgba(205,127,50,0.2), transparent);
- {% elif ranking.rank <= 10 %}background: var(--color-bg-elevated);{% endif %}"
- onmouseover="this.style.background='var(--color-bg-elevated)'"
- onmouseout="this.style.background='{% if ranking.rank == 1 %}linear-gradient(90deg, rgba(255,215,0,0.2), transparent){% elif ranking.rank == 2 %}linear-gradient(90deg, rgba(192,192,192,0.2), transparent){% elif ranking.rank == 3 %}linear-gradient(90deg, rgba(205,127,50,0.2), transparent){% elif ranking.rank <= 10 %}var(--color-bg-elevated){% else %}transparent{% endif %}'">
+ class="ranking-item d-flex align-center gap-3 {% if ranking.rank and ranking.rank <= 3 %}rank-frame rank-{{ ranking.rank }}{% elif ranking.rank and ranking.rank <= 10 %}rank-top10{% endif %}">
  
  <!-- 順位 -->
  <div style="width: 50px; text-align: center; flex-shrink: 0;">
  {% if ranking.rank == 1 %}
- <span style="font-size: 1.8rem;"></span>
+<span class="rank-number rank-number-top">1位</span>
  {% elif ranking.rank == 2 %}
- <span style="font-size: 1.6rem;"></span>
+<span class="rank-number rank-number-top">2位</span>
  {% elif ranking.rank == 3 %}
- <span style="font-size: 1.4rem;"></span>
+<span class="rank-number rank-number-top">3位</span>
  {% else %}
- <span style="font-size: 1.2rem; font-weight: bold;">{{ ranking.rank }}</span>
+<span class="rank-number">{{ ranking.rank }}</span>
  {% endif %}
  
  {% if ranking.rank_change %}
@@ -127,4 +120,71 @@
  {% endif %}
  
 </div>
+
+<style>
+.ranking-list {
+ display: flex;
+ flex-direction: column;
+ gap: var(--space-sm);
+}
+
+.ranking-item {
+ padding: var(--space-md);
+ border-radius: var(--radius);
+ text-decoration: none;
+ transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.ranking-item:hover {
+ transform: translateY(-2px);
+ box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+ background: var(--color-bg-elevated);
+}
+
+.rank-top10 {
+ background: var(--color-bg-elevated);
+}
+
+.rank-frame {
+ background-repeat: no-repeat;
+ background-position: center;
+ background-size: 100% 100%;
+ min-height: 180px;
+ padding: 28px;
+}
+
+.rank-1 {
+ background-image:
+   linear-gradient(135deg, rgba(255, 215, 0, 0.18), rgba(255, 165, 0, 0.12)),
+   url('{{ url_for("static", filename="images/ranking/rank1-frame.png") }}');
+}
+
+.rank-2 {
+ background-image:
+   linear-gradient(135deg, rgba(192, 192, 192, 0.18), rgba(160, 160, 160, 0.12)),
+   url('{{ url_for("static", filename="images/ranking/rank2-frame.png") }}');
+}
+
+.rank-3 {
+ background-image:
+   linear-gradient(135deg, rgba(205, 127, 50, 0.18), rgba(139, 69, 19, 0.12)),
+   url('{{ url_for("static", filename="images/ranking/rank3-frame.png") }}');
+}
+
+.rank-number {
+ font-size: 1.2rem;
+ font-weight: bold;
+}
+
+.rank-number-top {
+ font-size: 1.35rem;
+}
+
+@media (max-width: 640px) {
+ .rank-frame {
+  min-height: 150px;
+  padding: 20px;
+ }
+}
+</style>
 {% endblock %}
